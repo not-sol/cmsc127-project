@@ -1,4 +1,4 @@
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 

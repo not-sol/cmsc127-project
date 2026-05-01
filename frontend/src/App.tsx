@@ -3,15 +3,16 @@ import LoginPage from "@/pages/LoginPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
-import { useEffect } from 'react'
-import { useAuthStore } from '@/store/authStore'
+import TestForm from "@/features/forms/form-test/test-form";
+// import { useEffect } from 'react'
+// import { useAuthStore } from '@/store/authStore'
 
 export default function App() {
-  const init = useAuthStore((s) => s.init)
-
-  useEffect(() => {
-    init()
-  }, [])
+  // const init = useAuthStore((s) => s.init)
+  //
+  // useEffect(() => {
+  //   init()
+  // }, [init])
 
   return (
     <BrowserRouter>
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/report" element={<ReportsPage />} />
         <Route path="/entry" element={<NewEntryPage />} />
+        <Route path="/form" element={<TestForm />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
