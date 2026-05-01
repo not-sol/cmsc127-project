@@ -78,7 +78,7 @@ export function DynamicForm<TValues extends FieldValues>({
   description,
   submitLabel = "Submit",
   className = "w-full mx-auto justify-center",
-  formClassName = "w-full max-w-sm space-y-6"
+  formClassName = "w-full space-y-6"
 }: DynamicFormProps<TValues>) {
   const form = useForm<TValues>({
     resolver: zodResolver(formSchema) as Resolver<TValues>,
@@ -197,7 +197,6 @@ export function DynamicForm<TValues extends FieldValues>({
                         <RadioGroup
                           value={typeof field.value === "string" ? field.value : ""}
                           onValueChange={field.onChange}
-                          className="mt-4"
                         >
                           {item.options.map((opt, idx) => (
                             <Field
@@ -246,7 +245,7 @@ export function DynamicForm<TValues extends FieldValues>({
                           <FieldDescription>{item.description}</FieldDescription>
                         )}
 
-                        <div className="mt-4 space-y-3">
+                        <div className="space-y-3">
                           {item.options.map((opt) => (
                             <Field key={opt.value} orientation="horizontal">
                               <Checkbox
