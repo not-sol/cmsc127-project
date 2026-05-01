@@ -21,7 +21,13 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/report" element={<ReportsPage />} />
         <Route path="/entry" element={<NewEntryPage />} />
-        <Route path="/form" element={<TestForm />} />
+        <Route path="/test-form" element={<TestForm />} />
+        {/* <Route path="/form-a" element={} /> */}
+        {/* <Route path="/form-b" element={} /> */}
+        {/* <Route path="/form-c" element={} /> */}
+
+
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
