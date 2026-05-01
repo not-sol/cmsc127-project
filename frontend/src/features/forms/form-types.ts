@@ -5,6 +5,7 @@ export type BaseField<TValues extends FieldValues> = {
   name: Path<TValues>
   label: string
   description?: string
+  optional?: boolean
 }
 
 // Text field
@@ -61,6 +62,13 @@ export type DatePickerField<TValues extends FieldValues> = BaseField<TValues> & 
   placeholder?: string
 }
 
+// File upload
+export type FileUploadField<TValues extends FieldValues> = BaseField<TValues> & {
+  type: "file"
+  accept?: string
+  multiple?: boolean
+}
+
 // Union of all fields
 export type FormFieldConfig<TValues extends FieldValues> =
   | TextField<TValues>
@@ -69,3 +77,4 @@ export type FormFieldConfig<TValues extends FieldValues> =
   | CheckboxField<TValues>
   | SelectField<TValues>
   | DatePickerField<TValues>
+  | FileUploadField<TValues>
