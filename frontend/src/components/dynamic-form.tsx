@@ -51,12 +51,11 @@ import {
 } from "@/components/ui/popover"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
-import {
-  Dropzone,
-  DropzoneContent,
-  DropzoneEmptyState,
-  type DropzoneFileValue,
-} from "@/components/ui/dropzone"
+// import {
+//   Dropzone,
+//   DropzoneContent,
+//   DropzoneEmptyState,
+// } from "@/components/ui/dropzone"
 
 type DynamicFormProps<TValues extends FieldValues> = {
   formSchema: ZodType<TValues, TValues>
@@ -231,7 +230,7 @@ export function DynamicForm<TValues extends FieldValues>({
                         )}
                       </FieldSet>
                     )
-                  case "checkbox": {
+                  case "checkbox":
                     const selectedValues = Array.isArray(field.value)
                       ? field.value.map((value: unknown) => String(value))
                       : []
@@ -275,7 +274,6 @@ export function DynamicForm<TValues extends FieldValues>({
                         </div>
                       </FieldSet>
                     )
-                  }
 
                   case "select":
                     return (
@@ -347,37 +345,6 @@ export function DynamicForm<TValues extends FieldValues>({
                         {item.description && (
                           <FieldDescription>{item.description}</FieldDescription>
                         )}
-
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )
-                  case "file":
-                    return (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor={fieldId}>
-                          {item.label}
-                        </FieldLabel>
-
-                        {item.description && (
-                          <FieldDescription>{item.description}</FieldDescription>
-                        )}
-
-                        <Dropzone
-                          inputId={fieldId}
-                          value={field.value as DropzoneFileValue}
-                          onChange={(value) => field.onChange(value)}
-                          onBlur={field.onBlur}
-                          multiple={item.multiple}
-                          maxFiles={item.maxFiles}
-                          maxFileSize={item.maxFileSize}
-                          allowedMimeTypes={item.allowedMimeTypes}
-                          className={fieldState.invalid ? "border-destructive bg-destructive/10" : undefined}
-                        >
-                          <DropzoneEmptyState />
-                          <DropzoneContent />
-                        </Dropzone>
 
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
