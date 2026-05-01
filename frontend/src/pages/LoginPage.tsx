@@ -1,5 +1,5 @@
-import BackgroundPattern from "@/components/BackgroundPattern";
-import LoginCard from "@/components/LoginCard";
+import BackgroundPattern from "@/components/background-pattern";
+import LoginCard from "@/components/login-card";
 
 export default function LoginPage() {
   return (
@@ -25,4 +25,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
