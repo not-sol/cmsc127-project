@@ -1,6 +1,6 @@
 import { formSchema, type FormValues } from "@/features/forms/form-test/test-schema"
 import { formFields } from "@/features/forms/form-test/test-config"
-import { DynamicForm as FormRenderer } from "@/components/dynamic-form"
+import { DynamicForm as FormRenderer } from "@/components/forms/dynamic-form/dynamic-form"
 
 
 export default function TestForm() {
@@ -15,12 +15,12 @@ export default function TestForm() {
       defaultValues={{
         title: "",
         description: "",
-        // extras: "default",
-        // platforms: [],
+        other: "",
+        attachments: [],
       }}
       onSubmit={onSubmit}
-    // title="Form for Cool People"
-    // description="This form is yeaaa. Cool!"
+      title="Form for Cool People"
+      description="This form is yeaaa. Cool!"
     />
   )
 }

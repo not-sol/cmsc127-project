@@ -5,6 +5,7 @@ export type BaseField<TValues extends FieldValues> = {
   name: Path<TValues>
   label: string
   description?: string
+  optional?: boolean
 }
 
 // Text field
@@ -23,12 +24,22 @@ export type TextareaField<TValues extends FieldValues> = BaseField<TValues> & {
 export type RadioField<TValues extends FieldValues> = BaseField<TValues> & {
   type: "radio"
   options: RadioOption[]
+  otherOption?: RadioOtherOption<TValues>
 }
 
 export type RadioOption = {
   value: string
   label: string
   description?: string
+}
+
+export type RadioOtherOption<TValues extends FieldValues> = {
+  name: Path<TValues>
+  value?: string
+  label?: string
+  placeholder?: string
+  description?: string
+  clearOnDeselect?: boolean
 }
 
 // Checkbox field
@@ -61,6 +72,16 @@ export type DatePickerField<TValues extends FieldValues> = BaseField<TValues> & 
   placeholder?: string
 }
 
+// File upload
+export type FileUploadField<TValues extends FieldValues> = BaseField<TValues> & {
+  type: "file"
+  accept?: string
+  allowedMimeTypes?: string[]
+  maxFiles?: number
+  maxFileSize?: number
+  multiple?: boolean
+}
+
 // Union of all fields
 export type FormFieldConfig<TValues extends FieldValues> =
   | TextField<TValues>
@@ -69,3 +90,4 @@ export type FormFieldConfig<TValues extends FieldValues> =
   | CheckboxField<TValues>
   | SelectField<TValues>
   | DatePickerField<TValues>
+  | FileUploadField<TValues>

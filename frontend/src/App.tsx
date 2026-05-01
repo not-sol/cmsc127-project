@@ -3,7 +3,7 @@ import LoginPage from "@/pages/LoginPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
-import TestForm from "@/features/forms/form-test/test-form";
+import TestForm from "@/components/forms/test-form";
 // import { useEffect } from 'react'
 // import { useAuthStore } from '@/store/authStore'
 
@@ -25,9 +25,6 @@ export default function App() {
         {/* <Route path="/form-a" element={} /> */}
         {/* <Route path="/form-b" element={} /> */}
         {/* <Route path="/form-c" element={} /> */}
-
-
-
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
