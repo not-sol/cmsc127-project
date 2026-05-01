@@ -25,9 +25,6 @@ export default function App() {
         {/* <Route path="/form-a" element={} /> */}
         {/* <Route path="/form-b" element={} /> */}
         {/* <Route path="/form-c" element={} /> */}
-
-
-
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
