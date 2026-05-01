@@ -1,4 +1,5 @@
-import type { FieldValues, Path } from "react-hook-form"
+import type { FieldPathByValue, FieldValues, Path } from "react-hook-form"
+import type { DropzoneFileValue } from "@/components/ui/dropzone"
 
 // Generic field
 export type BaseField<TValues extends FieldValues> = {
@@ -61,6 +62,16 @@ export type DatePickerField<TValues extends FieldValues> = BaseField<TValues> & 
   placeholder?: string
 }
 
+// File picker
+export type FileField<TValues extends FieldValues> = Omit<BaseField<TValues>, "name"> & {
+  type: "file"
+  name: FieldPathByValue<TValues, DropzoneFileValue>
+  allowedMimeTypes?: string[]
+  maxFileSize?: number
+  maxFiles?: number
+  multiple?: boolean
+}
+
 // Union of all fields
 export type FormFieldConfig<TValues extends FieldValues> =
   | TextField<TValues>
@@ -69,3 +80,4 @@ export type FormFieldConfig<TValues extends FieldValues> =
   | CheckboxField<TValues>
   | SelectField<TValues>
   | DatePickerField<TValues>
+  | FileField<TValues>

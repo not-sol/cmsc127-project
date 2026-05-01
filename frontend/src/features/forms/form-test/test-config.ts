@@ -1,4 +1,9 @@
-import type { FormValues } from "@/features/forms/form-test/test-schema"
+import {
+  allowedAttachmentTypes,
+  maxAttachmentSize,
+  maxAttachments,
+  type FormValues,
+} from "@/features/forms/form-test/test-schema"
 import type { FormFieldConfig } from "@/features/forms/form-types"
 
 export const formFields: FormFieldConfig<FormValues>[] = [
@@ -21,13 +26,13 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     label: "Extras",
     options: [
       {
-        value: "default",
-        label: "Default",
+        value: "none",
+        label: "None",
         description: "Standard option",
       },
       {
-        value: "advanced",
-        label: "Advanced",
+        value: "many",
+        label: "Many",
         description: "More control",
       },
     ],
@@ -39,12 +44,16 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     label: "Platforms",
     options: [
       {
-        value: "android",
-        label: "Android",
+        value: "chocolate",
+        label: "Chocolate",
       },
       {
-        value: "ios",
-        label: "iOS",
+        value: "vanilla",
+        label: "Vanilla",
+      },
+      {
+        value: "strawberry",
+        label: "Strawberry",
       },
     ],
   },
@@ -66,5 +75,15 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     name: "dueDate",
     label: "Due Date",
     description: "When should this bug be fixed?",
+  },
+  {
+    type: "file",
+    name: "attachments",
+    label: "Attachments",
+    description: "Attach screenshots or a PDF report.",
+    allowedMimeTypes: allowedAttachmentTypes,
+    maxFiles: maxAttachments,
+    maxFileSize: maxAttachmentSize,
+    multiple: true,
   }
 ]

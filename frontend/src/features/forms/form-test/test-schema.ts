@@ -1,5 +1,19 @@
 import * as z from "zod"
 
+export const allowedAttachmentTypes = ["image/*", "application/pdf"]
+export const maxAttachmentSize = 1000 * 1000 * 10
+export const maxAttachments = 10
+
+function matchesMimeType(file: File, allowedTypes: string[]) {
+  return allowedTypes.some((type) => {
+    if (type.endsWith("/*")) {
+      return file.type.startsWith(type.slice(0, -1))
+    }
+
+    return file.type === type
+  })
+}
+
 const formSchema = z.object({
   title: z
     .string()
@@ -21,7 +35,18 @@ const formSchema = z.object({
   dueDate: z.date({
     message: "Please select a due date.",
   }),
-
+  attachments: z
+    .array(z.instanceof(File))
+    .min(1, "Please attach at least one file.")
+    .max(maxAttachments, `You can attach up to ${maxAttachments} files.`)
+    .refine(
+      (files) => files.every((file) => matchesMimeType(file, allowedAttachmentTypes)),
+      "Only images and PDF files are allowed."
+    )
+    .refine(
+      (files) => files.every((file) => file.size <= maxAttachmentSize),
+      "Each file must be 10 MB or smaller."
+    ),
 })
 
 type FormValues = z.infer<typeof formSchema>
