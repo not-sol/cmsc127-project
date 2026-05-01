@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/card"
 import { DynamicField } from "@/components/forms/dynamic-form/fields/DynamicField"
 
+const RADIO_OTHER_DEFAULT_VALUE = "__other__"
+
 type DynamicFormProps<TValues extends FieldValues> = {
   formSchema: ZodType<TValues, TValues>
   formFields: FormFieldConfig<TValues>[]
@@ -70,18 +72,22 @@ function createFormSchema<TValues extends FieldValues>(
   formSchema: ZodType<TValues, TValues>,
   formFields: FormFieldConfig<TValues>[]
 ) {
+  const radioOtherFieldNames = formFields.flatMap((field) =>
+    field.type === "radio" && field.otherOption ? [field.otherOption.name] : []
+  )
   const optionalFieldNames = formFields
     .filter((field) => field.optional)
     .map((field) => field.name)
+  const partialFieldNames = optionalFieldNames.concat(radioOtherFieldNames)
 
   const schema =
-    optionalFieldNames.length > 0 && hasPartial(formSchema)
+    partialFieldNames.length > 0 && hasPartial(formSchema)
       ? formSchema.partial(
-          Object.fromEntries(optionalFieldNames.map((name) => [name, true]))
+          Object.fromEntries(partialFieldNames.map((name) => [name, true]))
         )
       : formSchema
 
-  if (optionalFieldNames.length === 0) {
+  if (partialFieldNames.length === 0) {
     return schema
   }
 
@@ -98,6 +104,18 @@ function createFormSchema<TValues extends FieldValues>(
       }
     }
 
+    for (const field of formFields) {
+      if (field.type !== "radio" || !field.otherOption) {
+        continue
+      }
+
+      const otherValue = field.otherOption.value ?? RADIO_OTHER_DEFAULT_VALUE
+
+      if (nextValue[field.name] !== otherValue) {
+        delete nextValue[field.otherOption.name]
+      }
+    }
+
     return nextValue
   }, schema) as ZodType<TValues, TValues>
 }
@@ -111,6 +129,14 @@ function createDefaultValues<TValues extends FieldValues>(
   for (const field of formFields) {
     if (field.type === "checkbox" && nextDefaultValues[field.name] === undefined) {
       nextDefaultValues[field.name] = []
+    }
+
+    if (
+      field.type === "radio" &&
+      field.otherOption &&
+      nextDefaultValues[field.otherOption.name] === undefined
+    ) {
+      nextDefaultValues[field.otherOption.name] = ""
     }
   }
 
@@ -154,6 +180,7 @@ export function DynamicForm<TValues extends FieldValues>({
               render={({ field, fieldState }) => (
                 <DynamicField
                   config={fieldConfig}
+                  control={form.control}
                   fieldName={field.name}
                   fieldValue={field.value}
                   onChange={field.onChange}

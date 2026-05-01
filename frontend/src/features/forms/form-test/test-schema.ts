@@ -21,6 +21,10 @@ const formSchema = z.object({
   dueDate: z.date({
     message: "Please select a due date.",
   }),
+  other: z
+    .string()
+    .min(5, "Bug title must be at least 5 characters.")
+    .max(32, "Bug title must be at most 32 characters."),
 
 })
 

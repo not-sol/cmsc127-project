@@ -31,6 +31,11 @@ export const formFields: FormFieldConfig<FormValues>[] = [
         description: "More control",
       },
     ],
+    otherOption: {
+      name: "other",
+      label: "Other",
+      placeholder: "Enter another reason",
+    },
   },
   {
     type: "checkbox",
