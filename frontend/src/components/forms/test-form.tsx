@@ -15,8 +15,8 @@ export default function TestForm() {
       defaultValues={{
         title: "",
         description: "",
-        // extras: "default",
-        // platforms: [],
+        other: "",
+        attachments: [],
       }}
       onSubmit={onSubmit}
       title="Form for Cool People"

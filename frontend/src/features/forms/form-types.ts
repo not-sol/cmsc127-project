@@ -76,6 +76,9 @@ export type DatePickerField<TValues extends FieldValues> = BaseField<TValues> & 
 export type FileUploadField<TValues extends FieldValues> = BaseField<TValues> & {
   type: "file"
   accept?: string
+  allowedMimeTypes?: string[]
+  maxFiles?: number
+  maxFileSize?: number
   multiple?: boolean
 }
 

@@ -9,7 +9,7 @@ const formSchema = z.object({
     .string()
     .min(20, "Description must be at least 20 characters.")
     .max(100, "Description must be at most 100 characters."),
-  extras: z.enum(["default", "advanced"], {
+  extras: z.enum(["default", "advanced", "__other__"], {
     message: "You need to select one type.",
   }),
   platforms: z
@@ -23,10 +23,23 @@ const formSchema = z.object({
   }),
   other: z
     .string()
-    .min(5, "Bug title must be at least 5 characters.")
-    .max(32, "Bug title must be at most 32 characters."),
+    .max(32, "Other text must be at most 32 characters.")
+    .optional(),
+  attachments: z
+    .array(z.instanceof(File))
+    .min(1, "Please upload at least one attachment.")
+    .max(3, "You can upload up to 3 attachments."),
 
 })
+// .superRefine((values, context) => {
+//   if (values.extras === "__other__" && !values.other?.trim()) {
+//     context.addIssue({
+//       code: "custom",
+//       path: ["other"],
+//       message: "Please describe the other option.",
+//     })
+//   }
+// })
 
 type FormValues = z.infer<typeof formSchema>
 

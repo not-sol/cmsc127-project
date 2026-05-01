@@ -1,11 +1,18 @@
-import { CheckCircle, File, Loader2, Upload, X } from 'lucide-react'
-import { createContext, useCallback, useContext, type PropsWithChildren } from 'react'
+import { CheckCircle, File, Upload, X } from 'lucide-react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  type Dispatch,
+  type PropsWithChildren,
+  type SetStateAction,
+} from 'react'
+import type { DropzoneState, FileError } from 'react-dropzone'
 
 import { cn } from '@/lib/utils'
-import { type UseSupabaseUploadReturn } from '@/hooks/use-supabase-upload'
 import { Button } from '@/components/ui/button'
 
-export const formatBytes = (
+const formatBytes = (
   bytes: number,
   decimals = 2,
   size?: 'bytes' | 'KB' | 'MB' | 'GB' | 'TB' | 'PB' | 'EB' | 'ZB' | 'YB'
@@ -19,11 +26,30 @@ export const formatBytes = (
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
-type DropzoneContextType = Omit<UseSupabaseUploadReturn, 'getRootProps' | 'getInputProps'>
+export interface DropzoneFile extends File {
+  preview?: string
+  errors: readonly FileError[]
+}
+
+type DropzoneContextType = Pick<
+  DropzoneState,
+  'inputRef' | 'isDragActive' | 'isDragReject'
+> & {
+  files: DropzoneFile[]
+  setFiles: Dispatch<SetStateAction<DropzoneFile[]>>
+  successes: string[]
+  isSuccess: boolean
+  loading: boolean
+  errors: { name: string; message: string }[]
+  maxFileSize: number
+  maxFiles: number
+  allowedMimeTypes: string[]
+}
 
 const DropzoneContext = createContext<DropzoneContextType | undefined>(undefined)
 
-type DropzoneProps = UseSupabaseUploadReturn & {
+type DropzoneProps = DropzoneContextType &
+  Pick<DropzoneState, 'getRootProps' | 'getInputProps'> & {
   className?: string
 }
 
@@ -64,7 +90,6 @@ const DropzoneContent = ({ className }: { className?: string }) => {
   const {
     files,
     setFiles,
-    onUpload,
     loading,
     successes,
     errors,
@@ -73,7 +98,7 @@ const DropzoneContent = ({ className }: { className?: string }) => {
     isSuccess,
   } = useDropzoneContext()
 
-  const exceedMaxFiles = files.length > maxFiles
+  const exceedMaxFiles = maxFiles > 0 && files.length > maxFiles
 
   const handleRemoveFile = useCallback(
     (fileName: string) => {
@@ -130,7 +155,7 @@ const DropzoneContent = ({ className }: { className?: string }) => {
                 </p>
               ) : loading && !isSuccessfullyUploaded ? (
                 <p className="text-xs text-muted-foreground">Uploading file...</p>
-              ) : !!fileError ? (
+              ) : fileError ? (
                 <p className="text-xs text-destructive">Failed to upload: {fileError.message}</p>
               ) : isSuccessfullyUploaded ? (
                 <p className="text-xs text-primary">Successfully uploaded file</p>
@@ -157,24 +182,6 @@ const DropzoneContent = ({ className }: { className?: string }) => {
           You may upload only up to {maxFiles} files, please remove {files.length - maxFiles} file
           {files.length - maxFiles > 1 ? 's' : ''}.
         </p>
-      )}
-      {files.length > 0 && !exceedMaxFiles && (
-        <div className="mt-2">
-          <Button
-            variant="outline"
-            onClick={onUpload}
-            disabled={files.some((file) => file.errors.length !== 0) || loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>Upload files</>
-            )}
-          </Button>
-        </div>
       )}
     </div>
   )
@@ -225,4 +232,4 @@ const useDropzoneContext = () => {
   return context
 }
 
-export { Dropzone, DropzoneContent, DropzoneEmptyState, useDropzoneContext }
+export { Dropzone, DropzoneContent, DropzoneEmptyState }

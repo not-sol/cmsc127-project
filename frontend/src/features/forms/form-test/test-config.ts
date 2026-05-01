@@ -71,5 +71,15 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     name: "dueDate",
     label: "Due Date",
     description: "When should this bug be fixed?",
+  },
+  {
+    type: "file",
+    name: "attachments",
+    label: "Attachments",
+    description: "Upload screenshots, logs, or a short PDF report.",
+    multiple: true,
+    allowedMimeTypes: ["image/*", "application/pdf", "text/plain"],
+    maxFiles: 3,
+    maxFileSize: 1000 * 1000 * 5,
   }
 ]
