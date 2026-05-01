@@ -3,8 +3,16 @@ import LoginPage from "@/pages/LoginPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
+import { useEffect } from 'react'
+import { useAuthStore } from '@/store/authStore'
 
 export default function App() {
+  const init = useAuthStore((s) => s.init)
+
+  useEffect(() => {
+    init()
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>
