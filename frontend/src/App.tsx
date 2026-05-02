@@ -3,7 +3,7 @@ import LoginPage from "@/pages/LoginPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
-import TestForm from "@/features/forms/form-test/test-form";
+import TestForm from "@/features/forms/form-k/form-k";
 import FormKOtherPage from "@/pages/forms/FormKPage";
 import FormJAuthorshipPage from "@/pages/forms/FormJPage";
 import FormIPartnershipPage from "@/pages/forms/FormIPage";
