@@ -1,5 +1,5 @@
 import Sidebar from "@/components/sidebar"
-import FormKOther from "@/components/forms/form-k-other"
+import FormKOther from "@/features/forms/form-k/form-k"
 import { ChevronRight } from "lucide-react"
 
 function Breadcrumb() {

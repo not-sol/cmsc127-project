@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { useController } from "react-hook-form"
 import type { Control, FieldValues, Path } from "react-hook-form"
 import type { RadioField as RadioFieldConfig } from "@/features/forms/form-types"
-import type { DynamicFieldProps } from "./types"
+import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-fields/dynamic-field-types"
 
 import {
   Field,

@@ -1,6 +1,6 @@
 import type { FieldValues } from "react-hook-form"
 import type { TextField as TextFieldConfig } from "@/features/forms/form-types"
-import type { DynamicFieldProps } from "./types"
+import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-fields/dynamic-field-types"
 
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"

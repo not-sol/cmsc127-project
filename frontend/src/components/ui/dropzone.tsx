@@ -50,8 +50,8 @@ const DropzoneContext = createContext<DropzoneContextType | undefined>(undefined
 
 type DropzoneProps = DropzoneContextType &
   Pick<DropzoneState, 'getRootProps' | 'getInputProps'> & {
-  className?: string
-}
+    className?: string
+  }
 
 const Dropzone = ({
   className,

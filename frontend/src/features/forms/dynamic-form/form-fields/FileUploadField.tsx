@@ -3,7 +3,7 @@ import type { SetStateAction } from "react"
 import { useDropzone, type Accept, type FileRejection } from "react-dropzone"
 import type { FieldValues } from "react-hook-form"
 import type { FileUploadField as FileUploadFieldConfig } from "@/features/forms/form-types"
-import type { DynamicFieldProps } from "./types"
+import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-fields/dynamic-field-types"
 
 import {
   Dropzone,
