@@ -2,7 +2,7 @@ import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import type { FieldValues } from "react-hook-form"
 import type { DatePickerField as DatePickerFieldConfig } from "@/features/forms/form-types"
-import type { DynamicFieldProps } from "./types"
+import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-fields/dynamic-field-types"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"

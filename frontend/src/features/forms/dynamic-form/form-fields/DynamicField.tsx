@@ -1,5 +1,5 @@
 import type { FieldValues } from "react-hook-form"
-import type { DynamicFieldProps } from "./types"
+import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-fields/dynamic-field-types"
 
 import { CheckboxField } from "./CheckboxField"
 import { DatePickerField } from "./DatePickerField"

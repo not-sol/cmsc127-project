@@ -1,9 +1,9 @@
 import {
   formKOtherSchema,
   type FormKOtherValues,
-} from "@/features/forms/form-k-other/form-k-other-schema"
-import { formKOtherFields } from "@/features/forms/form-k-other/form-k-other-config"
-import { DynamicForm } from "@/components/forms/dynamic-form/dynamic-form"
+} from "@/features/forms/form-k/form-k-schema"
+import { formKOtherFields } from "@/features/forms/form-k/form-k-config"
+import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 
 export default function FormKOther() {
   function onSubmit(data: FormKOtherValues) {

@@ -1,4 +1,4 @@
-import type { FormKOtherValues } from "@/features/forms/form-k-other/form-k-other-schema"
+import type { FormKOtherValues } from "@/features/forms/form-k/form-k-schema"
 import type { FormFieldConfig } from "@/features/forms/form-types"
 
 export const formKOtherFields: FormFieldConfig<FormKOtherValues>[] = [

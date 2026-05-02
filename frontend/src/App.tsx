@@ -3,8 +3,8 @@ import LoginPage from "@/pages/LoginPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
-import TestForm from "@/components/forms/test-form";
-import FormKOtherPage from "@/pages/FormKOtherPage";
+import TestForm from "@/features/forms/form-k/form-k";
+import FormKOtherPage from "@/pages/forms/FormKPage";
 // import { useEffect } from 'react'
 // import { useAuthStore } from '@/store/authStore'
 

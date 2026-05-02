@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { DynamicField } from "@/components/forms/dynamic-form/fields/DynamicField"
+import { DynamicField } from "@/features/forms/dynamic-form/form-fields/DynamicField"
 
 const RADIO_OTHER_DEFAULT_VALUE = "__other__"
 
@@ -83,8 +83,8 @@ function createFormSchema<TValues extends FieldValues>(
   const schema =
     partialFieldNames.length > 0 && hasPartial(formSchema)
       ? formSchema.partial(
-          Object.fromEntries(partialFieldNames.map((name) => [name, true]))
-        )
+        Object.fromEntries(partialFieldNames.map((name) => [name, true]))
+      )
       : formSchema
 
   if (partialFieldNames.length === 0) {

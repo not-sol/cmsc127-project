@@ -1,6 +1,6 @@
 import type { FieldValues } from "react-hook-form"
 import type { CheckboxField as CheckboxFieldConfig } from "@/features/forms/form-types"
-import type { DynamicFieldProps } from "./types"
+import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-fields/dynamic-field-types"
 
 import {
   Field,
