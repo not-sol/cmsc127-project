@@ -4,6 +4,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
 import TestForm from "@/components/forms/test-form";
+import FormKOtherPage from "@/pages/FormKOtherPage";
 // import { useEffect } from 'react'
 // import { useAuthStore } from '@/store/authStore'
 
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/report" element={<ReportsPage />} />
         <Route path="/entry" element={<NewEntryPage />} />
         <Route path="/test-form" element={<TestForm />} />
+        <Route path="/form-k-other" element={<FormKOtherPage />} />
         {/* <Route path="/form-a" element={} /> */}
         {/* <Route path="/form-b" element={} /> */}
         {/* <Route path="/form-c" element={} /> */}
