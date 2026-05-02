@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
-const RADIO_OTHER_DEFAULT_VALUE = "__other__"
+const RADIO_OTHER_DEFAULT_VALUE = "_other__"
 
 type RadioOtherInputProps<TValues extends FieldValues> = {
   control: Control<TValues>
