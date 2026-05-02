@@ -36,9 +36,10 @@ Make sure you have [Node.js](https://nodejs.org/) (v16 or higher) and `npm` inst
    npm run dev
 
 4. **Open the app**
-Open your browser and navigate to the local server address (default is usually port 5173 for Vite/React):
-```text
-http://localhost:5173
-```
+
+   Open your browser and navigate to the local server address (default is usually port 5173 for Vite/React):
+   ```text
+   http://localhost:5173
+   ```
 
 
