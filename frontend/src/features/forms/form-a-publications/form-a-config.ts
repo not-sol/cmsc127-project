@@ -71,7 +71,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
   {
     type: "radio",
     name: "pubrLocr",
-    label: "Type of Publisher",
+    label: "Location of Publisher",
     options: [
       { value: "Local", label: "Local" },
       { value: "International", label: "International" },
@@ -174,12 +174,12 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     description: "Upload citation evidence, sales data, UIPA, or indexed publication proof (if applicable)",
   }, //pubUtilProof
   {
-    type: "text",
+    type: "textarea",
     name: "pubSupRemarks",
     label: "Remarks",
   }, //pubSupRemarks
   {
-    type: "text",
+    type: "textarea",
     name: "pubRelatedKRAs",
     label: "Related KRAs / Sub-activities",
   }, //pubRelatedKRAs
