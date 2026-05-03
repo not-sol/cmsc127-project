@@ -4,7 +4,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
 import TestForm from "@/features/forms/form-k/form-k";
-import FormKOtherPage from "@/pages/forms/FormKPage"
+import FormKOtherPage from "@/pages/forms/FormKPage";
 import FormIPage from "@/pages/forms/FormIPage";
 // import { useEffect } from 'react'
 // import { useAuthStore } from '@/store/authStore'
