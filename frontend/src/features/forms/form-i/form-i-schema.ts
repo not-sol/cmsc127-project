@@ -63,7 +63,11 @@ const formIPartnershipSchema = z
     moaDocument: z
       .array(z.instanceof(File))
       .min(1, "Please upload the signed MOA / MOU / Partnership Agreement."),
-    remarks: z.string().max(2000, "Remarks must be at most 2000 characters.").optional(),
+    remarks: z
+      .string()
+      .max(2000, "Remarks must be at most 2000 characters.")
+      .optional()
+      .transform((val) => (val === "" ? undefined : val)),
   })
   .refine(
     (data) => {

@@ -156,7 +156,6 @@ export const formIPartnershipFields: FormFieldConfig<FormIPartnershipValues>[] =
     label: "MOA / MOU / Partnership Agreement",
     description:
       "Upload the signed MOA, MOU, or partnership agreement with requisite signatures.",
-    multiple: false,
     allowedMimeTypes: [
       "image/*",
       "application/pdf",
