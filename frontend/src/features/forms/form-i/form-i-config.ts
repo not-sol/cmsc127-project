@@ -170,6 +170,5 @@ export const formIPartnershipFields: FormFieldConfig<FormIPartnershipValues>[] =
     name: "remarks",
     label: "Remarks",
     placeholder: "Enter any additional remarks...",
-    optional: true,
   },
 ]
