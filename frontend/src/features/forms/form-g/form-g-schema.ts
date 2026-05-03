@@ -33,8 +33,8 @@ const formGSchema = z.object({
   // G.2 Client Satisfaction Survey
   sampleSize: z
     .string()
-    .min(1, "Sample size is required.")
-    .regex(/^\d+$/, "Must be a valid whole number (enter 0 if no survey was conducted)."),
+    .min(1, "Sample size is required. Enter 0 if no survey was conducted.")
+    .regex(/^\d+$/, "Must be a valid whole number. Enter 0 if no survey was conducted."),
   responsesPoor: z
     .string()
     .min(1, "This field is required.")

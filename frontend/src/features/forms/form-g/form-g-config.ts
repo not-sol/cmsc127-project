@@ -109,9 +109,9 @@ export const formGFields: FormFieldConfig<FormGValues>[] = [
     type: "text",
     name: "sampleSize",
     label: "Sample Size",
-    placeholder: "e.g., 25",
+    placeholder: "e.g., 25 (enter 0 if no survey was conducted)",
     description:
-      "Minimum 25% of total trainees. Enter 0 if no survey was conducted.",
+      "Minimum 25% of total trainees. Enter 0 if no survey was conducted. This field must not be left blank.",
   },
   {
     type: "text",
