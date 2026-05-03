@@ -5,6 +5,7 @@ import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
 import TestForm from "@/features/forms/form-k/form-k";
 import FormKOtherPage from "@/pages/forms/FormKPage";
+import FormIPartnershipPage from "@/pages/forms/FormIPage";
 // import { useEffect } from 'react'
 // import { useAuthStore } from '@/store/authStore'
 
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/entry" element={<NewEntryPage />} />
         <Route path="/test-form" element={<TestForm />} />
         <Route path="/form-k-other" element={<FormKOtherPage />} />
+        <Route path="/form-i-partnership" element={<FormIPartnershipPage />} />
         {/* <Route path="/form-a" element={} /> */}
         {/* <Route path="/form-b" element={} /> */}
         {/* <Route path="/form-c" element={} /> */}
