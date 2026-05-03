@@ -15,10 +15,41 @@ const formASchema = z.object({
   pubAuthors: z
     .string()
     .min(1, "Author(s) required"),
-  dateToggle: z
-    .enum(["year", "date"]),
-  yearPublished: z.coerce.number().min(1900).max(2199).optional(),
-  datePublished: z.date().optional(),
+  // dateToggle: z
+  //   .enum(["year", "date"]),
+  // yearPublished: z.coerce.number().min(1900).max(2199).optional(),
+  // datePublished: z.date().optional(),
+  pubDate: z
+    .string()
+    .min(4, "Date or Year is required")
+    .refine((val) => {
+      const trimmed = val.trim();
+      const isYearOnly = /^\d{4}$/.test(trimmed);
+      const isFullDate = !isNaN(Date.parse(trimmed));
+      return isYearOnly || isFullDate;
+    }, "Please enter a valid 4-digit year or a full date")
+    
+    // THIS IS THE NEW PART:
+    .transform((val) => {
+      const trimmed = val.trim();
+      
+      // 1. If they only typed a year (e.g., "2024"), just return the year.
+      // (Or change this to "01/01/2024" if you strictly need a full date).
+      if (/^\d{4}$/.test(trimmed)) {
+        return trimmed; 
+      }
+
+      // 2. If it's a full date (e.g. "2024-10-12" or "Oct 12 2024"), 
+      // convert it into a Date object, then format it as MM/DD/YYYY.
+      const dateObj = new Date(trimmed);
+      
+      // Get month, day, year (adding 1 to month because January is 0)
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const yyyy = dateObj.getFullYear();
+      
+      return `${mm}/${dd}/${yyyy}`;
+    }),
 
   //A.2 Journal / Publisher Information (PBMS Form G)
   pubName: z.string().min(1, "Publication name is required"),

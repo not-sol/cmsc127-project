@@ -19,7 +19,7 @@ export default function FormAPublications() {
           pubType: "book",
           pubTitle: "",
           pubAuthors: "",
-          dateToggle: "year",
+          pubDate: "",
           pubName: "",
           pubrType: "Commercial",
           pubrLocr: "Local",

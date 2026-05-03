@@ -13,7 +13,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
       { value: "journalArticle", label: "Journal Article" },
       { value: "peerReviewed", label: "Peer-Reviewed" },
       { value: "conferencePaper", label: "Conference Paper" },
-      { value: "other", label: "Other" },
+      
     ],
   otherOption:{
     name: "otherPubTypeText",
@@ -34,27 +34,11 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     placeholder: "Separate multiple authors with semicolons; list lead author first",
   }, //pubAuthors
   {
-    type: "radio",
-    name: "dateToggle",
-    label: "Year / Date Published",
-    options: [
-      { value: "year", label: "Select Year" },
-      { value: "date", label: "Select Date" },
-    ],
-    otherOption: {
-      name: "datePublished",
-      value: "date",
-      label: "Select Date",
-    },
-  }, //dateToggle
-  {
-    type: "number",
-    name: "yearPublished",
-    label: "Year Published",
-    placeholder: "YYYY",
-    min: 1900,
-    max: 2199,
-  }, //yearPublished
+    type: "text",
+    name: "pubDate",
+    label: "Date / Year Published",
+    placeholder: "YYYY or MM/DD/YYYY if known",
+  },
   // {
   //   type: "date-picker",
   //   name: "datePublished",
@@ -167,6 +151,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     type: "text",
     name: "otherDB",
     label: "Other reputable database",
+    placeholder: "Specify if applicable",
   }, //otherDB
   {
     type: "text",
