@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { DynamicField } from "@/features/forms/dynamic-form/form-fields/DynamicField"
+import { SectionHeaderField } from "@/features/forms/dynamic-form/form-fields/SectionHeaderField"
 
 const RADIO_OTHER_DEFAULT_VALUE = "__other__"
 
@@ -72,10 +73,11 @@ function createFormSchema<TValues extends FieldValues>(
   formSchema: ZodType<TValues, TValues>,
   formFields: FormFieldConfig<TValues>[]
 ) {
-  const radioOtherFieldNames = formFields.flatMap((field) =>
+  const inputFields = formFields.filter((field) => field.type !== "section-header")
+  const radioOtherFieldNames = inputFields.flatMap((field) =>
     field.type === "radio" && field.otherOption ? [field.otherOption.name] : []
   )
-  const optionalFieldNames = formFields
+  const optionalFieldNames = inputFields
     .filter((field) => field.optional)
     .map((field) => field.name)
   const partialFieldNames = optionalFieldNames.concat(radioOtherFieldNames)
@@ -172,26 +174,37 @@ export function DynamicForm<TValues extends FieldValues>({
 
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className={formClassName}>
-          {formFields.map((fieldConfig) => (
-            <Controller
-              key={fieldConfig.name}
-              name={fieldConfig.name as Path<TValues>}
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <DynamicField
+          {formFields.map((fieldConfig) => {
+            if (fieldConfig.type === "section-header") {
+              return (
+                <SectionHeaderField
+                  key={fieldConfig.name}
                   config={fieldConfig}
-                  control={form.control}
-                  fieldName={field.name}
-                  fieldValue={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  setInputElement={field.ref}
-                  fieldState={fieldState}
-                  fieldId={`field-${fieldConfig.name}`}
                 />
-              )}
-            />
-          ))}
+              )
+            }
+
+            return (
+              <Controller
+                key={fieldConfig.name}
+                name={fieldConfig.name as Path<TValues>}
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <DynamicField
+                    config={fieldConfig}
+                    control={form.control}
+                    fieldName={field.name}
+                    fieldValue={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    setInputElement={field.ref}
+                    fieldState={fieldState}
+                    fieldId={`field-${fieldConfig.name}`}
+                  />
+                )}
+              />
+            )
+          })}
 
           <Button type="submit" disabled={form.formState.isSubmitting}>
             {submitLabel}
