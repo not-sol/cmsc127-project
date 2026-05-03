@@ -82,6 +82,14 @@ export type FileUploadField<TValues extends FieldValues> = BaseField<TValues> & 
   multiple?: boolean
 }
 
+// Section header (visual divider with title, not a form input)
+export type SectionHeaderField = {
+  type: "section-header"
+  name: string
+  label: string
+  description?: string
+}
+
 // Union of all fields
 export type FormFieldConfig<TValues extends FieldValues> =
   | TextField<TValues>
@@ -91,3 +99,4 @@ export type FormFieldConfig<TValues extends FieldValues> =
   | SelectField<TValues>
   | DatePickerField<TValues>
   | FileUploadField<TValues>
+  | SectionHeaderField

@@ -6,6 +6,9 @@ import NewEntryPage from "./pages/NewentryPage";
 import TestForm from "@/features/forms/form-k/form-k";
 import FormKOtherPage from "@/pages/forms/FormKPage";
 import FormJAuthorshipPage from "@/pages/forms/FormJPage";
+import FormIPartnershipPage from "@/pages/forms/FormIPage";
+import FormGPage from "@/pages/forms/FormGPage";
+import FormHPage from "@/pages/forms/FormHPage";
 // import { useEffect } from 'react'
 // import { useAuthStore } from '@/store/authStore'
 
@@ -26,6 +29,9 @@ export default function App() {
         <Route path="/test-form" element={<TestForm />} />
         <Route path="/form-k-other" element={<FormKOtherPage />} />
         <Route path="/form-j-authorship" element={<FormJAuthorshipPage />} />
+        <Route path="/form-i-partnership" element={<FormIPartnershipPage />} />
+        <Route path="/form-g" element={<FormGPage />} />
+        <Route path="/form-h" element={<FormHPage />} />
         {/* <Route path="/form-a" element={} /> */}
         {/* <Route path="/form-b" element={} /> */}
         {/* <Route path="/form-c" element={} /> */}
