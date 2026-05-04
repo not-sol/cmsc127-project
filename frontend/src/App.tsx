@@ -11,6 +11,10 @@ import FormGPage from "@/pages/forms/FormGPage";
 import FormHPage from "@/pages/forms/FormHPage";
 import FormEPage from "@/pages/forms/FormEPage";
 import FormFPage from "@/pages/forms/FormFPage";
+import FormAPublicationsPage from "@/pages/forms/FormAPage";
+import FormBGrantsAndFellowshipsPage from "@/pages/forms/FormBPage";
+import FormCOralOrPosterPage from "@/pages/forms/FormCPage";
+import FormDPage from "@/pages/forms/FormDPage";
 // import { useEffect } from 'react'
 // import { useAuthStore } from '@/store/authStore'
 
@@ -36,9 +40,10 @@ export default function App() {
         <Route path="/form-h" element={<FormHPage />} />
         <Route path="/form-e" element={<FormEPage />} />
         <Route path="/form-f" element={<FormFPage />} />
-        {/* <Route path="/form-a" element={} /> */}
-        {/* <Route path="/form-b" element={} /> */}
-        {/* <Route path="/form-c" element={} /> */}
+        <Route path="/form-a" element={<FormAPublicationsPage />} />
+        <Route path="/form-b" element={<FormBGrantsAndFellowshipsPage />} />
+        <Route path="/form-c" element={<FormCOralOrPosterPage />} />
+        <Route path="/form-d" element={<FormDPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
