@@ -2,7 +2,7 @@ import * as z from "zod"
 
 const formCSchema = z.object({
 
-  //C.1 Research Identification
+  //C.1 Presentation Details
   researchTitle2: z
   .enum([""], {
     message: "Linked research title is required.",
@@ -15,7 +15,7 @@ const formCSchema = z.object({
   eventType: z
   .enum(["conference", "forum","seminar","workshop"]),
 
-  //C.2  Duration & Status
+  //C.2  Event Information
   eventTitle: z
     .string()
     .min(1, "Title of Conference / Event is required."),
