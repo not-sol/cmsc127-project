@@ -24,8 +24,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/report" element={<ReportsPage />} />
-        <Route path="/entry" element={<NewEntryPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/reports/new" element={<NewEntryPage />} />
         <Route path="/test-form" element={<TestForm />} />
         <Route path="/form-k-other" element={<FormKOtherPage />} />
         <Route path="/form-j-authorship" element={<FormJAuthorshipPage />} />
@@ -40,3 +40,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
