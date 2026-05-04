@@ -1,8 +1,8 @@
 import {
   formBSchema,
   type FormValues
-} from "@/features/forms/form-b-grants-and-fellowships/form-b-schema"
-import { formFields } from "@/features/forms/form-b-grants-and-fellowships/form-b-config"
+} from "@/features/forms/form-b/form-b-schema"
+import { formFields } from "@/features/forms/form-b/form-b-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 export default function FormBGrantsAndFellowships() {
   const onSubmit = (data: FormValues) => {

@@ -1,8 +1,8 @@
 import {
   formCSchema,
   type FormValues
-} from "@/features/forms/form-c-oral-or-poster/form-c-schema"
-import { formFields } from "@/features/forms/form-c-oral-or-poster/form-c-config"
+} from "@/features/forms/form-c/form-c-schema"
+import { formFields } from "@/features/forms/form-c/form-c-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 export default function FormCOralOrPoster() {
   const onSubmit = (data: FormValues) => {
