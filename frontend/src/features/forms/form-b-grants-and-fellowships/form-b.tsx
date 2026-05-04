@@ -1,0 +1,37 @@
+import {
+  formBSchema,
+  type FormValues
+} from "@/features/forms/form-b-grants-and-fellowships/form-b-schema"
+import { formFields } from "@/features/forms/form-b-grants-and-fellowships/form-b-config"
+import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
+export default function FormBGrantsAndFellowships() {
+  const onSubmit = (data: FormValues) => {
+    console.log("Submitted Data:", data)
+  }
+
+  return (
+    <div className="p-8">
+      {/* <h2 className="text-xl font-bold mb-4">SECTION B — GRANTS AND FELLOWSHIPS</h2> */}
+      <DynamicForm<FormValues>
+        formSchema={formBSchema}
+        formFields={formFields}
+        defaultValues={{
+          contrUnit: "csmod",
+          researchTitle: "",
+          researchType: "basic",
+          rStartDate: new Date(),
+          rEndDate: undefined,
+          researchTimeframeMonths: "",
+          researcherNames: "",
+          upSystemResearchGrantPesos: 0,
+          externalFundingAmountPesos: 0,
+          totalFundingPesos: 0,
+          otherFundSource: "",
+          majoritySource: "genFundCurYr",
+          // Add other defaults here
+        }}
+        onSubmit={onSubmit}
+      />
+    </div>
+  )
+}
