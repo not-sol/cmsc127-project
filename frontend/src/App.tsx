@@ -33,9 +33,9 @@ export default function App() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/reports/new" element={<NewEntryPage />} />
         <Route path="/test-form" element={<TestForm />} />
-        <Route path="/form-k-other" element={<FormKOtherPage />} />
-        <Route path="/form-j-authorship" element={<FormJAuthorshipPage />} />
-        <Route path="/form-i-partnership" element={<FormIPartnershipPage />} />
+        <Route path="/form-k" element={<FormKOtherPage />} />
+        <Route path="/form-j" element={<FormJAuthorshipPage />} />
+        <Route path="/form-i" element={<FormIPartnershipPage />} />
         <Route path="/form-g" element={<FormGPage />} />
         <Route path="/form-h" element={<FormHPage />} />
         <Route path="/form-e" element={<FormEPage />} />
