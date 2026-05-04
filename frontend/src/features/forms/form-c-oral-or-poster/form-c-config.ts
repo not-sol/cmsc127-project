@@ -90,7 +90,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     type: "file",
     name: "presentationAttachments",
     label: "Attachments",
-    description: "Upload cover page, title page, acceptance letter, or preprint",
+    description: "Upload program, invitation, or certificate of presentation",
   },
   { //presentationRemarks
     type: "textarea",
