@@ -23,9 +23,9 @@ export default function FormBGrantsAndFellowships() {
           rEndDate: undefined,
           researchTimeframeMonths: "",
           researcherNames: "",
-          upSystemResearchGrantPesos: 0,
-          externalFundingAmountPesos: 0,
-          totalFundingPesos: 0,
+          upSystemResearchGrantPesos: "0.00",
+          externalFundingAmountPesos: "0.00",
+          totalFundingPesos: "0.00",
           otherFundSource: "",
           majoritySource: "genFundCurYr",
           // Add other defaults here

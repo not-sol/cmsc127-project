@@ -31,23 +31,14 @@ const formBSchema = z.object({
   
   //B.4  Funding
   upSystemResearchGrantPesos: z
-  .coerce.number({
-    message: "Please enter a valid amount.",
-    })
-    .nonnegative("Amount must be zero or greater.")
-    .default(0),
+    .string()
+    .min(1, "Please enter a valid amount that must be zero or greater."),
   externalFundingAmountPesos: z
-  .coerce.number({
-    message: "Please enter a valid amount.",
-    })
-    .nonnegative("Amount must be zero or greater.")
-    .default(0),
+    .string()
+    .min(1, "Please enter a valid amount that must be zero or greater."),
   totalFundingPesos: z
-  .coerce.number({
-    message: "Please enter a valid amount.",
-    })
-    .nonnegative("Amount must be zero or greater.")
-    .default(0),
+    .string()
+    .min(1, "Please enter a valid amount that must be zero or greater."),
   otherFundSource: z
    .string()
    .optional(),
