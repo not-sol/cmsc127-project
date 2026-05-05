@@ -89,7 +89,7 @@ const formASchema = z.object({
   otherDB: z
    .string().optional(),
   citationNum: z
-    .coerce.number().nonnegative(),
+     .string().optional(),
   
   // A.4 Supporting Documents
   pubProof: z

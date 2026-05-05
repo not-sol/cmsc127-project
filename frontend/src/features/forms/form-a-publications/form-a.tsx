@@ -28,7 +28,7 @@ export default function FormAPublications() {
           pubmedMedline: "No",
           isChedRecognized: "No",
           peerRev: "No",
-          citationNum: 0,
+          citationNum: "",
           // Add other defaults here
         }}
         onSubmit={onSubmit}
