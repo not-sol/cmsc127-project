@@ -1,4 +1,4 @@
-import type { FormValues } from "@/features/forms/form-c-oral-or-poster/form-c-schema"
+import type { FormValues } from "@/features/forms/form-c/form-c-schema"
 import type { FormFieldConfig } from "@/features/forms/form-types"
 
 export const formFields: FormFieldConfig<FormValues>[] = [
@@ -8,7 +8,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     name: "researchTitle2",
     label: "Linked Research (from Section B)",
     placeholder: "Select title of parent research project",
-    options:[
+    options: [
 
     ]
   },
@@ -24,7 +24,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     options: [
       { value: "oral", label: "Oral Presentation" },
       { value: "poster", label: "Poster Presentation" },
-      ],
+    ],
   },
   { //eventType
     type: "radio",
@@ -35,7 +35,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
       { value: "forum", label: "Forum" },
       { value: "seminar", label: "Seminar" },
       { value: "workshop", label: "Workshop" },
-      ],
+    ],
   },
 
   // SECTION C.2
@@ -84,7 +84,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     placeholder: "MM/DD/YYYY",
   },
 
-  
+
   // C.3  Supporting Documents
   { //presentationAttachments
     type: "file",

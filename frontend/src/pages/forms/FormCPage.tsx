@@ -1,5 +1,5 @@
 import Sidebar from "@/components/sidebar"
-import FormCOralOrPoster from "@/features/forms/form-c-oral-or-poster/form-c"
+import FormCOralOrPoster from "@/features/forms/form-c/form-c"
 import { ChevronRight } from "lucide-react"
 
 function Breadcrumb() {

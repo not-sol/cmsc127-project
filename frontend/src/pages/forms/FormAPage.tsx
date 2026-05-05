@@ -1,5 +1,5 @@
 import Sidebar from "@/components/sidebar"
-import FormAPublications from "@/features/forms/form-a-publications/form-a"
+import FormAPublications from "@/features/forms/form-a/form-a"
 import { ChevronRight } from "lucide-react"
 
 function Breadcrumb() {

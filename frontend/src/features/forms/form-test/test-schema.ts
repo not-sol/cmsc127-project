@@ -9,7 +9,7 @@ const formSchema = z.object({
     .string()
     .min(20, "Description must be at least 20 characters.")
     .max(100, "Description must be at most 100 characters."),
-  extras: z.enum(["default", "advanced", "__other__"], {
+  extras: z.enum(["default", "advanced", "what", "__other__"], {
     message: "You need to select one type.",
   }),
   platforms: z

@@ -1,4 +1,4 @@
-import type { FormValues } from "@/features/forms/form-a-publications/form-a-schema"
+import type { FormValues } from "@/features/forms/form-a/form-a-schema"
 import type { FormFieldConfig } from "@/features/forms/form-types"
 
 export const formFields: FormFieldConfig<FormValues>[] = [
@@ -13,13 +13,13 @@ export const formFields: FormFieldConfig<FormValues>[] = [
       { value: "journalArticle", label: "Journal Article" },
       { value: "peerReviewed", label: "Peer-Reviewed" },
       { value: "conferencePaper", label: "Conference Paper" },
-      
+
     ],
-  otherOption:{
-    name: "otherPubTypeText",
-    value: "other",
-    placeholder: "Enter publication type",
-  }, //otherPubTypeText
+    otherOption: {
+      name: "otherPubTypeText",
+      value: "other",
+      placeholder: "Enter publication type",
+    }, //otherPubTypeText
   }, //pubType
   {
     type: "text",

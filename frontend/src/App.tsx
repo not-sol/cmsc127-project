@@ -3,7 +3,7 @@ import LoginPage from "@/pages/LoginPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "./pages/ReportsPage";
 import NewEntryPage from "./pages/NewentryPage";
-import TestForm from "@/features/forms/form-k/form-k";
+import TestForm from "@/features/forms/form-test/test-form";
 import FormKOtherPage from "@/pages/forms/FormKPage";
 import FormJAuthorshipPage from "@/pages/forms/FormJPage";
 import FormIPartnershipPage from "@/pages/forms/FormIPage";
@@ -33,9 +33,9 @@ export default function App() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/reports/new" element={<NewEntryPage />} />
         <Route path="/test-form" element={<TestForm />} />
-        <Route path="/form-k-other" element={<FormKOtherPage />} />
-        <Route path="/form-j-authorship" element={<FormJAuthorshipPage />} />
-        <Route path="/form-i-partnership" element={<FormIPartnershipPage />} />
+        <Route path="/form-k" element={<FormKOtherPage />} />
+        <Route path="/form-j" element={<FormJAuthorshipPage />} />
+        <Route path="/form-i" element={<FormIPartnershipPage />} />
         <Route path="/form-g" element={<FormGPage />} />
         <Route path="/form-h" element={<FormHPage />} />
         <Route path="/form-e" element={<FormEPage />} />

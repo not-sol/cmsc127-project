@@ -1,4 +1,4 @@
-import type { FormValues } from "@/features/forms/form-b-grants-and-fellowships/form-b-schema"
+import type { FormValues } from "@/features/forms/form-b/form-b-schema"
 import type { FormFieldConfig } from "@/features/forms/form-types"
 
 export const formFields: FormFieldConfig<FormValues>[] = [
@@ -61,7 +61,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
 
   // SECTION B.4
   { //upSystemResearchGrantPesos
-    type: "text", 
+    type: "text",
     name: "upSystemResearchGrantPesos",
     label: "UP System Research Grant (PHP)",
     placeholder: "0.00",

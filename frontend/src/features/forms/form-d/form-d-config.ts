@@ -1,4 +1,4 @@
-import type { FormValues } from "@/features/forms/form-d-patents/form-d-schema"
+import type { FormValues } from "@/features/forms/form-d/form-d-schema"
 import type { FormFieldConfig } from "@/features/forms/form-types"
 
 export const formFields: FormFieldConfig<FormValues>[] = [
@@ -8,7 +8,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     name: "researchTitle3",
     label: "Linked Research (from Section B)",
     placeholder: "Select title of parent research project",
-    options:[
+    options: [
 
     ]
   },
@@ -25,7 +25,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
       { value: "invention", label: "Invention" },
       { value: "utilityModel", label: "Utility Model" },
       { value: "industrialDesign", label: "Industrial Design" },
-      ],
+    ],
   },
 
   // D.2 Application & Grant Details
@@ -81,7 +81,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     ],
   },
 
-  
+
   // D.3  Supporting Documents
   { //patentAttachments
     type: "file",

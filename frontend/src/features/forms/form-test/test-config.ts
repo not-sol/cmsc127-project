@@ -30,6 +30,11 @@ export const formFields: FormFieldConfig<FormValues>[] = [
         label: "Advanced",
         description: "More control",
       },
+      {
+        value: "what",
+        label: "What",
+        description: "More control",
+      },
     ],
     otherOption: {
       name: "other",

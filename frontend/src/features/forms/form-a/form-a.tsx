@@ -1,8 +1,8 @@
 import {
   formASchema,
   type FormValues
-} from "@/features/forms/form-a-publications/form-a-schema"
-import { formFields } from "@/features/forms/form-a-publications/form-a-config"
+} from "@/features/forms/form-a/form-a-schema"
+import { formFields } from "@/features/forms/form-a/form-a-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 export default function FormAPublications() {
   const onSubmit = (data: FormValues) => {

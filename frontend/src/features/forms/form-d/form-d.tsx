@@ -1,8 +1,8 @@
 import {
   formDSchema,
   type FormValues
-} from "@/features/forms/form-d-patents/form-d-schema"
-import { formFields } from "@/features/forms/form-d-patents/form-d-config"
+} from "@/features/forms/form-d/form-d-schema"
+import { formFields } from "@/features/forms/form-d/form-d-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 export default function FormDPatents() {
   const onSubmit = (data: FormValues) => {
