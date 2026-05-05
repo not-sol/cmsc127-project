@@ -25,7 +25,7 @@ import { SectionHeaderField } from "@/features/forms/dynamic-form/form-fields/Se
 const RADIO_OTHER_DEFAULT_VALUE = "__other__"
 
 type DynamicFormProps<TValues extends FieldValues> = {
-  formSchema: ZodType<TValues, TValues>
+  formSchema: ZodType<TValues, any>
   formFields: FormFieldConfig<TValues>[]
   defaultValues: DefaultValues<TValues>
   onSubmit: SubmitHandler<TValues>
@@ -36,15 +36,12 @@ type DynamicFormProps<TValues extends FieldValues> = {
   formClassName?: string
 }
 
-type PartialableSchema<TValues extends FieldValues> = ZodType<
-  TValues,
-  TValues
-> & {
-  partial: (mask: Record<string, true>) => ZodType<TValues, TValues>
+type PartialableSchema<TValues extends FieldValues> = ZodType<TValues, any> & {
+  partial: (mask: Record<string, true>) => ZodType<TValues, any>
 }
 
 function hasPartial<TValues extends FieldValues>(
-  schema: ZodType<TValues, TValues>
+  schema: ZodType<TValues, any>
 ): schema is PartialableSchema<TValues> {
   return typeof (schema as { partial?: unknown }).partial === "function"
 }
@@ -70,7 +67,7 @@ function isEmptyOptionalValue(value: unknown) {
 }
 
 function createFormSchema<TValues extends FieldValues>(
-  formSchema: ZodType<TValues, TValues>,
+  formSchema: ZodType<TValues>,
   formFields: FormFieldConfig<TValues>[]
 ) {
   const inputFields = formFields.filter((field) => field.type !== "section-header")
