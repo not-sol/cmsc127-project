@@ -28,7 +28,6 @@ export default function FormBGrantsAndFellowships() {
           totalFundingPesos: "0.00",
           otherFundSource: "",
           majoritySource: "genFundCurYr",
-          // Add other defaults here
         }}
         onSubmit={onSubmit}
       />
