@@ -1,5 +1,5 @@
 import Sidebar from "@/components/sidebar"
-import FormDPatents from "@/features/forms/form-d-patents/form-d"
+import FormDPatents from "@/features/forms/form-d/form-d"
 import { ChevronRight } from "lucide-react"
 
 function Breadcrumb() {

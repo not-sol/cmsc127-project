@@ -1,5 +1,5 @@
 import Sidebar from "@/components/sidebar"
-import FormBGrantsAndFellowships from "@/features/forms/form-b-grants-and-fellowships/form-b"
+import FormBGrantsAndFellowships from "@/features/forms/form-b/form-b"
 import { ChevronRight } from "lucide-react"
 
 function Breadcrumb() {
