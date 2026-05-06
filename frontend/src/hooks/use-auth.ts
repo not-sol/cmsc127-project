@@ -1,46 +1,42 @@
-import { useState } from "react";
-import { signInWithEmail, signOut } from "@/api/auth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { signInWithEmail, signUpNewUser, signOut } from "@/api/auth";
 import { useAuthStore } from "@/store/auth-store";
+import { LoginFormValues, RegisterFormValues } from "@/lib/validations/auth";
 
 export function useAuth() {
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { user, session, loading } = useAuthStore();
 
-  const {
-    setUser,
-    setSession,
-    setLoading,
-    clearAuth,
-    loading,
-  } = useAuthStore();
+  const loginMutation = useMutation({
+    mutationFn: (credentials: LoginFormValues) => signInWithEmail(credentials),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
 
-  async function login(email: string, password: string) {
-    try {
-      setLoading(true);
-      setError(null);
+  const registerMutation = useMutation({
+    mutationFn: (credentials: RegisterFormValues) => signUpNewUser(credentials),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
 
-      const data = await signInWithEmail(email, password);
-
-      setUser(data.user);
-      setSession(data.session);
-
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function logout() {
-    await signOut();
-    clearAuth();
-  }
+  const logoutMutation = useMutation({
+    mutationFn: signOut,
+    onSuccess: () => {
+      queryClient.clear();
+    },
+  });
 
   return {
-    login,
-    logout,
-    loading,
-    error,
+    user,
+    session,
+    isLoading: loading || loginMutation.isPending || registerMutation.isPending || logoutMutation.isPending,
+    login: loginMutation.mutateAsync,
+    register: registerMutation.mutateAsync,
+    logout: logoutMutation.mutateAsync,
+    loginError: loginMutation.error,
+    registerError: registerMutation.error,
+    logoutError: logoutMutation.error,
   };
 }

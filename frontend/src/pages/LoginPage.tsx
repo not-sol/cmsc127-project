@@ -1,7 +1,18 @@
+import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import BackgroundPattern from "@/components/background-pattern";
 import LoginCard from "@/components/login-card";
+import RegisterCard from "@/components/register-card";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginPage() {
+  const [isLogin, setIsLogin] = useState(true);
+  const { session } = useAuth();
+
+  if (session) {
+    return <Navigate to="/reports" replace />;
+  }
+
   return (
     <div className="relative min-h-screen flex items-center justify-center">
       <BackgroundPattern />
@@ -18,9 +29,12 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Login Card */}
       <div className="relative z-10 w-full max-w-sm mx-6 md:mx-0 md:mr-16">
-        <LoginCard />
+        {isLogin ? (
+          <LoginCard onToggleMode={() => setIsLogin(false)} />
+        ) : (
+          <RegisterCard onToggleMode={() => setIsLogin(true)} />
+        )}
       </div>
     </div>
   );

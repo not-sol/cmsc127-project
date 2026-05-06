@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/pages/LoginPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -15,35 +16,57 @@ import FormAPublicationsPage from "@/pages/forms/FormAPage";
 import FormBGrantsAndFellowshipsPage from "@/pages/forms/FormBPage";
 import FormCOralOrPosterPage from "@/pages/forms/FormCPage";
 import FormDPage from "@/pages/forms/FormDPage";
-// import { useEffect } from 'react'
-// import { useAuthStore } from '@/store/authStore'
+import { useAuthStore } from "@/store/auth-store";
+import { supabase } from "@/lib/supabase/client";
+import ProtectedRoute from "@/components/protected-route";
 
 export default function App() {
-  // const init = useAuthStore((s) => s.init)
-  //
-  // useEffect(() => {
-  //   init()
-  // }, [init])
+  const { setUser, setSession, setLoading } = useAuthStore();
+
+  useEffect(() => {
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for changes on auth state (logged in, signed out, etc.)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setSession, setUser, setLoading]);
 
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/reports/new" element={<NewEntryPage report={undefined} onSaveDraft={() => {}} onSubmit={() => {}} onAddEntry={() => {}} onViewEntry={() => {}} onDeleteEntry={() => {}} />} />
-        <Route path="/test-form" element={<TestForm />} />
-        <Route path="/form-k" element={<FormKOtherPage />} />
-        <Route path="/form-j" element={<FormJAuthorshipPage />} />
-        <Route path="/form-i" element={<FormIPartnershipPage />} />
-        <Route path="/form-g" element={<FormGPage />} />
-        <Route path="/form-h" element={<FormHPage />} />
-        <Route path="/form-e" element={<FormEPage />} />
-        <Route path="/form-f" element={<FormFPage />} />
-        <Route path="/form-a" element={<FormAPublicationsPage />} />
-        <Route path="/form-b" element={<FormBGrantsAndFellowshipsPage />} />
-        <Route path="/form-c" element={<FormCOralOrPosterPage />} />
-        <Route path="/form-d" element={<FormDPage />} />
+        
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/reports/new" element={<NewEntryPage report={undefined} onSaveDraft={() => {}} onSubmit={() => {}} onAddEntry={() => {}} onViewEntry={() => {}} onDeleteEntry={() => {}} />} />
+          <Route path="/test-form" element={<TestForm />} />
+          <Route path="/form-k" element={<FormKOtherPage />} />
+          <Route path="/form-j" element={<FormJAuthorshipPage />} />
+          <Route path="/form-i" element={<FormIPartnershipPage />} />
+          <Route path="/form-g" element={<FormGPage />} />
+          <Route path="/form-h" element={<FormHPage />} />
+          <Route path="/form-e" element={<FormEPage />} />
+          <Route path="/form-f" element={<FormFPage />} />
+          <Route path="/form-a" element={<FormAPublicationsPage />} />
+          <Route path="/form-b" element={<FormBGrantsAndFellowshipsPage />} />
+          <Route path="/form-c" element={<FormCOralOrPosterPage />} />
+          <Route path="/form-d" element={<FormDPage />} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

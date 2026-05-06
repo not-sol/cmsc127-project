@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
-import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
+import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,30 +14,31 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-interface LoginCardProps {
+interface RegisterCardProps {
   onToggleMode: () => void;
 }
 
-export default function LoginCard({ onToggleMode }: LoginCardProps) {
-  const { login, isLoading, loginError } = useAuth();
+export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
+  const { register: signUp, isLoading, registerError } = useAuth();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  async function onSubmit(data: LoginFormValues) {
+  async function onSubmit(data: RegisterFormValues) {
     try {
-      await login(data);
+      await signUp(data);
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Registration failed:", error);
     }
   }
 
@@ -45,7 +46,7 @@ export default function LoginCard({ onToggleMode }: LoginCardProps) {
     <Card className="w-full max-w-sm">
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardHeader className="px-8 pt-8 pb-4">
-          <CardTitle className="text-2xl font-bold tracking-tight">Log in</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 px-8">
@@ -75,26 +76,39 @@ export default function LoginCard({ onToggleMode }: LoginCardProps) {
             )}
           </div>
 
-          {loginError && (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              {...register("confirmPassword")}
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
+            )}
+          </div>
+
+          {registerError && (
             <p className="text-sm font-medium text-destructive">
-              {loginError instanceof Error ? loginError.message : "Login failed"}
+              {registerError instanceof Error ? registerError.message : "Registration failed"}
             </p>
           )}
 
           <Button type="submit" className="w-full mt-2" disabled={isLoading}>
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? "Creating account..." : "Register"}
           </Button>
         </CardContent>
 
         <CardFooter className="justify-center px-8 pt-2 pb-8">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <button
               type="button"
               onClick={onToggleMode}
               className="font-medium text-primary hover:underline underline-offset-4"
             >
-              Sign up
+              Log in
             </button>
           </p>
         </CardFooter>

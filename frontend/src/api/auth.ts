@@ -1,11 +1,12 @@
 import { supabase } from '@/lib/supabase/client'
+import { LoginFormValues, RegisterFormValues } from '@/lib/validations/auth'
 
-export async function signUpNewUser(email: string, password: string) {
+export async function signUpNewUser({ email, password }: RegisterFormValues) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: 'https://example.com/welcome',
+      emailRedirectTo: `${window.location.origin}/login`,
     },
   })
 
@@ -13,7 +14,7 @@ export async function signUpNewUser(email: string, password: string) {
   return data
 }
 
-export async function signInWithEmail(email: string, password: string) {
+export async function signInWithEmail({ email, password }: LoginFormValues) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
