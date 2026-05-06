@@ -55,7 +55,7 @@ export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
             <Input
               id="email"
               type="email"
-              placeholder="username@up.edu.ph"
+              placeholder="email"
               {...register("email")}
             />
             {errors.email && (
@@ -68,7 +68,7 @@ export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="password"
               {...register("password")}
             />
             {errors.password && (
@@ -81,7 +81,7 @@ export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="••••••••"
+              placeholder="password"
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (

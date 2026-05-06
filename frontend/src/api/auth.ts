@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
-import { LoginFormValues, RegisterFormValues } from '@/lib/validations/auth'
+import type { LoginFormValues, RegisterFormValues } from '@/lib/validations/auth'
 
 export async function signUpNewUser({ email, password }: RegisterFormValues) {
   const { data, error } = await supabase.auth.signUp({

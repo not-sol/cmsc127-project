@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { signInWithEmail, signUpNewUser, signOut } from "@/api/auth";
 import { useAuthStore } from "@/store/auth-store";
-import { LoginFormValues, RegisterFormValues } from "@/lib/validations/auth";
+import type { LoginFormValues, RegisterFormValues } from "@/lib/validations/auth";
 
 export function useAuth() {
   const queryClient = useQueryClient();
