@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
 import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,14 +14,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 
-interface RegisterCardProps {
-  onToggleMode: () => void;
-}
-
-export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
+export default function RegisterCard() {
   const { register: signUp, isLoading, registerError } = useAuth();
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     register,
@@ -36,10 +36,35 @@ export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
 
   async function onSubmit(data: RegisterFormValues) {
     try {
-      await signUp(data);
+      const result = await signUp(data);
+      // If session is null, it means email confirmation is required
+      if (result.user && !result.session) {
+        setIsSuccess(true);
+      }
     } catch (error) {
       console.error("Registration failed:", error);
     }
+  }
+
+  if (isSuccess) {
+    return (
+      <Card className="w-full max-w-sm">
+        <CardHeader className="px-8 pt-8 pb-4 text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight">Check your email</CardTitle>
+          <CardDescription>
+            We've sent a confirmation link to your email address. Please verify your account to continue.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className="justify-center px-8 pt-2 pb-8">
+          <Link
+            to="/login"
+            className="font-medium text-primary hover:underline underline-offset-4"
+          >
+            Back to login
+          </Link>
+        </CardFooter>
+      </Card>
+    );
   }
 
   return (
@@ -48,6 +73,7 @@ export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
         <CardHeader className="px-8 pt-8 pb-4">
           <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
         </CardHeader>
+...
 
         <CardContent className="flex flex-col gap-4 px-8">
           <div className="flex flex-col gap-2">
@@ -103,13 +129,12 @@ export default function RegisterCard({ onToggleMode }: RegisterCardProps) {
         <CardFooter className="justify-center px-8 pt-2 pb-8">
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <button
-              type="button"
-              onClick={onToggleMode}
+            <Link
+              to="/login"
               className="font-medium text-primary hover:underline underline-offset-4"
             >
               Log in
-            </button>
+            </Link>
           </p>
         </CardFooter>
       </form>
