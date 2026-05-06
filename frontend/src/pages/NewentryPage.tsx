@@ -4,19 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ChevronRight } from "lucide-react";
-import {ENTRY_TYPES} from "@/lib/constants";
+import { ENTRY_TYPES } from "@/lib/constants";
 import { useState } from "react";
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form";
 
 // Import form schemas and configs
-import { formASchema } from "@/features/forms/form-a-publications/form-a-schema";
-import { formFields as formAFields } from "@/features/forms/form-a-publications/form-a-config";
-import { formBSchema } from "@/features/forms/form-b-grants-and-fellowships/form-b-schema";
-import { formFields as formBFields } from "@/features/forms/form-b-grants-and-fellowships/form-b-config";
-import { formCSchema } from "@/features/forms/form-c-oral-or-poster/form-c-schema";
-import { formFields as formCFields } from "@/features/forms/form-c-oral-or-poster/form-c-config";
-import { formDSchema } from "@/features/forms/form-d-patents/form-d-schema";
-import { formFields as formDFields } from "@/features/forms/form-d-patents/form-d-config";
+import { formASchema } from "@/features/forms/form-a/form-a-schema";
+import { formFields as formAFields } from "@/features/forms/form-a/form-a-config";
+import { formBSchema } from "@/features/forms/form-b/form-b-schema";
+import { formFields as formBFields } from "@/features/forms/form-b/form-b-config";
+import { formCSchema } from "@/features/forms/form-c/form-c-schema";
+import { formFields as formCFields } from "@/features/forms/form-c/form-c-config";
+import { formDSchema } from "@/features/forms/form-d/form-d-schema";
+import { formFields as formDFields } from "@/features/forms/form-d/form-d-config";
 // Add more as needed
 
 const formMap: Record<string, { schema: any, fields: any }> = {
@@ -181,33 +181,33 @@ export default function NewEntryPage() {
               "creative",
               "other"
             ].includes(sec) && (
-              <>
-                <h4 className="font-semibold">
-                  {ENTRY_TYPES.find(e => e.id === sec)?.label}
-                </h4>
+                <>
+                  <h4 className="font-semibold">
+                    {ENTRY_TYPES.find(e => e.id === sec)?.label}
+                  </h4>
 
-                <div>
-                  <Label>Title</Label>
-                  <Input />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Start Date</Label>
-                    <Input type="date" />
+                    <Label>Title</Label>
+                    <Input />
                   </div>
-                  <div>
-                    <Label>End Date</Label>
-                    <Input type="date" />
-                  </div>
-                </div>
 
-                <div>
-                  <Label>Description</Label>
-                  <Textarea />
-                </div>
-              </>
-            )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Start Date</Label>
+                      <Input type="date" />
+                    </div>
+                    <div>
+                      <Label>End Date</Label>
+                      <Input type="date" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea />
+                  </div>
+                </>
+              )}
           </div>
         </div>
       </main>
