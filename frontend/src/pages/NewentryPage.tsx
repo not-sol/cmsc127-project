@@ -9,14 +9,14 @@ import { useState } from "react";
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form";
 
 // Import form schemas and configs
-import { formASchema } from "@/features/forms/form-a-publications/form-a-schema";
-import { formFields as formAFields } from "@/features/forms/form-a-publications/form-a-config";
-import { formBSchema } from "@/features/forms/form-b-grants-and-fellowships/form-b-schema";
-import { formFields as formBFields } from "@/features/forms/form-b-grants-and-fellowships/form-b-config";
-import { formCSchema } from "@/features/forms/form-c-oral-or-poster/form-c-schema";
-import { formFields as formCFields } from "@/features/forms/form-c-oral-or-poster/form-c-config";
-import { formDSchema } from "@/features/forms/form-d-patents/form-d-schema";
-import { formFields as formDFields } from "@/features/forms/form-d-patents/form-d-config";
+import { formASchema } from "@/features/forms/form-a/form-a-schema";
+import { formFields as formAFields } from "@/features/forms/form-a/form-a-config";
+import { formBSchema } from "@/features/forms/form-b/form-b-schema";
+import { formFields as formBFields } from "@/features/forms/form-b/form-b-config";
+import { formCSchema } from "@/features/forms/form-c/form-c-schema";
+import { formFields as formCFields } from "@/features/forms/form-c/form-c-config";
+import { formDSchema } from "@/features/forms/form-d/form-d-schema";
+import { formFields as formDFields } from "@/features/forms/form-d/form-d-config";
 // Add more as needed
 
 const formMap: Record<string, { schema: any, fields: any }> = {
