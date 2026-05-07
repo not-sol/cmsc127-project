@@ -158,7 +158,7 @@ export function DynamicForm<TValues extends FieldValues>({
   submitError,
   submitSuccess,
   className = "w-full mx-auto justify-center",
-  formClassName = "w-full space-y-6",
+  formClassName = "w-full space-y-10",
 }: DynamicFormProps<TValues>) {
   const resolverSchema = createFormSchema(formSchema, formFields)
 
