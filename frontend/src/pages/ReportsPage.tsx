@@ -49,7 +49,7 @@ export default function ReportsPage() {
           <h2 className="text-2xl font-bold mb-6">My Accomplishment Reports</h2>
 
           {/* Table card */}
-          <div className="bg-white rounded-lg border p-4 flex flex-col gap-4">
+          <div className="rounded-lg border p-4 flex flex-col gap-4">
 
             {/* Toolbar */}
             <div className="flex items-center gap-2">

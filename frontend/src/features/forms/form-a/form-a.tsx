@@ -4,9 +4,19 @@ import {
 } from "@/features/forms/form-a/form-a-schema"
 import { formFields } from "@/features/forms/form-a/form-a-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
+import { getMutationErrorMessage } from "@/api/forms/shared"
+import { useCreateFormARecord } from "@/hooks/forms/use-form-a-mutation"
+import { useAuthStore } from "@/store/auth-store"
+
 export default function FormAPublications() {
-  const onSubmit = (data: FormValues) => {
-    console.log("Submitted Data:", data)
+  const createFormARecord = useCreateFormARecord()
+  const userId = useAuthStore((state) => state.user?.id)
+
+  const onSubmit = async (data: FormValues) => {
+    await createFormARecord.mutateAsync({
+      values: data,
+      submittedBy: userId,
+    })
   }
 
   return (
@@ -31,6 +41,10 @@ export default function FormAPublications() {
           citationNum: "0",
         }}
         onSubmit={onSubmit}
+        submitError={getMutationErrorMessage(createFormARecord.error)}
+        submitSuccess={
+          createFormARecord.isSuccess ? "Publication entry created successfully." : undefined
+        }
       />
     </div>
   )

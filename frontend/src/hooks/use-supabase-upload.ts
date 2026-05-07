@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useDropzone, type FileError, type FileRejection } from 'react-dropzone'
 
 import { supabase } from '@/lib/supabase/client'
@@ -7,6 +7,20 @@ import { supabase } from '@/lib/supabase/client'
 interface FileWithPreview extends File {
   preview?: string
   errors: readonly FileError[]
+}
+
+function normalizeTooManyFilesErrors(
+  files: FileWithPreview[],
+  maxFiles: number
+) {
+  if (files.length > maxFiles) {
+    return files
+  }
+
+  return files.map((file) => ({
+    ...file,
+    errors: file.errors.filter((error) => error.code !== 'too-many-files'),
+  }))
 }
 
 type UseSupabaseUploadOptions = {
@@ -75,11 +89,14 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
         return file as FileWithPreview
       })
 
-      const newFiles = [...files, ...validFiles, ...invalidFiles]
+      const newFiles = normalizeTooManyFilesErrors(
+        [...files, ...validFiles, ...invalidFiles],
+        maxFiles
+      )
 
       setFiles(newFiles)
     },
-    [files, setFiles]
+    [files, maxFiles, setFiles]
   )
 
   const dropzoneProps = useDropzone({
@@ -109,7 +126,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
       filesToUpload.map(async (file) => {
         const { error } = await supabase.storage
           .from(bucketName)
-          .upload(!!path ? `${path}/${file.name}` : file.name, file, {
+          .upload(path ? `${path}/${file.name}` : file.name, file, {
             cacheControl: cacheControl.toString(),
             upsert,
           })
@@ -132,28 +149,9 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     setSuccesses(newSuccesses)
 
     setLoading(false)
-  }, [files, path, bucketName, errors, successes])
+  }, [bucketName, cacheControl, errors, files, path, successes, upsert])
 
-  useEffect(() => {
-    if (files.length === 0) {
-      setErrors([])
-    }
-
-    // If the number of files doesn't exceed the maxFiles parameter, remove the error 'Too many files' from each file
-    if (files.length <= maxFiles) {
-      let changed = false
-      const newFiles = files.map((file) => {
-        if (file.errors.some((e) => e.code === 'too-many-files')) {
-          file.errors = file.errors.filter((e) => e.code !== 'too-many-files')
-          changed = true
-        }
-        return file
-      })
-      if (changed) {
-        setFiles(newFiles)
-      }
-    }
-  }, [files.length, setFiles, maxFiles])
+  const visibleErrors = files.length === 0 ? [] : errors
 
   return {
     files,
@@ -161,7 +159,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     successes,
     isSuccess,
     loading,
-    errors,
+    errors: visibleErrors,
     setErrors,
     onUpload,
     maxFileSize: maxFileSize,

@@ -4,13 +4,10 @@ import type { FormFieldConfig } from "@/features/forms/form-types"
 export const formFields: FormFieldConfig<FormValues>[] = [
   // D.1 Patent Identification
   { //researchTitle3
-    type: "select",
+    type: "text",
     name: "researchTitle3",
     label: "Linked Research (from Section B)",
-    placeholder: "Select title of parent research project",
-    options: [
-
-    ]
+    placeholder: "Enter the title of the parent research project",
   },
   { //patentTitle
     type: "text",
@@ -52,7 +49,7 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     placeholder: "MM/DD/YYYY",
   },
   { //grantPatentDate
-    type: "text",
+    type: "date-picker",
     name: "grantPatentDate",
     label: "Date of Grant of Patent",
     placeholder: "MM/DD/YYYY — leave blank if not yet granted",

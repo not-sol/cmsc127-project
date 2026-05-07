@@ -4,9 +4,8 @@ const formCSchema = z.object({
 
   //C.1 Presentation Details
   researchTitle2: z
-  .enum([""], {
-    message: "Linked research title is required.",
-  }),
+    .string()
+    .min(1, "Linked research title is required."),
   titlePresented: z
     .string()
     .min(1, "Title of paper presented is required."),
@@ -30,9 +29,7 @@ const formCSchema = z.object({
   conferenceStartDate: z.date({
     message: "Start date is required.",
   }),
-  conferenceEndDate: z.date({
-    message: "End date is required.",
-  }),
+  conferenceEndDate: z.date().optional(),
   presentationDate: z.date({
     message: "Presentation date is required.",
   }),

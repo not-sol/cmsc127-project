@@ -19,29 +19,33 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { FieldError } from "@/components/ui/field"
 import { DynamicField } from "@/features/forms/dynamic-form/form-fields/DynamicField"
 import { SectionHeaderField } from "@/features/forms/dynamic-form/form-fields/SectionHeaderField"
 
 const RADIO_OTHER_DEFAULT_VALUE = "__other__"
 
 type DynamicFormProps<TValues extends FieldValues> = {
-  formSchema: ZodType<TValues, any>
+  formSchema: ZodType<TValues, FieldValues>
   formFields: FormFieldConfig<TValues>[]
   defaultValues: DefaultValues<TValues>
   onSubmit: SubmitHandler<TValues>
   title?: string
   description?: string
   submitLabel?: string
+  submittingLabel?: string
+  submitError?: string
+  submitSuccess?: string
   className?: string
   formClassName?: string
 }
 
-type PartialableSchema<TValues extends FieldValues> = ZodType<TValues, any> & {
-  partial: (mask: Record<string, true>) => ZodType<TValues, any>
+type PartialableSchema<TValues extends FieldValues> = ZodType<TValues, FieldValues> & {
+  partial: (mask: Record<string, true>) => ZodType<TValues, FieldValues>
 }
 
 function hasPartial<TValues extends FieldValues>(
-  schema: ZodType<TValues, any>
+  schema: ZodType<TValues, FieldValues>
 ): schema is PartialableSchema<TValues> {
   return typeof (schema as { partial?: unknown }).partial === "function"
 }
@@ -67,7 +71,7 @@ function isEmptyOptionalValue(value: unknown) {
 }
 
 function createFormSchema<TValues extends FieldValues>(
-  formSchema: ZodType<TValues>,
+  formSchema: ZodType<TValues, FieldValues>,
   formFields: FormFieldConfig<TValues>[]
 ) {
   const inputFields = formFields.filter((field) => field.type !== "section-header")
@@ -116,7 +120,7 @@ function createFormSchema<TValues extends FieldValues>(
     }
 
     return nextValue
-  }, schema) as ZodType<TValues, TValues>
+  }, schema) as ZodType<TValues, FieldValues>
 }
 
 function createDefaultValues<TValues extends FieldValues>(
@@ -150,6 +154,9 @@ export function DynamicForm<TValues extends FieldValues>({
   title,
   description,
   submitLabel = "Submit",
+  submittingLabel = "Submitting...",
+  submitError,
+  submitSuccess,
   className = "w-full mx-auto justify-center",
   formClassName = "w-full space-y-6",
 }: DynamicFormProps<TValues>) {
@@ -204,8 +211,16 @@ export function DynamicForm<TValues extends FieldValues>({
           })}
 
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {submitLabel}
+            {form.formState.isSubmitting ? submittingLabel : submitLabel}
           </Button>
+
+          {submitError && <FieldError>{submitError}</FieldError>}
+
+          {submitSuccess && (
+            <p className="text-sm font-medium">
+              {submitSuccess}
+            </p>
+          )}
         </form>
       </CardContent>
     </Card>

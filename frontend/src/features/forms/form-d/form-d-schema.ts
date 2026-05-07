@@ -4,9 +4,8 @@ const formDSchema = z.object({
 
   //D.1 Patent Identification
   researchTitle3: z
-  .enum([""], {
-    message: "Linked research title is required.",
-  }),
+    .string()
+    .min(1, "Linked research title is required."),
   patentTitle: z
     .string()
     .min(1, "Title of patent is required."),
@@ -28,8 +27,7 @@ const formDSchema = z.object({
   unexaminedApplicationDate: z.date({
     message: "Date of publication of unexamined application is required.",
   }),
-  grantPatentDate: z
-  .date().optional(),
+  grantPatentDate: z.date().optional(),
   regisNum: z
     .string()
     .optional(),

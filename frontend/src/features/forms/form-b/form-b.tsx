@@ -4,9 +4,19 @@ import {
 } from "@/features/forms/form-b/form-b-schema"
 import { formFields } from "@/features/forms/form-b/form-b-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
+import { getMutationErrorMessage } from "@/api/forms/shared"
+import { useCreateFormBRecord } from "@/hooks/forms/use-form-b-mutation"
+import { useAuthStore } from "@/store/auth-store"
+
 export default function FormBGrantsAndFellowships() {
-  const onSubmit = (data: FormValues) => {
-    console.log("Submitted Data:", data)
+  const createFormBRecord = useCreateFormBRecord()
+  const userId = useAuthStore((state) => state.user?.id)
+
+  const onSubmit = async (data: FormValues) => {
+    await createFormBRecord.mutateAsync({
+      values: data,
+      submittedBy: userId,
+    })
   }
 
   return (
@@ -30,6 +40,12 @@ export default function FormBGrantsAndFellowships() {
           majoritySource: "genFundCurYr",
         }}
         onSubmit={onSubmit}
+        submitError={getMutationErrorMessage(createFormBRecord.error)}
+        submitSuccess={
+          createFormBRecord.isSuccess
+            ? "Research grant or fellowship entry created successfully."
+            : undefined
+        }
       />
     </div>
   )
