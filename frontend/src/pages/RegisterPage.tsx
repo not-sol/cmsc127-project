@@ -1,9 +1,9 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import BackgroundPattern from "@/components/background-pattern";
-import LoginCard from "@/components/login-card";
+import RegisterCard from "@/components/register-card";
 import { useAuth } from "@/hooks/use-auth";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const { session } = useAuth();
 
   if (session) {
@@ -27,7 +27,12 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-sm mx-6 md:mx-0 md:mr-16">
-        <LoginCard />
+        <RegisterCard />
+        <div className="mt-4 text-center">
+          <Link to="/login" className="text-sm text-white/70 hover:text-white underline underline-offset-4">
+            Already have an account? Log in
+          </Link>
+        </div>
       </div>
     </div>
   );

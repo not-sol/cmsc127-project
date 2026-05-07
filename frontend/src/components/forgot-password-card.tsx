@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
-import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
+import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@/lib/validations/auth";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -13,36 +13,60 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 
-export default function LoginCard() {
-  const { login, isLoading, loginError } = useAuth();
+export default function ForgotPasswordCard() {
+  const { forgotPassword, isLoading, forgotPasswordError, isForgotPasswordSuccess } = useAuth();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  async function onSubmit(data: LoginFormValues) {
+  async function onSubmit(data: ForgotPasswordFormValues) {
     try {
-      await login(data);
+      await forgotPassword(data.email);
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Forgot password request failed:", error);
     }
+  }
+
+  if (isForgotPasswordSuccess) {
+    return (
+      <Card className="w-full max-w-sm">
+        <CardHeader className="px-8 pt-8 pb-4 text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight">Check your email</CardTitle>
+          <CardDescription>
+            We've sent a password reset link to your email address.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className="justify-center px-8 pt-2 pb-8">
+          <Link
+            to="/login"
+            className="font-medium text-primary hover:underline underline-offset-4"
+          >
+            Back to login
+          </Link>
+        </CardFooter>
+      </Card>
+    );
   }
 
   return (
     <Card className="w-full max-w-sm">
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardHeader className="px-8 pt-8 pb-4">
-          <CardTitle className="text-2xl font-bold tracking-tight">Log in</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">Reset password</CardTitle>
+          <CardDescription>
+            Enter your email address and we'll send you a link to reset your password.
+          </CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 px-8">
@@ -59,46 +83,25 @@ export default function LoginCard() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                to="/forgot-password"
-                className="text-xs font-medium text-primary hover:underline underline-offset-4"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="password"
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-xs text-destructive">{errors.password.message}</p>
-            )}
-          </div>
-
-          {loginError && (
+          {forgotPasswordError && (
             <p className="text-sm font-medium text-destructive">
-              {loginError instanceof Error ? loginError.message : "Login failed"}
+              {forgotPasswordError instanceof Error ? forgotPasswordError.message : "Request failed"}
             </p>
           )}
 
           <Button type="submit" className="w-full mt-2" disabled={isLoading}>
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? "Sending link..." : "Send reset link"}
           </Button>
         </CardContent>
 
         <CardFooter className="justify-center px-8 pt-2 pb-8">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Remembered your password?{" "}
             <Link
-              to="/register"
+              to="/login"
               className="font-medium text-primary hover:underline underline-offset-4"
             >
-              Sign up
+              Log in
             </Link>
           </p>
         </CardFooter>
