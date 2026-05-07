@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { RouterProvider } from "react-router-dom";
 import { useAuthStore } from "@/store/auth-store";
 import { supabase } from "@/lib/supabase/client";
-import { router } from "@/routes";
+import { router } from "@/routes/routes";
 
 export default function App() {
   const { setUser, setSession, setLoading } = useAuthStore();

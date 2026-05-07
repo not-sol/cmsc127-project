@@ -6,26 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ChevronRight } from "lucide-react";
 import { ENTRY_TYPES } from "@/lib/constants";
 import { useState } from "react";
-import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form";
-
-// Import form schemas and configs
-import { formASchema } from "@/features/forms/form-a/form-a-schema";
-import { formFields as formAFields } from "@/features/forms/form-a/form-a-config";
-import { formBSchema } from "@/features/forms/form-b/form-b-schema";
-import { formFields as formBFields } from "@/features/forms/form-b/form-b-config";
-import { formCSchema } from "@/features/forms/form-c/form-c-schema";
-import { formFields as formCFields } from "@/features/forms/form-c/form-c-config";
-import { formDSchema } from "@/features/forms/form-d/form-d-schema";
-import { formFields as formDFields } from "@/features/forms/form-d/form-d-config";
-// Add more as needed
-
-const formMap: Record<string, { schema: any, fields: any }> = {
-  pub: { schema: formASchema, fields: formAFields },
-  res: { schema: formBSchema, fields: formBFields },
-  pres: { schema: formCSchema, fields: formCFields },
-  patent: { schema: formDSchema, fields: formDFields },
-  // Add more as needed
-};
+import { formRegistry } from "@/features/forms/form-registry";
 
 function Breadcrumb() {
   return (
@@ -41,6 +22,8 @@ function Breadcrumb() {
 
 export default function NewEntryPage() {
   const [sec, setSec] = useState<string | null>(null);
+  const ActiveForm = sec ? formRegistry[sec] : null;
+
   return (
     <div className="flex min-h-screen bg-muted/40">
       <Sidebar />
@@ -159,55 +142,7 @@ export default function NewEntryPage() {
               </div>
             )}
 
-            {/* Dynamic Form for mapped entries */}
-            {sec && formMap[sec] && (
-              <DynamicForm
-                formSchema={formMap[sec].schema}
-                formFields={formMap[sec].fields}
-                defaultValues={{}}
-                onSubmit={(data) => console.log('Form submitted', data)}
-                title={`${ENTRY_TYPES.find(e => e.id === sec)?.letter} — ${ENTRY_TYPES.find(e => e.id === sec)?.label}`}
-                submitLabel="Submit Entry"
-              />
-            )}
-
-            {/* ───────── GENERIC SECTIONS ───────── */}
-            {sec && !formMap[sec] && [
-              "ext",
-              "partner",
-              "award",
-              "auth",
-              "patent",
-              "creative",
-              "other"
-            ].includes(sec) && (
-                <>
-                  <h4 className="font-semibold">
-                    {ENTRY_TYPES.find(e => e.id === sec)?.label}
-                  </h4>
-
-                  <div>
-                    <Label>Title</Label>
-                    <Input />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Start Date</Label>
-                      <Input type="date" />
-                    </div>
-                    <div>
-                      <Label>End Date</Label>
-                      <Input type="date" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea />
-                  </div>
-                </>
-              )}
+            {ActiveForm ? <ActiveForm /> : null}
           </div>
         </div>
       </main>

@@ -1,10 +1,19 @@
 import { formGSchema, type FormGValues } from "@/features/forms/form-g/form-g-schema"
 import { formGFields } from "@/features/forms/form-g/form-g-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
+import { getMutationErrorMessage } from "@/api/forms/shared"
+import { useCreateFormGRecord } from "@/hooks/forms/use-form-g-mutation"
+import { useAuthStore } from "@/store/auth-store"
 
 export default function FormG() {
-  function onSubmit(data: FormGValues) {
-    console.log("Form G Training submitted:", data)
+  const createFormGRecord = useCreateFormGRecord()
+  const userId = useAuthStore((state) => state.user?.id)
+
+  async function onSubmit(data: FormGValues) {
+    await createFormGRecord.mutateAsync({
+      values: data,
+      submittedBy: userId,
+    })
   }
 
   return (
@@ -38,6 +47,10 @@ export default function FormG() {
       title="Form G: Training / Workshop / Seminar Conducted"
       description="Use this form to record training activities conducted by faculty. Trainings attended as a participant should be recorded in Section I (Other Accomplishments)."
       submitLabel="Submit"
+      submitError={getMutationErrorMessage(createFormGRecord.error)}
+      submitSuccess={
+        createFormGRecord.isSuccess ? "Training entry created successfully." : undefined
+      }
     />
   )
 }

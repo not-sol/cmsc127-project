@@ -4,9 +4,19 @@ import {
 } from "@/features/forms/form-c/form-c-schema"
 import { formFields } from "@/features/forms/form-c/form-c-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
+import { getMutationErrorMessage } from "@/api/forms/shared"
+import { useCreateFormCRecord } from "@/hooks/forms/use-form-c-mutation"
+import { useAuthStore } from "@/store/auth-store"
+
 export default function FormCOralOrPoster() {
-  const onSubmit = (data: FormValues) => {
-    console.log("Submitted Data:", data)
+  const createFormCRecord = useCreateFormCRecord()
+  const userId = useAuthStore((state) => state.user?.id)
+
+  const onSubmit = async (data: FormValues) => {
+    await createFormCRecord.mutateAsync({
+      values: data,
+      submittedBy: userId,
+    })
   }
 
   return (
@@ -29,6 +39,10 @@ export default function FormCOralOrPoster() {
           presentationDate: new Date()
         }}
         onSubmit={onSubmit}
+        submitError={getMutationErrorMessage(createFormCRecord.error)}
+        submitSuccess={
+          createFormCRecord.isSuccess ? "Presentation entry created successfully." : undefined
+        }
       />
     </div>
   )
