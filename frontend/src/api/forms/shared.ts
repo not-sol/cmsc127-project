@@ -1,5 +1,32 @@
 import { supabase } from "@/lib/supabase/client"
 
+export type SupabaseInsertFailure = {
+  message: string
+  details?: string | null
+  hint?: string | null
+  code?: string | null
+}
+
+export class SupabaseInsertError extends Error {
+  table: string
+  supabaseError: SupabaseInsertFailure
+
+  constructor(table: string, supabaseError: SupabaseInsertFailure) {
+    const messageParts = [
+      `Failed to insert into "${table}".`,
+      supabaseError.message,
+      supabaseError.details ? `Details: ${supabaseError.details}` : undefined,
+      supabaseError.hint ? `Hint: ${supabaseError.hint}` : undefined,
+      supabaseError.code ? `Code: ${supabaseError.code}` : undefined,
+    ].filter(Boolean)
+
+    super(messageParts.join(" "))
+    this.name = "SupabaseInsertError"
+    this.table = table
+    this.supabaseError = supabaseError
+  }
+}
+
 export type SerializedFile = {
   name: string
   size: number
@@ -76,21 +103,18 @@ export async function insertFormRecord<TPayload extends Record<string, unknown>>
     .single()
 
   if (error) {
-    const messageParts = [
-      `Failed to insert into "${table}".`,
-      error.message,
-      error.details ? `Details: ${error.details}` : undefined,
-      error.hint ? `Hint: ${error.hint}` : undefined,
-      error.code ? `Code: ${error.code}` : undefined,
-    ].filter(Boolean)
-
     console.error(`[supabase] insert failed for ${table}`, {
       table,
       payload,
       error,
     })
 
-    throw new Error(messageParts.join(" "))
+    throw new SupabaseInsertError(table, {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    })
   }
 
   return data as TPayload & { id: string }

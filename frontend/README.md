@@ -45,7 +45,9 @@ Make sure you have [Node.js](https://nodejs.org/) (v16 or higher), `npm`, and th
    cd frontend
    cp .env.example .env.local
    ```
-   Update `.env.local` values from `supabase status` if they differ from your local output.
+   Update `.env.local` with the `API URL` and `anon key` values shown by `supabase status`:
+   - `VITE_SUPABASE_URL=<API URL>`
+   - `VITE_SUPABASE_ANON_KEY=<anon key>`
 
 5. **Install dependencies and start the app**
    ```bash

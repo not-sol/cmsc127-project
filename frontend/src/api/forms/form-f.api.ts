@@ -3,10 +3,12 @@ import {
   emptyStringToNull,
   insertFormRecord,
   serializeFiles,
+  SupabaseInsertError,
   toIsoDate,
 } from "@/api/forms/shared"
 
 export const FORM_F_TABLE = "form_f_awards_and_grants"
+const POSTGREST_SCHEMA_OUTDATED_CODE = "PGRST204"
 
 export type CreateFormFInput = {
   values: FormFValues
@@ -37,14 +39,24 @@ export async function createFormFRecord({
   } catch (error) {
     if (
       submittedBy &&
-      error instanceof Error &&
-      error.message.includes("'submitted_by'") &&
-      error.message.includes("schema cache")
+      error instanceof SupabaseInsertError &&
+      error.table === FORM_F_TABLE &&
+      error.supabaseError.code === POSTGREST_SCHEMA_OUTDATED_CODE &&
+      error.supabaseError.message.includes("submitted_by")
     ) {
       console.warn(
         `[supabase] ${FORM_F_TABLE}: retrying insert without submitted_by due to schema cache mismatch.`
       )
-      return insertFormRecord(FORM_F_TABLE, basePayload)
+
+      try {
+        return await insertFormRecord(FORM_F_TABLE, basePayload)
+      } catch (retryError) {
+        throw new Error(
+          `Insert retry for "${FORM_F_TABLE}" without submitted_by also failed. ${
+            retryError instanceof Error ? retryError.message : "Unknown retry failure."
+          }`
+        )
+      }
     }
 
     throw error

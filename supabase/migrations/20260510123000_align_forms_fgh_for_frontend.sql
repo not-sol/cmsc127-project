@@ -206,8 +206,6 @@ BEGIN
 END
 $$;
 
-GRANT SELECT ON TABLE public.form_g_trainings TO anon;
-GRANT SELECT ON TABLE public.form_h_extension_programs TO anon;
 GRANT ALL ON TABLE public.form_g_trainings TO authenticated, service_role;
 GRANT ALL ON TABLE public.form_h_extension_programs TO authenticated, service_role;
 
