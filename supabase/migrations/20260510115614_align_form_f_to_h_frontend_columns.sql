@@ -42,8 +42,6 @@ ALTER TABLE public.form_f_awards_and_grants
   DROP CONSTRAINT IF EXISTS form_f_awards_and_grants_entry_id_fkey,
   ADD COLUMN IF NOT EXISTS submitted_by text,
   ADD COLUMN IF NOT EXISTS type text,
-  ADD COLUMN IF NOT EXISTS award_grant_title text,
-  ADD COLUMN IF NOT EXISTS source_awarding_body text,
   ADD COLUMN IF NOT EXISTS details text,
   ADD COLUMN IF NOT EXISTS start_date date,
   ADD COLUMN IF NOT EXISTS end_date date,
@@ -208,9 +206,10 @@ BEGIN
 END
 $$;
 
-GRANT ALL ON TABLE public.form_g_trainings TO anon, authenticated, service_role;
-GRANT ALL ON TABLE public.form_h_extension_programs TO anon, authenticated, service_role;
-GRANT ALL ON TABLE public.form_f_awards_and_grants TO anon, authenticated, service_role;
+GRANT SELECT ON TABLE public.form_g_trainings TO anon;
+GRANT SELECT ON TABLE public.form_h_extension_programs TO anon;
+GRANT ALL ON TABLE public.form_g_trainings TO authenticated, service_role;
+GRANT ALL ON TABLE public.form_h_extension_programs TO authenticated, service_role;
 
 DO $$
 BEGIN
@@ -220,7 +219,7 @@ BEGIN
     WHERE sequence_schema = 'public'
       AND sequence_name = 'form_g_trainings_entry_id_seq'
   ) THEN
-    GRANT ALL ON SEQUENCE public.form_g_trainings_entry_id_seq TO anon, authenticated, service_role;
+    GRANT ALL ON SEQUENCE public.form_g_trainings_entry_id_seq TO authenticated, service_role;
   END IF;
 
   IF EXISTS (
@@ -229,7 +228,7 @@ BEGIN
     WHERE sequence_schema = 'public'
       AND sequence_name = 'form_h_extension_programs_entry_id_seq'
   ) THEN
-    GRANT ALL ON SEQUENCE public.form_h_extension_programs_entry_id_seq TO anon, authenticated, service_role;
+    GRANT ALL ON SEQUENCE public.form_h_extension_programs_entry_id_seq TO authenticated, service_role;
   END IF;
 END
 $$;
