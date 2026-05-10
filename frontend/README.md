@@ -18,28 +18,44 @@ A structured reporting tool designed to streamline the recording, organization, 
 ## Getting Started
 
 ### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) (v16 or higher) and `npm` installed on your machine.
+Make sure you have [Node.js](https://nodejs.org/) (v16 or higher), `npm`, and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-### Installation & Running the App
+### Local Supabase + Frontend setup
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
    cd cmsc127-project
+   ```
 
-2. **Install dependencies**
+2. **Start and reset local Supabase**
+   ```bash
+   supabase start
+   supabase db reset
+   ```
+
+3. **Get local API URL and anon key**
+   ```bash
+   supabase status
+   ```
+   Copy the API URL and anon key from the command output.
+
+4. **Configure frontend environment**
+   ```bash
+   cd frontend
+   cp .env.example .env.local
+   ```
+   Update `.env.local` values from `supabase status` if they differ from your local output.
+
+5. **Install dependencies and start the app**
    ```bash
    npm install
-
-3. **Start the development server**
-   ```bash
    npm run dev
+   ```
 
-4. **Open the app**
+6. **Open the app**
 
-   Open your browser and navigate to the local server address (default is usually port 5173 for Vite/React):
+   Open your browser and navigate to:
    ```text
    http://localhost:5173
    ```
-
-

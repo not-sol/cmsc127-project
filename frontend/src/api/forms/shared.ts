@@ -76,7 +76,21 @@ export async function insertFormRecord<TPayload extends Record<string, unknown>>
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    const messageParts = [
+      `Failed to insert into "${table}".`,
+      error.message,
+      error.details ? `Details: ${error.details}` : undefined,
+      error.hint ? `Hint: ${error.hint}` : undefined,
+      error.code ? `Code: ${error.code}` : undefined,
+    ].filter(Boolean)
+
+    console.error(`[supabase] insert failed for ${table}`, {
+      table,
+      payload,
+      error,
+    })
+
+    throw new Error(messageParts.join(" "))
   }
 
   return data as TPayload & { id: string }

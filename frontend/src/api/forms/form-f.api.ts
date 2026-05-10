@@ -17,8 +17,7 @@ export async function createFormFRecord({
   values,
   submittedBy,
 }: CreateFormFInput) {
-  return insertFormRecord(FORM_F_TABLE, {
-    submitted_by: submittedBy ?? null,
+  const basePayload = {
     type: values.type,
     award_grant_title: values.awardGrantTitle,
     source_awarding_body: values.sourceAwardingBody,
@@ -28,7 +27,28 @@ export async function createFormFRecord({
     attachments: serializeFiles(values.attachments),
     remarks: emptyStringToNull(values.remarks),
     related_kras: emptyStringToNull(values.relatedKras),
-  })
+  }
+
+  try {
+    return await insertFormRecord(FORM_F_TABLE, {
+      ...basePayload,
+      ...(submittedBy ? { submitted_by: submittedBy } : {}),
+    })
+  } catch (error) {
+    if (
+      submittedBy &&
+      error instanceof Error &&
+      error.message.includes("'submitted_by'") &&
+      error.message.includes("schema cache")
+    ) {
+      console.warn(
+        `[supabase] ${FORM_F_TABLE}: retrying insert without submitted_by due to schema cache mismatch.`
+      )
+      return insertFormRecord(FORM_F_TABLE, basePayload)
+    }
+
+    throw error
+  }
 }
 
 export const formFSupabaseInsertExample = `
