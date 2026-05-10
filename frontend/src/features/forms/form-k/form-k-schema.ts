@@ -12,6 +12,7 @@ const formKOtherSchema = z.object({
   date: z.date({
     message: "Date of accomplishment is required.",
   }),
+  endDate: z.date().optional(),
   supportingDocuments: z
     .array(z.instanceof(File))
     .min(1, "Please upload at least one supporting document."),

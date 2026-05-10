@@ -27,6 +27,7 @@ export default function FormKOther() {
         title: "",
         description: "",
         date: undefined,
+        endDate: undefined,
         supportingDocuments: [],
       }}
       onSubmit={onSubmit}
