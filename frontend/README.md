@@ -27,19 +27,26 @@ Make sure you have [Node.js](https://nodejs.org/) (v16 or higher) and `npm` inst
    git clone <repository-url>
    cd cmsc127-project
 
-2. **Install dependencies**
+2. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Fill in your Supabase values in `.env`:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`)
+
+3. **Install dependencies**
    ```bash
    npm install
 
-3. **Start the development server**
+4. **Start the development server**
    ```bash
    npm run dev
 
-4. **Open the app**
+5. **Open the app**
 
    Open your browser and navigate to the local server address (default is usually port 5173 for Vite/React):
    ```text
    http://localhost:5173
    ```
-
 
