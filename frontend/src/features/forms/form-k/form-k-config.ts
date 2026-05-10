@@ -26,6 +26,12 @@ export const formKOtherFields: FormFieldConfig<FormKOtherValues>[] = [
     description: "Select the date on which the accomplishment occurred.",
   },
   {
+    type: "date-picker",
+    name: "endDate",
+    label: "End Date",
+    description: "Select the end date if applicable.",
+  },
+  {
     type: "file",
     name: "supportingDocuments",
     label: "Supporting Documents",
