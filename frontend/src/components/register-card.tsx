@@ -31,14 +31,16 @@ export default function RegisterCard() {
       email: "",
       password: "",
       confirmPassword: "",
+      firstName: "",
+      lastName: "",
     },
   });
 
   async function onSubmit(data: RegisterFormValues) {
     try {
       const result = await signUp(data);
-      // If session is null, it means email confirmation is required
-      if (result.user && !result.session) {
+      // If result is returned, it means registration was initiated
+      if (result?.user) {
         setIsSuccess(true);
       }
     } catch (error) {
@@ -76,12 +78,37 @@ export default function RegisterCard() {
 ...
 
         <CardContent className="flex flex-col gap-4 px-8">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                placeholder="Jane"
+                {...register("firstName")}
+              />
+              {errors.firstName && (
+                <p className="text-xs text-destructive">{errors.firstName.message}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                placeholder="Doe"
+                {...register("lastName")}
+              />
+              {errors.lastName && (
+                <p className="text-xs text-destructive">{errors.lastName.message}</p>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">UP Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="email"
+              placeholder="email@up.edu.ph"
               {...register("email")}
             />
             {errors.email && (
