@@ -25,11 +25,6 @@ export async function createFacultyProfile({
     .single();
 
   if (error) {
-    // If there's an error, we should handle it gracefully
-    // Check if it's a duplicate (though unlikely on sign-up)
-    if (error.code === "23505") {
-      return data;
-    }
     throw error;
   }
 
