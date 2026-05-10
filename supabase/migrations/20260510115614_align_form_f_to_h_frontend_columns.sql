@@ -1,4 +1,4 @@
--- Align Form F-H schema with frontend Supabase insert payloads.
+-- Align Forms F through H schema with frontend Supabase insert payloads.
 
 DO $$
 BEGIN
@@ -39,6 +39,8 @@ END
 $$;
 
 ALTER TABLE public.form_f_awards_and_grants
+  -- Frontend inserts directly into form tables and does not create accomplishment_entries rows first.
+  -- Dropping this FK keeps local/dev inserts compatible with current frontend behavior.
   DROP CONSTRAINT IF EXISTS form_f_awards_and_grants_entry_id_fkey,
   ADD COLUMN IF NOT EXISTS submitted_by text,
   ADD COLUMN IF NOT EXISTS type text,
