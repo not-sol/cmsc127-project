@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS public.form_g_trainings (
   related_kras text
 );
 
+-- Keep this for environments where form_g_trainings already exists with partial/legacy columns.
 ALTER TABLE public.form_g_trainings
   ADD COLUMN IF NOT EXISTS submitted_by text,
   ADD COLUMN IF NOT EXISTS contributing_unit text,
@@ -164,6 +165,7 @@ CREATE TABLE IF NOT EXISTS public.form_h_extension_programs (
   remarks text
 );
 
+-- Keep this for environments where form_h_extension_programs already exists with partial/legacy columns.
 ALTER TABLE public.form_h_extension_programs
   ADD COLUMN IF NOT EXISTS submitted_by text,
   ADD COLUMN IF NOT EXISTS contributing_unit text,
