@@ -19,6 +19,7 @@ import FormBGrantsAndFellowshipsPage from "@/pages/forms/FormBPage";
 import FormCOralOrPosterPage from "@/pages/forms/FormCPage";
 import FormDPage from "@/pages/forms/FormDPage";
 import ProtectedRoute from "@/components/protected-route";
+import NewReportPage from "@/pages/NewReportPage";
 
 export const router = createBrowserRouter([
   {
@@ -49,7 +50,11 @@ export const router = createBrowserRouter([
     element: <ReportsPage />,
   },
   {
-    path: "/reports/new",
+    path: "/reports/create-report",
+    element: <NewReportPage />,
+  },
+  {
+    path: "/reports/create-report/new-entry",
     element: <NewEntryPage />,
   },
   {
