@@ -5,8 +5,13 @@ import { ChevronRight } from "lucide-react"
 function Breadcrumb() {
   return (
     <div className="flex items-center gap-1.5 text-xs text-white/80">
-      <a href="/report" className="hover:text-white transition-colors">
+      <a href="/reports" className="hover:text-white transition-colors">
         My Reports
+      </a>
+      <ChevronRight size={12} />
+
+      <a href="/reports/create-report" className="hover:text-white transition-colors">
+        Create/Edit Report
       </a>
       <ChevronRight size={12} />
       <span className="text-white">
