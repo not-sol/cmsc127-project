@@ -44,6 +44,173 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
+
+CREATE TYPE "public"."conference_location" AS ENUM (
+    'institutionalInhouse',
+    'localRegional',
+    'national',
+    'international'
+);
+
+
+ALTER TYPE "public"."conference_location" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."contributing_unit" AS ENUM (
+    'csmod',
+    'dbses',
+    'dfsc',
+    'dmpcs'
+);
+
+
+ALTER TYPE "public"."contributing_unit" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."event_scope" AS ENUM (
+    'institutional_in_house',
+    'local_regional',
+    'national',
+    'international'
+);
+
+
+ALTER TYPE "public"."event_scope" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."event_type" AS ENUM (
+    'conference',
+    'forum',
+    'seminar',
+    'workshop'
+);
+
+
+ALTER TYPE "public"."event_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."majority_source_of_funds" AS ENUM (
+    'genFundCurYr',
+    'genFundSup',
+    'revolFund',
+    'intGenFund',
+    'rpGovtTrustFund',
+    'rpGovtDirFund',
+    'rpPrivTrustFund',
+    'forTrustFund',
+    'forDirFund'
+);
+
+
+ALTER TYPE "public"."majority_source_of_funds" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."output_type" AS ENUM (
+    'performing_arts',
+    'visual_arts',
+    'literary_work',
+    'textbook',
+    'computer_software',
+    'product_process_method_technology_innovation',
+    'other'
+);
+
+
+ALTER TYPE "public"."output_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."patent_type" AS ENUM (
+    'invention',
+    'utilityModel',
+    'industrialDesign'
+);
+
+
+ALTER TYPE "public"."patent_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."presentation_type" AS ENUM (
+    'oral',
+    'poster'
+);
+
+
+ALTER TYPE "public"."presentation_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."public_event_type" AS ENUM (
+    'exhibition',
+    'performance',
+    'publication'
+);
+
+
+ALTER TYPE "public"."public_event_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."publication_type" AS ENUM (
+    'book',
+    'bookChapter',
+    'journalArticle',
+    'peerReviewed',
+    'conferencePaper',
+    'other'
+);
+
+
+ALTER TYPE "public"."publication_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."publisher_location" AS ENUM (
+    'Local',
+    'International'
+);
+
+
+ALTER TYPE "public"."publisher_location" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."publisher_type" AS ENUM (
+    'Commercial',
+    'Learned Society / Association',
+    'University Press'
+);
+
+
+ALTER TYPE "public"."publisher_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."research_type" AS ENUM (
+    'basic',
+    'applied',
+    'policy'
+);
+
+
+ALTER TYPE "public"."research_type" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."research_utilization_output" AS ENUM (
+    'nAUtil',
+    'techDev',
+    'servProv',
+    'endProduct'
+);
+
+
+ALTER TYPE "public"."research_utilization_output" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."utilization_research_output" AS ENUM (
+    'not_applicable',
+    'development_of_technology',
+    'service_provision',
+    'end_product'
+);
+
+
+ALTER TYPE "public"."utilization_research_output" OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -54,7 +221,11 @@ CREATE TABLE IF NOT EXISTS "public"."accomplishment_entries" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "title" "text",
     "description" "text",
+    "venue" "text",
+    "participation" "text",
     "author" "text",
+    "start_date" "date",
+    "end_date" "date",
     "report_id" bigint,
     "form_type_id" bigint
 );
@@ -234,11 +405,11 @@ ALTER TABLE "public"."isip_awards_forms" ALTER COLUMN "entry_id" ADD GENERATED B
 
 CREATE TABLE IF NOT EXISTS "public"."isip_creative_work_forms" (
     "entry_id" bigint NOT NULL,
-    "creative_work_title" "text",
+    "creative_work_title" "text" NOT NULL,
     "other_type" "text",
-    "event_start_date" "date",
-    "event_end_date" "date",
-    "research_proof" "text",
+    "event_start_date" "date" NOT NULL,
+    "event_end_date" "date" NOT NULL,
+    "research_proof" "text" NOT NULL,
     "remarks" "text",
     "related_kras" "text"
 );
@@ -293,10 +464,10 @@ ALTER TABLE "public"."isip_extension_programs_forms" ALTER COLUMN "entry_id" ADD
 
 CREATE TABLE IF NOT EXISTS "public"."isip_oral_forms" (
     "entry_id" bigint NOT NULL,
-    "paper_title" "text",
-    "presentation_type" "text",
-    "event_type" "text",
-    "attachments" "text",
+    "paper_title" "text" NOT NULL,
+    "presentation_type" "public"."presentation_type" NOT NULL,
+    "event_type" "public"."event_type" NOT NULL,
+    "attachments" "text" NOT NULL,
     "remarks" "text",
     "related_kras" "text"
 );
@@ -373,7 +544,7 @@ ALTER TABLE "public"."isip_partnership_forms" ALTER COLUMN "entry_id" ADD GENERA
 
 CREATE TABLE IF NOT EXISTS "public"."isip_patents_forms" (
     "entry_id" bigint NOT NULL,
-    "attachments" "text",
+    "attachments" "text" NOT NULL,
     "remarks" "text"
 );
 
@@ -394,18 +565,18 @@ ALTER TABLE "public"."isip_patents_forms" ALTER COLUMN "entry_id" ADD GENERATED 
 
 CREATE TABLE IF NOT EXISTS "public"."isip_publication_forms" (
     "entry_id" bigint NOT NULL,
-    "publication_type" "text",
-    "publication_title" "text",
-    "publication_author" "text",
-    "publication_date_published" "date",
-    "publication_name" "text",
-    "isi" "text",
-    "scopus" "text",
-    "pubmed" "text",
-    "ched_recognized" "text",
-    "peer_reviewed" "text",
+    "publication_type" "public"."publication_type" NOT NULL,
+    "publication_title" "text" NOT NULL,
+    "publication_author" "text" NOT NULL,
+    "publication_date_published" "date" NOT NULL,
+    "publication_name" "text" NOT NULL,
+    "isi" boolean NOT NULL,
+    "scopus" boolean NOT NULL,
+    "pubmed" boolean NOT NULL,
+    "ched_recognized" boolean NOT NULL,
+    "peer_reviewed" boolean NOT NULL,
     "other_reputable_database" "text",
-    "publication_proof" "text",
+    "publication_proof" "text" NOT NULL,
     "remarks" "text",
     "related_kras" "text"
 );
@@ -427,16 +598,16 @@ ALTER TABLE "public"."isip_publication_forms" ALTER COLUMN "entry_id" ADD GENERA
 
 CREATE TABLE IF NOT EXISTS "public"."isip_research_forms" (
     "entry_id" bigint NOT NULL,
-    "research_title" "text",
-    "research_type" "text",
-    "start_date" "date",
+    "research_title" "text" NOT NULL,
+    "research_type" "public"."research_type" NOT NULL,
+    "start_date" "date" NOT NULL,
     "end_date" "date",
-    "researcher_name" "text",
-    "research_grant" numeric,
-    "funding_amount" numeric,
-    "total_funding" numeric,
+    "researcher_name" "text" NOT NULL,
+    "research_grant" numeric NOT NULL,
+    "funding_amount" numeric NOT NULL,
+    "total_funding" numeric NOT NULL,
     "other_fund_source" "text",
-    "attachments" "text",
+    "attachments" "text" NOT NULL,
     "remarks" "text",
     "related_kras" "text"
 );
@@ -485,16 +656,16 @@ ALTER TABLE "public"."isip_trainings_forms" ALTER COLUMN "entry_id" ADD GENERATE
 
 CREATE TABLE IF NOT EXISTS "public"."pbms_creative_work_forms" (
     "entry_id" bigint NOT NULL,
-    "linked_research" "text",
-    "output_type" "text",
-    "public_event_type" "text",
-    "event_type" "text",
-    "organizer_name" "text",
-    "event_scope" "text",
-    "event_venue" "text",
-    "date_released" "date",
-    "utilization_research_output" "text",
-    "utilization_proof" "text"
+    "linked_research" "text" NOT NULL,
+    "output_type" "public"."output_type" NOT NULL,
+    "public_event_type" "public"."public_event_type" NOT NULL,
+    "organizer_name" "text" NOT NULL,
+    "event_scope" "public"."event_scope" NOT NULL,
+    "event_venue" "text" NOT NULL,
+    "date_released" "date" NOT NULL,
+    "utilization_research_output" "public"."utilization_research_output" NOT NULL,
+    "utilization_proof" "text" NOT NULL,
+    "event_title" "text" NOT NULL
 );
 
 
@@ -537,14 +708,14 @@ ALTER TABLE "public"."pbms_extension_programs_forms" ALTER COLUMN "entry_id" ADD
 
 CREATE TABLE IF NOT EXISTS "public"."pbms_oral_forms" (
     "entry_id" bigint NOT NULL,
-    "linked_research" "text",
-    "conference_title" "text",
-    "organizer_name" "text",
-    "conference_location" "text",
-    "venue" "text",
-    "conference_start_date" "date",
+    "linked_research" "text" NOT NULL,
+    "conference_title" "text" NOT NULL,
+    "organizer_name" "text" NOT NULL,
+    "conference_location" "public"."conference_location" NOT NULL,
+    "venue" "text" NOT NULL,
+    "conference_start_date" "date" NOT NULL,
     "conference_end_date" "date",
-    "presentation_date" "date"
+    "presentation_date" "date" NOT NULL
 );
 
 
@@ -610,17 +781,17 @@ ALTER TABLE "public"."pbms_partnerships_forms" ALTER COLUMN "entry_id" ADD GENER
 
 CREATE TABLE IF NOT EXISTS "public"."pbms_patents_forms" (
     "entry_id" bigint NOT NULL,
-    "linked_research" "text",
-    "patent_title" "text",
-    "patent_type" "text",
-    "application_no" numeric,
-    "inventor_name" "text",
-    "applicant_name" "text",
-    "publication_date" "date",
+    "linked_research" "text" NOT NULL,
+    "patent_title" "text" NOT NULL,
+    "patent_type" "public"."patent_type" NOT NULL,
+    "application_no" numeric NOT NULL,
+    "inventor_name" "text" NOT NULL,
+    "applicant_name" "text" NOT NULL,
+    "publication_date" "date" NOT NULL,
     "grant_date" "date",
     "registration_no" numeric,
     "commercial_product_name" "text",
-    "research_utilization_output" "text"
+    "research_utilization_output" "public"."research_utilization_output" NOT NULL
 );
 
 
@@ -639,24 +810,24 @@ ALTER TABLE "public"."pbms_patents_forms" ALTER COLUMN "entry_id" ADD GENERATED 
 
 
 CREATE TABLE IF NOT EXISTS "public"."pbms_publication_forms" (
-    "form_id" bigint NOT NULL,
-    "publisher_name" "text",
-    "publisher_type" "text",
-    "publisher_location" "text",
+    "publisher_name" "text" NOT NULL,
+    "publisher_type" "public"."publisher_type" NOT NULL,
+    "publisher_location" "public"."publisher_location" NOT NULL,
     "editor_name" "text",
     "volume_issue_no" "text",
-    "doi" "text",
+    "doi" "text" NOT NULL,
     "isbn" "text",
-    "number_of_citation" "text",
-    "utilization_proof" "text"
+    "number_of_citation" numeric,
+    "utilization_proof" "text",
+    "entry_id" bigint NOT NULL
 );
 
 
 ALTER TABLE "public"."pbms_publication_forms" OWNER TO "postgres";
 
 
-ALTER TABLE "public"."pbms_publication_forms" ALTER COLUMN "form_id" ADD GENERATED BY DEFAULT AS IDENTITY (
-    SEQUENCE NAME "public"."pbms_publication_forms_form_id_seq"
+ALTER TABLE "public"."pbms_publication_forms" ALTER COLUMN "entry_id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."pbms_publication_forms_entry_id_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -668,9 +839,9 @@ ALTER TABLE "public"."pbms_publication_forms" ALTER COLUMN "form_id" ADD GENERAT
 
 CREATE TABLE IF NOT EXISTS "public"."pbms_research_forms" (
     "entry_id" bigint NOT NULL,
-    "contributing_unit" "text",
-    "original_timeframe_months" smallint,
-    "majority_source_of_funds" "text"
+    "contributing_unit" "public"."contributing_unit" NOT NULL,
+    "original_timeframe_months" numeric NOT NULL,
+    "majority_source_of_funds" "public"."majority_source_of_funds" NOT NULL
 );
 
 
@@ -882,7 +1053,7 @@ ALTER TABLE ONLY "public"."pbms_patents_forms"
 
 
 ALTER TABLE ONLY "public"."pbms_publication_forms"
-    ADD CONSTRAINT "pbms_publication_forms_pkey" PRIMARY KEY ("form_id");
+    ADD CONSTRAINT "pbms_publication_forms_pkey" PRIMARY KEY ("entry_id");
 
 
 
@@ -1022,7 +1193,7 @@ ALTER TABLE ONLY "public"."pbms_patents_forms"
 
 
 ALTER TABLE ONLY "public"."pbms_publication_forms"
-    ADD CONSTRAINT "pbms_publication_forms_form_id_fkey" FOREIGN KEY ("form_id") REFERENCES "public"."accomplishment_entries"("entry_id");
+    ADD CONSTRAINT "pbms_publication_forms_entry_id_fkey" FOREIGN KEY ("entry_id") REFERENCES "public"."accomplishment_entries"("entry_id");
 
 
 
@@ -1048,6 +1219,18 @@ ALTER TABLE ONLY "public"."reviews"
 
 ALTER TABLE ONLY "public"."supporting_documents"
     ADD CONSTRAINT "supporting_documents_entry_id_fkey" FOREIGN KEY ("entry_id") REFERENCES "public"."accomplishment_entries"("entry_id");
+
+
+
+CREATE POLICY "Enable insert for authenticated users only" ON "public"."faculties" FOR INSERT TO "authenticated" WITH CHECK (true);
+
+
+
+CREATE POLICY "Enable select for authenticated users only" ON "public"."faculties" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Enable update for authenticated users only" ON "public"."faculties" FOR UPDATE TO "authenticated" USING (true);
 
 
 
@@ -1585,9 +1768,9 @@ GRANT ALL ON TABLE "public"."pbms_publication_forms" TO "service_role";
 
 
 
-GRANT ALL ON SEQUENCE "public"."pbms_publication_forms_form_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."pbms_publication_forms_form_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."pbms_publication_forms_form_id_seq" TO "service_role";
+GRANT ALL ON SEQUENCE "public"."pbms_publication_forms_entry_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."pbms_publication_forms_entry_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."pbms_publication_forms_entry_id_seq" TO "service_role";
 
 
 
@@ -1701,5 +1884,40 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 drop extension if exists "pg_net";
+
+
+  create policy "allow authenticated uploads ftos4x_0"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to authenticated
+with check ((bucket_id = 'publication_proof'::text));
+
+
+
+  create policy "allow authenticated uploads ftos4x_1"
+  on "storage"."objects"
+  as permissive
+  for select
+  to authenticated
+using ((bucket_id = 'publication_proof'::text));
+
+
+
+  create policy "allow authenticated uploads ftos4x_2"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to authenticated
+using ((bucket_id = 'publication_proof'::text));
+
+
+
+  create policy "allow authenticated uploads ftos4x_3"
+  on "storage"."objects"
+  as permissive
+  for update
+  to authenticated
+using ((bucket_id = 'publication_proof'::text));
 
 

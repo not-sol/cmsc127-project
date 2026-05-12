@@ -446,13 +446,6 @@ SELECT pg_catalog.setval('"public"."export_records_export_id_seq"', 1, false);
 
 
 --
--- Name: faculties_faculty_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
-SELECT pg_catalog.setval('"public"."faculties_faculty_id_seq"', 1, false);
-
-
---
 -- Name: form_types_form_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -579,10 +572,10 @@ SELECT pg_catalog.setval('"public"."pbms_patents_forms_entry_id_seq"', 1, false)
 
 
 --
--- Name: pbms_publication_forms_form_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: pbms_publication_forms_entry_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('"public"."pbms_publication_forms_form_id_seq"', 1, false);
+SELECT pg_catalog.setval('"public"."pbms_publication_forms_entry_id_seq"', 1, false);
 
 
 --
