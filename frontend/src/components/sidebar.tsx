@@ -5,8 +5,8 @@ import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { icon: LayoutGrid, label: "My Reports", href: "/reports" },
-  { icon: Plus, label: "Create New Report", href: "/reports/new" },
-  { icon: Download, label: "Export Records", href: "/export" },
+  { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
+  { icon: Download, label: "Export Records", href: "/exports" },
 ];
 
 export default function Sidebar() {

@@ -21,6 +21,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Filter, Plus, Eye, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const sampleReports = [
   {
@@ -36,6 +37,7 @@ const sampleReports = [
 
 export default function ReportsPage() {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-screen bg-muted/40">
@@ -80,7 +82,8 @@ export default function ReportsPage() {
               <div className="flex-1" />
 
               {/* Add New Report */}
-              <Button size="sm" className="h-8 gap-1.5 text-sm bg-foreground text-background hover:bg-foreground/90">
+              <Button size="sm" className="h-8 gap-1.5 text-sm bg-foreground text-background hover:bg-foreground/90"
+              onClick={() => navigate('/reports/create-report')}>
                 <Plus size={13} />
                 Add New Report
               </Button>
