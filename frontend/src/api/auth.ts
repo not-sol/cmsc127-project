@@ -1,16 +1,25 @@
 import { supabase } from '@/lib/supabase/client'
 import type { LoginFormValues, RegisterFormValues } from '@/lib/validations/auth'
 
-export async function signUpNewUser({ email, password }: RegisterFormValues) {
+export async function signUpNewUser({
+  email,
+  password,
+  firstName,
+  lastName,
+}: RegisterFormValues) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${window.location.origin}/login`,
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+      },
     },
   })
 
   if (error) throw error
+
   return data
 }
 
