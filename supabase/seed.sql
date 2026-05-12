@@ -181,7 +181,7 @@ SET row_security = off;
 -- Data for Name: accomplishment_entries; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."accomplishment_entries" ("entry_id", "created_at", "title", "description", "participation", "author", "start_date", "end_date", "report_id", "form_type_id") VALUES
+INSERT INTO "public"."accomplishment_entries" ("entry_id", "created_at", "title", "description", "venue", "participation", "author", "start_date", "end_date", "report_id", "form_type_id") VALUES
 	(1, '2026-05-09 16:09:02.55422+00', 'sus', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 	(2, '2026-05-09 16:09:28.810231+00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 	(3, '2026-05-09 16:09:45.840192+00', NULL, NULL, 'Hell, Michigan', NULL, NULL, NULL, NULL, NULL, NULL),
@@ -446,13 +446,6 @@ SELECT pg_catalog.setval('"public"."export_records_export_id_seq"', 1, false);
 
 
 --
--- Name: faculties_faculty_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
-SELECT pg_catalog.setval('"public"."faculties_faculty_id_seq"', 1, false);
-
-
---
 -- Name: form_types_form_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -579,10 +572,10 @@ SELECT pg_catalog.setval('"public"."pbms_patents_forms_entry_id_seq"', 1, false)
 
 
 --
--- Name: pbms_publication_forms_form_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: pbms_publication_forms_entry_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('"public"."pbms_publication_forms_form_id_seq"', 1, false);
+SELECT pg_catalog.setval('"public"."pbms_publication_forms_entry_id_seq"', 1, false);
 
 
 --

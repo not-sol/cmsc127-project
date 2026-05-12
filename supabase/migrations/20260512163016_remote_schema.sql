@@ -221,7 +221,11 @@ CREATE TABLE IF NOT EXISTS "public"."accomplishment_entries" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "title" "text",
     "description" "text",
+    "venue" "text",
+    "participation" "text",
     "author" "text",
+    "start_date" "date",
+    "end_date" "date",
     "report_id" bigint,
     "form_type_id" bigint
 );
@@ -1915,6 +1919,5 @@ using ((bucket_id = 'publication_proof'::text));
   for update
   to authenticated
 using ((bucket_id = 'publication_proof'::text));
-
 
 
