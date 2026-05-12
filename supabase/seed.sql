@@ -579,10 +579,10 @@ SELECT pg_catalog.setval('"public"."pbms_patents_forms_entry_id_seq"', 1, false)
 
 
 --
--- Name: pbms_publication_forms_form_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: pbms_publication_forms_entry_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('"public"."pbms_publication_forms_form_id_seq"', 1, false);
+SELECT pg_catalog.setval('"public"."pbms_publication_forms_entry_id_seq"', 1, false);
 
 
 --
