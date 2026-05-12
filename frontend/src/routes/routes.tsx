@@ -18,7 +18,6 @@ import FormAPublicationsPage from "@/pages/forms/FormAPage";
 import FormBGrantsAndFellowshipsPage from "@/pages/forms/FormBPage";
 import FormCOralOrPosterPage from "@/pages/forms/FormCPage";
 import FormDPage from "@/pages/forms/FormDPage";
-import ProtectedRoute from "@/components/protected-route";
 
 export const router = createBrowserRouter([
   {
