@@ -39,79 +39,79 @@ export const router = createBrowserRouter([
     path: "/reset-password",
     element: <ResetPasswordPage />,
   },
-  // {
-  //   element: <ProtectedRoute />,
-  //   children: [
   {
-    path: "/profile",
-    element: <ProfilePage />,
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: "/profile",
+        element: <ProfilePage />,
+      },
+      {
+        path: "/reports",
+        element: <ReportsPage />,
+      },
+      {
+        path: "/reports/create-report",
+        element: <NewReportPage />,
+      },
+      {
+        path: "/reports/create-report/new-entry",
+        element: <NewEntryPage />,
+      },
+      {
+        path: "/exports",
+        element: <ExportsRecordsPage />,
+      },
+      {
+        path: "/test-form",
+        element: <TestForm />,
+      },
+      {
+        path: "/form-k",
+        element: <FormKOtherPage />,
+      },
+      {
+        path: "/form-j",
+        element: <FormJAuthorshipPage />,
+      },
+      {
+        path: "/form-i",
+        element: <FormIPartnershipPage />,
+      },
+      {
+        path: "/form-g",
+        element: <FormGPage />,
+      },
+      {
+        path: "/form-h",
+        element: <FormHPage />,
+      },
+      {
+        path: "/form-e",
+        element: <FormEPage />,
+      },
+      {
+        path: "/form-f",
+        element: <FormFPage />,
+      },
+      {
+        path: "/form-a",
+        element: <FormAPublicationsPage />,
+      },
+      {
+        path: "/form-b",
+        element: <FormBGrantsAndFellowshipsPage />,
+      },
+      {
+        path: "/form-c",
+        element: <FormCOralOrPosterPage />,
+      },
+      {
+        path: "/form-d",
+        element: <FormDPage />,
+      },
+    ],
   },
-  {
-    path: "/reports",
-    element: <ReportsPage />,
-  },
-  {
-    path: "/reports/create-report",
-    element: <NewReportPage />,
-  },
-  {
-    path: "/reports/create-report/new-entry",
-    element: <NewEntryPage />,
-  },
-  {
-    path: "/exports",
-    element: <ExportsRecordsPage />,
-  },
-  {
-    path: "/test-form",
-    element: <TestForm />,
-  },
-  {
-    path: "/form-k",
-    element: <FormKOtherPage />,
-  },
-  {
-    path: "/form-j",
-    element: <FormJAuthorshipPage />,
-  },
-  {
-    path: "/form-i",
-    element: <FormIPartnershipPage />,
-  },
-  {
-    path: "/form-g",
-    element: <FormGPage />,
-  },
-  {
-    path: "/form-h",
-    element: <FormHPage />,
-  },
-  {
-    path: "/form-e",
-    element: <FormEPage />,
-  },
-  {
-    path: "/form-f",
-    element: <FormFPage />,
-  },
-  {
-    path: "/form-a",
-    element: <FormAPublicationsPage />,
-  },
-  {
-    path: "/form-b",
-    element: <FormBGrantsAndFellowshipsPage />,
-  },
-  {
-    path: "/form-c",
-    element: <FormCOralOrPosterPage />,
-  },
-  {
-    path: "/form-d",
-    element: <FormDPage />,
-  },
-  //   ],
-  // },
   {
     path: "/",
     element: <Navigate to="/reports" replace />,
