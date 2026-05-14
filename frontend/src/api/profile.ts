@@ -7,6 +7,7 @@ export interface UserProfile {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  department_id: number | null;
   role: AppRole;
 }
 
