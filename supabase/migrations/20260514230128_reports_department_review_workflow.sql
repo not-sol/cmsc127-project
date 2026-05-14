@@ -1,5 +1,4 @@
 set check_function_bodies = off;
-
 insert into public.departments (department_name, college_name)
 select department_name, 'College of Science'
 from (
@@ -14,38 +13,30 @@ where not exists (
   from public.departments d
   where d.department_name = allowed_departments.department_name
 );
-
 create unique index if not exists departments_department_name_key
   on public.departments (department_name);
-
 alter table public.accomplishment_reports
   alter column faculty_id drop default;
-
 alter table public.accomplishment_reports
   add column if not exists department_id bigint;
-
 alter table public.accomplishment_reports
   drop constraint if exists accomplishment_reports_department_id_fkey,
   add constraint accomplishment_reports_department_id_fkey
     foreign key (department_id) references public.departments(department_id)
     on update cascade
     on delete set null;
-
 alter table public.accomplishment_reports
   drop constraint if exists accomplishment_reports_status_check,
   add constraint accomplishment_reports_status_check
     check (status in ('draft', 'pending', 'reviewed', 'archived'));
-
 alter table public.reviews
   alter column reviewed_by drop default,
   alter column review_date set default current_date,
   alter column status type text using status::text;
-
 alter table public.reviews
   drop constraint if exists reviews_status_check,
   add constraint reviews_status_check
     check (status in ('approved', 'partially_approved'));
-
 create or replace function public.current_user_department_id()
 returns bigint
 language sql
@@ -57,7 +48,6 @@ as $$
   from public.users u
   where u.id = auth.uid();
 $$;
-
 create or replace function public.is_faculty()
 returns boolean
 language sql
@@ -67,7 +57,6 @@ set search_path = public
 as $$
   select public.current_user_role() in ('faculty', 'department_chair', 'admin');
 $$;
-
 create or replace function public.can_manage_department(p_department_id bigint)
 returns boolean
 language sql
@@ -82,7 +71,6 @@ as $$
       and p_department_id = public.current_user_department_id()
     );
 $$;
-
 create or replace function public.report_department_id(p_report_id bigint)
 returns bigint
 language sql
@@ -95,7 +83,6 @@ as $$
   left join public.users u on u.id = ar.faculty_id
   where ar.report_id = p_report_id;
 $$;
-
 create or replace function public.can_read_report(p_report_id bigint)
 returns boolean
 language sql
@@ -119,7 +106,6 @@ as $$
         )
     );
 $$;
-
 create or replace function public.can_edit_report(p_report_id bigint)
 returns boolean
 language sql
@@ -142,7 +128,6 @@ as $$
         )
     );
 $$;
-
 create or replace function public.can_read_review(p_review_id bigint)
 returns boolean
 language sql
@@ -166,7 +151,6 @@ as $$
         )
     );
 $$;
-
 create or replace function public.can_edit_review(p_review_id bigint)
 returns boolean
 language sql
@@ -189,7 +173,6 @@ as $$
         )
     );
 $$;
-
 create or replace function public.ensure_user_profile()
 returns public.users
 language plpgsql
@@ -258,7 +241,6 @@ begin
   return app_user;
 end;
 $$;
-
 create or replace function public.review_accomplishment_report(
   p_report_id bigint,
   p_status text,
@@ -333,18 +315,15 @@ begin
   return created_review;
 end;
 $$;
-
 revoke all on table public.users from anon;
 revoke all on table public.accomplishment_reports from anon;
 revoke all on table public.reviews from anon;
 revoke all on table public.departments from anon;
-
 grant select on table public.departments to authenticated;
 grant select, insert, update, delete on table public.accomplishment_reports to authenticated;
 grant select, update on table public.reviews to authenticated;
 grant usage, select on sequence public.reviews_reviews_id_seq to authenticated;
 grant select, update, delete on table public.users to authenticated;
-
 revoke execute on function public.current_user_department_id() from public, anon;
 revoke execute on function public.is_faculty() from public, anon;
 revoke execute on function public.can_manage_department(bigint) from public, anon;
@@ -354,7 +333,6 @@ revoke execute on function public.can_edit_report(bigint) from public, anon;
 revoke execute on function public.can_read_review(bigint) from public, anon;
 revoke execute on function public.can_edit_review(bigint) from public, anon;
 revoke execute on function public.review_accomplishment_report(bigint, text, text) from public, anon;
-
 grant execute on function public.current_user_department_id() to authenticated;
 grant execute on function public.is_faculty() to authenticated;
 grant execute on function public.can_manage_department(bigint) to authenticated;
@@ -364,7 +342,6 @@ grant execute on function public.can_edit_report(bigint) to authenticated;
 grant execute on function public.can_read_review(bigint) to authenticated;
 grant execute on function public.can_edit_review(bigint) to authenticated;
 grant execute on function public.review_accomplishment_report(bigint, text, text) to authenticated;
-
 drop policy if exists "Verified users can read accomplishment_reports" on public.accomplishment_reports;
 drop policy if exists "Verified users can insert accomplishment_reports" on public.accomplishment_reports;
 drop policy if exists "Verified users can update accomplishment_reports" on public.accomplishment_reports;
@@ -373,13 +350,11 @@ drop policy if exists "Faculty and reviewers can read reports" on public.accompl
 drop policy if exists "Faculty can create own reports" on public.accomplishment_reports;
 drop policy if exists "Faculty and reviewers can update reports" on public.accomplishment_reports;
 drop policy if exists "Faculty and reviewers can delete reports" on public.accomplishment_reports;
-
 create policy "Faculty and reviewers can read reports"
   on public.accomplishment_reports
   for select
   to authenticated
   using (public.can_read_report(report_id));
-
 create policy "Faculty can create own reports"
   on public.accomplishment_reports
   for insert
@@ -394,7 +369,6 @@ create policy "Faculty can create own reports"
       )
     )
   );
-
 create policy "Faculty and reviewers can update reports"
   on public.accomplishment_reports
   for update
@@ -408,42 +382,35 @@ create policy "Faculty and reviewers can update reports"
       or public.can_manage_department(public.report_department_id(report_id))
     )
   );
-
 create policy "Faculty and reviewers can delete reports"
   on public.accomplishment_reports
   for delete
   to authenticated
   using (public.can_edit_report(report_id));
-
 drop policy if exists "Verified users can read reviews" on public.reviews;
 drop policy if exists "Verified users can insert reviews" on public.reviews;
 drop policy if exists "Verified users can update reviews" on public.reviews;
 drop policy if exists "Verified users can delete reviews" on public.reviews;
 drop policy if exists "Faculty and reviewers can read reviews" on public.reviews;
 drop policy if exists "Reviewers can update reviews" on public.reviews;
-
 create policy "Faculty and reviewers can read reviews"
   on public.reviews
   for select
   to authenticated
   using (public.can_read_review(reviews_id));
-
 create policy "Reviewers can update reviews"
   on public.reviews
   for update
   to authenticated
   using (public.can_edit_review(reviews_id))
   with check (public.can_edit_review(reviews_id));
-
 drop policy if exists "Admins can delete users" on public.users;
 drop policy if exists "Users can update own profile" on public.users;
-
 create policy "Admins can delete users"
   on public.users
   for delete
   to authenticated
   using (public.is_admin());
-
 create policy "Users can update own profile"
   on public.users
   for update
