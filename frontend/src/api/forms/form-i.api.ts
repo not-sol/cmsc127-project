@@ -13,6 +13,15 @@ export async function createFormIRecord({ values }: CreateFormIInput) {
   const { data: isipData, error: isipError } = await supabase
     .from("isip_partnerships_forms")
     .insert({
+      partnership_title: values.titleOfExtensionPartnership,
+      work_scope: values.scopeOfWork,
+      training_courses: values.trainingCourses === "yes",
+      advisory_service: values.technicalAdvisoryService === "yes",
+      information_dissemination: values.informationDissemination === "yes",
+      consultancy: values.consultancy === "yes",
+      community_outreach: values.communityOutreach === "yes",
+      knowledge_transfer: values.technologyKnowledgeTransfer === "yes",
+      organizing_events: values.organizingEvents === "yes",
       remarks: emptyStringToNull(values.remarks),
     })
     .select("entry_id")
@@ -26,20 +35,11 @@ export async function createFormIRecord({ values }: CreateFormIInput) {
     .insert({
       entry_id: isipData.entry_id,
       contributing_unit: values.contributingUnit,
-      partnership_title: values.titleOfExtensionPartnership,
-      work_scope: values.scopeOfWork,
-      stakeholder_name: values.nameOfPartnerStakeholder,
+      partner_stakeholder_name: values.nameOfPartnerStakeholder,
       stakeholder_category: values.stakeholderCategory,
-      has_training_courses: values.trainingCourses === "yes",
-      has_technical_advisory: values.technicalAdvisoryService === "yes",
-      has_info_dissemination: values.informationDissemination === "yes",
-      has_consultancy: values.consultancy === "yes",
-      has_community_outreach: values.communityOutreach === "yes",
-      has_tech_transfer: values.technologyKnowledgeTransfer === "yes",
-      has_organizing_events: values.organizingEvents === "yes",
-      agreement_type: values.typeOfPartnershipAgreement,
-      start_date: toIsoDate(values.partnershipEffectivityStartDate),
-      end_date: toIsoDate(values.partnershipEffectivityEndDate),
+      partnership_agreement_type: values.typeOfPartnershipAgreement,
+      partnership_effectivity_start_date: toIsoDate(values.partnershipEffectivityStartDate),
+      partnership_effectivity_end_date: toIsoDate(values.partnershipEffectivityEndDate),
       moa_docs: serializeFiles(values.moaDocument),
     })
 
