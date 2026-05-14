@@ -1,56 +1,49 @@
-import type { FormEValues } from "@/features/forms/form-e/form-e-schema"
-import {
-  emptyStringToNull,
-  insertFormRecord,
-  serializeFiles,
-  toIsoDate,
-} from "@/api/forms/shared"
-
-export const FORM_E_TABLE = "form_e_creative_work_outputs"
+// form-e.api.ts
+import type { FormEValues as FormEValues } from "@/features/forms/form-e/form-e-schema"
+import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
+import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormEInput = {
   values: FormEValues
-  submittedBy?: string
+  entry_id?: string
 }
 
-export async function createFormERecord({
-  values,
-  submittedBy,
-}: CreateFormEInput) {
-  return insertFormRecord(FORM_E_TABLE, {
-    submitted_by: submittedBy ?? null,
-    linked_research: values.linkedResearch,
-    title_of_artistic_work: values.titleOfArtisticWork,
-    type_of_output: values.typeOfOutput,
-    other_type: emptyStringToNull(values.otherType),
-    type_of_public_event: values.typeOfPublicEvent,
-    title_of_event: values.titleOfEvent,
-    organizer: values.organizer,
-    location_scope: values.locationScope,
-    event_venue_city_country: values.eventVenueCityCountry,
-    event_start_date: toIsoDate(values.eventStartDate),
-    event_end_date: toIsoDate(values.eventEndDate),
-    first_shown_released_date: toIsoDate(values.firstShownReleasedDate),
-    utilization: values.utilization,
-    proof_of_research_output: serializeFiles(values.proofOfResearchOutput),
-    proof_of_utilization: serializeFiles(values.proofOfUtilization),
-    remarks: emptyStringToNull(values.remarks),
-    related_kras: emptyStringToNull(values.relatedKras),
-  })
-}
+export async function createFormERecord({ values }: CreateFormEInput) {
+  // 1. Insert into isip_creative_work_forms to get the entry_id
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_creative_work_forms")
+    .insert({
+      creative_work_title: values.titleOfArtisticWork,
+      other_type: emptyStringToNull(values.otherType),
+      event_start_date: toIsoDate(values.eventStartDate),
+      event_end_date: toIsoDate(values.eventEndDate),
+      research_proof: serializeFiles(values.proofOfResearchOutput),
+      remarks: emptyStringToNull(values.remarks),
+      related_kras: emptyStringToNull(values.relatedKras),
+    })
+    .select("entry_id")
+    .single()
 
-export const formESupabaseInsertExample = `
-insert into public.${FORM_E_TABLE} (
-  submitted_by,
-  linked_research,
-  title_of_artistic_work,
-  type_of_output,
-  type_of_public_event
-) values (
-  '<user-id>',
-  'Parent Research Project',
-  'Sample Creative Work',
-  'computer_software',
-  'publication'
-);
-`.trim()
+  if (isipError) throw isipError
+
+  // 2. Insert into pbms_creative_work_forms using the returned entry_id
+  const { error: pbmsError } = await supabase
+    .from("pbms_creative_work_forms")
+    .insert({
+      entry_id: isipData.entry_id,
+      linked_research: values.linkedResearch,
+      output_type: values.typeOfOutput,
+      public_event_type: values.typeOfPublicEvent,
+      organizer_name: values.organizer,
+      event_scope: values.locationScope,
+      event_venue: values.eventVenueCityCountry,
+      date_released: toIsoDate(values.firstShownReleasedDate),
+      utilization_research_output: values.utilization,
+      utilization_proof: serializeFiles(values.proofOfUtilization),
+      event_title: values.titleOfEvent,
+    })
+
+  if (pbmsError) throw pbmsError
+
+  return isipData
+}
