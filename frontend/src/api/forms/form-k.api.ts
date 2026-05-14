@@ -1,40 +1,36 @@
+// form-k.api.ts
 import type { FormKOtherValues } from "@/features/forms/form-k/form-k-schema"
-import {
-  insertFormRecord,
-  serializeFiles,
-  toIsoDate,
-} from "@/api/forms/shared"
-
-export const FORM_K_TABLE = "form_k_other_accomplishments"
+import { serializeFiles, toIsoDate } from "@/api/forms/shared"
+import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormKInput = {
   values: FormKOtherValues
-  submittedBy?: string
+  entry_id?: string
 }
 
-export async function createFormKRecord({
-  values,
-  submittedBy,
-}: CreateFormKInput) {
-  return insertFormRecord(FORM_K_TABLE, {
-    submitted_by: submittedBy ?? null,
-    title: values.title,
-    description: values.description,
-    accomplishment_date: toIsoDate(values.date),
-    supporting_documents: serializeFiles(values.supportingDocuments),
-  })
-}
+export async function createFormKRecord({ values }: CreateFormKInput) {
+  // 1. Insert into isip_other_accomplishments_forms
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_other_accomplishments_forms")
+    .insert({
+      attachments: serializeFiles(values.supportingDocuments),
+    })
+    .select("entry_id")
+    .single()
 
-export const formKSupabaseInsertExample = `
-insert into public.${FORM_K_TABLE} (
-  submitted_by,
-  title,
-  description,
-  accomplishment_date
-) values (
-  '<user-id>',
-  'Special Accomplishment',
-  'Sample accomplishment description.',
-  '2026-05-07T00:00:00.000Z'
-);
-`.trim()
+  if (isipError) throw isipError
+
+  // 2. Insert into pbms_other_accomplishments_forms
+  const { error: pbmsError } = await supabase
+    .from("pbms_other_accomplishments_forms")
+    .insert({
+      entry_id: isipData.entry_id,
+      accomplishment_title: values.title,
+      accomplishment_description: values.description,
+      accomplishment_date: toIsoDate(values.date),
+    })
+
+  if (pbmsError) throw pbmsError
+
+  return isipData
+}

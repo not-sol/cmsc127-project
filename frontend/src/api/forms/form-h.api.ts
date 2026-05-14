@@ -1,58 +1,50 @@
-import type { FormHValues } from "@/features/forms/form-h/form-h-schema"
-import {
-  emptyStringToNull,
-  insertFormRecord,
-  serializeFiles,
-  toIntegerOrNull,
-  toIsoDate,
-} from "@/api/forms/shared"
-
-export const FORM_H_TABLE = "form_h_extension_programs"
+// form-h.api.ts
+import type { FormHValues as FormHValues } from "@/features/forms/form-h/form-h-schema"
+import { emptyStringToNull, serializeFiles, toIntegerOrNull, toIsoDate } from "@/api/forms/shared"
+import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormHInput = {
   values: FormHValues
-  submittedBy?: string
+  entry_id?: string
 }
 
-export async function createFormHRecord({
-  values,
-  submittedBy,
-}: CreateFormHInput) {
-  return insertFormRecord(FORM_H_TABLE, {
-    submitted_by: submittedBy ?? null,
-    contributing_unit: values.contributingUnit,
-    title: values.title,
-    training_courses: values.trainingCourses === "yes",
-    technical_advisory_service: values.technicalAdvisoryService === "yes",
-    information_dissemination: values.informationDissemination === "yes",
-    consultancy: values.consultancy === "yes",
-    community_outreach: values.communityOutreach === "yes",
-    technology_transfer: values.technologyTransfer === "yes",
-    organizing: values.organizing === "yes",
-    academic_degree_programs: emptyStringToNull(values.academicDegreePrograms),
-    scope_of_work: values.scopeOfWork,
-    start_date: toIsoDate(values.startDate),
-    end_date: toIsoDate(values.endDate),
-    target_beneficiary: values.targetBeneficiary,
-    number_of_beneficiaries: toIntegerOrNull(values.numberOfBeneficiaries),
-    funding_source: values.fundingSource,
-    program_documents: serializeFiles(values.programDocuments),
-    remarks: emptyStringToNull(values.remarks),
-  })
-}
+export async function createFormHRecord({ values }: CreateFormHInput) {
+  // 1. Insert into isip_extension_programs_forms
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_extension_programs_forms")
+    .insert({
+      remarks: emptyStringToNull(values.remarks),
+    })
+    .select("entry_id")
+    .single()
 
-export const formHSupabaseInsertExample = `
-insert into public.${FORM_H_TABLE} (
-  submitted_by,
-  contributing_unit,
-  title,
-  scope_of_work,
-  number_of_beneficiaries
-) values (
-  '<user-id>',
-  'CSMOD',
-  'Community Extension Program',
-  'Integrated extension activities for partner communities.',
-  150
-);
-`.trim()
+  if (isipError) throw isipError
+
+  // 2. Insert into pbms_extension_programs_forms
+  const { error: pbmsError } = await supabase
+    .from("pbms_extension_programs_forms")
+    .insert({
+      entry_id: isipData.entry_id,
+      contributing_unit: values.contributingUnit,
+      extension_title: values.title,
+      has_training_courses: values.trainingCourses === "yes",
+      has_technical_advisory: values.technicalAdvisoryService === "yes",
+      has_info_dissemination: values.informationDissemination === "yes",
+      has_consultancy: values.consultancy === "yes",
+      has_community_outreach: values.communityOutreach === "yes",
+      has_tech_transfer: values.technologyTransfer === "yes",
+      has_organizing: values.organizing === "yes",
+      academic_programs: emptyStringToNull(values.academicDegreePrograms),
+      work_scope: values.scopeOfWork,
+      start_date: toIsoDate(values.startDate),
+      end_date: toIsoDate(values.endDate),
+      beneficiary_name: values.targetBeneficiary,
+      beneficiary_count: toIntegerOrNull(values.numberOfBeneficiaries),
+      funding_source: values.fundingSource,
+      program_docs: serializeFiles(values.programDocuments),
+    })
+
+  if (pbmsError) throw pbmsError
+
+  return isipData
+}
