@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import type { LoginFormValues, RegisterFormValues } from '@/lib/validations/auth'
-import { createFacultyProfile } from './profile'
+import { ensureUserProfile } from './profile'
 
 export async function signUpNewUser({
   email,
@@ -12,6 +12,7 @@ export async function signUpNewUser({
     email,
     password,
     options: {
+      emailRedirectTo: `${window.location.origin}/login`,
       data: {
         first_name: firstName,
         last_name: lastName,
@@ -20,22 +21,6 @@ export async function signUpNewUser({
   })
 
   if (error) throw error
-
-  // 🔥 WAIT FOR AUTH STATE TO UPDATE
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  if (!session) {
-    throw new Error("User created but not logged in yet")
-  }
-
-  await createFacultyProfile({
-    faculty_id: session.user.id,
-    email,
-    first_name: firstName,
-    last_name: lastName,
-  })
 
   return data
 }
@@ -47,6 +32,10 @@ export async function signInWithEmail({ email, password }: LoginFormValues) {
   })
 
   if (error) throw error
+  if (data.session) {
+    await ensureUserProfile()
+  }
+
   return data
 }
 

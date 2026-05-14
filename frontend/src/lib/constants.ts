@@ -12,6 +12,5 @@ export const ENTRY_TYPES = [
   { id: "other", letter: "K", label: "Other Accomplishment", pbms: "Various" },
 ];
 
-export const ROLES = ["faculty", "chair", "admin"];
+export const ROLES = ["faculty", "department_chair", "admin"];
 export const STATUSES = ["Draft", "Waiting for Approval", "Partially Approved", "Fully Approved"];
-
