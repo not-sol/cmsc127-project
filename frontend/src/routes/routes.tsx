@@ -181,8 +181,6 @@ export const router = createBrowserRouter([
     path: "/form-d",
     element: <FormDPage />,
   },
-  //   ],
-  // },
   {
     path: "/",
     element: <Navigate to="/reports" replace />,
