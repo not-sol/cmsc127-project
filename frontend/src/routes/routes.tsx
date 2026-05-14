@@ -21,6 +21,7 @@ import FormDPage from "@/pages/forms/FormDPage";
 import ProtectedRoute from "@/components/protected-route";
 import NewReportPage from "@/pages/NewReportPage";
 import ExportsRecordsPage from "@/pages/ExportRecordsPage";
+import UserManagementForm from "@/pages/UserManagementForm";
 
 export const router = createBrowserRouter([
   {
@@ -112,6 +113,76 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "/reports",
+    element: <ReportsPage />,
+  },
+  {
+    path: "/reports/create-report",
+    element: <NewReportPage />,
+  },
+  {
+    path: "/reports/create-report/new-entry",
+    element: <NewEntryPage />,
+  },
+  {
+    path: "/exports",
+    element: <ExportsRecordsPage />,
+  },
+  {
+    path: "/user-management",
+    element: <UserManagementForm />,
+  },
+  {
+    path: "/test-form",
+    element: <TestForm />,
+  },
+  {
+    path: "/form-k",
+    element: <FormKOtherPage />,
+  },
+  {
+    path: "/form-j",
+    element: <FormJAuthorshipPage />,
+  },
+  {
+    path: "/form-i",
+    element: <FormIPartnershipPage />,
+  },
+  {
+    path: "/form-g",
+    element: <FormGPage />,
+  },
+  {
+    path: "/form-h",
+    element: <FormHPage />,
+  },
+  {
+    path: "/form-e",
+    element: <FormEPage />,
+  },
+  {
+    path: "/form-f",
+    element: <FormFPage />,
+  },
+  {
+    path: "/form-a",
+    element: <FormAPublicationsPage />,
+  },
+  {
+    path: "/form-b",
+    element: <FormBGrantsAndFellowshipsPage />,
+  },
+  {
+    path: "/form-c",
+    element: <FormCOralOrPosterPage />,
+  },
+  {
+    path: "/form-d",
+    element: <FormDPage />,
+  },
+  //   ],
+  // },
   {
     path: "/",
     element: <Navigate to="/reports" replace />,
