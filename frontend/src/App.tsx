@@ -11,9 +11,12 @@ export default function App() {
 
   useEffect(() => {
     let isMounted = true;
+    let hasInitialized = false;
 
-    async function hydrateSession(session: Session | null) {
-      setLoading(true);
+    async function hydrateSession(session: Session | null, showLoading = false) {
+      if (showLoading) {
+        setLoading(true);
+      }
 
       try {
         if (session) {
@@ -25,7 +28,9 @@ export default function App() {
         setUser(session?.user ?? null);
       } catch (error) {
         console.error("Unable to initialize verified user profile:", error);
-        await supabase.auth.signOut();
+        if (session) {
+          await supabase.auth.signOut();
+        }
 
         if (!isMounted) return;
         setSession(null);
@@ -34,13 +39,13 @@ export default function App() {
         if (isMounted) {
           setLoading(false);
         }
+        hasInitialized = true;
       }
     }
 
+    // Initial session fetch
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setTimeout(() => {
-        void hydrateSession(session);
-      }, 0);
+      void hydrateSession(session, true);
     });
 
     // Listen for changes on auth state (logged in, signed out, etc.)
@@ -54,9 +59,10 @@ export default function App() {
         return;
       }
 
-      setTimeout(() => {
-        void hydrateSession(session);
-      }, 0);
+      // Only show loading if we haven't initialized yet or it's a signed in event
+      const shouldShowLoading = !hasInitialized || event === "SIGNED_IN";
+      
+      void hydrateSession(session, shouldShowLoading);
     });
 
     return () => {
