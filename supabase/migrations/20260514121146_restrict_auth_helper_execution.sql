@@ -10,4 +10,4 @@ grant execute on function public.ensure_user_profile() to authenticated;
 grant execute on function public.has_verified_profile() to authenticated;
 grant execute on function public.current_user_role() to authenticated;
 grant execute on function public.is_admin() to authenticated;
-grant execute on function public.is_department_chair() to authenticated;
+grant execute on function public.is_department_chair() to authenticated;;

@@ -269,4 +269,4 @@ begin
       execute format('create policy "Verified users can delete %1$I" on public.%1$I for delete to authenticated using (public.has_verified_profile())', table_name);
     end if;
   end loop;
-end $$;
+end $$;;

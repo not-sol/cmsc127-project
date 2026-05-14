@@ -1,1 +1,1 @@
-grant update (role) on table public.users to authenticated;
+grant update (role) on table public.users to authenticated;;
