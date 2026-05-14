@@ -1,0 +1,33 @@
+import { supabase } from '@/lib/supabase/client'
+
+export const getUsers = async () => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+
+  if (error) throw error
+  return data
+}
+
+export const updateUserRole = async (
+  userId: string,
+  role: "faculty" | "department_chair" | "admin"
+) => {
+  const { error } = await supabase
+    .from("users")
+    .update({ role })
+    .eq("id", userId)
+
+  if (error) throw error
+}
+
+export const getMyRole = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", userId)
+    .single()
+
+  if (error) throw error
+  return data
+}
