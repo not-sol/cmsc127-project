@@ -7,6 +7,7 @@ export async function signUpNewUser({
   password,
   firstName,
   lastName,
+  department,
 }: RegisterFormValues) {
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -16,6 +17,7 @@ export async function signUpNewUser({
       data: {
         first_name: firstName,
         last_name: lastName,
+        department,
       },
     },
   })

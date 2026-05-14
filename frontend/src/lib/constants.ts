@@ -13,4 +13,5 @@ export const ENTRY_TYPES = [
 ];
 
 export const ROLES = ["faculty", "department_chair", "admin"];
+export const DEPARTMENTS = ["CSMOD", "DBSES", "DFSC", "DMPCS"] as const;
 export const STATUSES = ["Draft", "Waiting for Approval", "Partially Approved", "Fully Approved"];
