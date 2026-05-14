@@ -7,6 +7,7 @@ const navItems = [
   { icon: LayoutGrid, label: "My Reports", href: "/reports" },
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
   { icon: Download, label: "Export Records", href: "/exports" },
+  { icon: User, label: "User Management", href: "/user-management" },
 ];
 
 export default function Sidebar() {
