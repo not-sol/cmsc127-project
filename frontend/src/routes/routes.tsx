@@ -21,6 +21,7 @@ import FormDPage from "@/pages/forms/FormDPage";
 import ProtectedRoute from "@/components/protected-route";
 import NewReportPage from "@/pages/NewReportPage";
 import ExportsRecordsPage from "@/pages/ExportRecordsPage";
+import UserManagementForm from "@/pages/UserManagementForm";
 
 export const router = createBrowserRouter([
   {
@@ -61,6 +62,10 @@ export const router = createBrowserRouter([
   {
     path: "/exports",
     element: <ExportsRecordsPage />,
+  },
+  {
+    path: "/user-management",
+    element: <UserManagementForm />,
   },
   {
     path: "/test-form",
