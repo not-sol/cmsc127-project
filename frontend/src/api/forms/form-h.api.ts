@@ -13,6 +13,19 @@ export async function createFormHRecord({ values }: CreateFormHInput) {
   const { data: isipData, error: isipError } = await supabase
     .from("isip_extension_programs_forms")
     .insert({
+      extension_title: values.title,
+      training_courses: values.trainingCourses === "yes",
+      external_clients_technical: values.technicalAdvisoryService === "yes",
+      information_dissemination: values.informationDissemination === "yes",
+      external_clients_consultancy: values.consultancy === "yes",
+      community_outreach: values.communityOutreach === "yes",
+      knowledge_transfer: values.technologyTransfer === "yes",
+      organizing: values.organizing === "yes",
+      work_scope: values.scopeOfWork,
+      start_date: toIsoDate(values.startDate),
+      end_date: toIsoDate(values.endDate),
+      target_beneficiary_group: values.targetBeneficiary,
+      program_description: serializeFiles(values.programDocuments),
       remarks: emptyStringToNull(values.remarks),
     })
     .select("entry_id")
@@ -26,22 +39,9 @@ export async function createFormHRecord({ values }: CreateFormHInput) {
     .insert({
       entry_id: isipData.entry_id,
       contributing_unit: values.contributingUnit,
-      extension_title: values.title,
-      has_training_courses: values.trainingCourses === "yes",
-      has_technical_advisory: values.technicalAdvisoryService === "yes",
-      has_info_dissemination: values.informationDissemination === "yes",
-      has_consultancy: values.consultancy === "yes",
-      has_community_outreach: values.communityOutreach === "yes",
-      has_tech_transfer: values.technologyTransfer === "yes",
-      has_organizing: values.organizing === "yes",
-      academic_programs: emptyStringToNull(values.academicDegreePrograms),
-      work_scope: values.scopeOfWork,
-      start_date: toIsoDate(values.startDate),
-      end_date: toIsoDate(values.endDate),
-      beneficiary_name: values.targetBeneficiary,
-      beneficiary_count: toIntegerOrNull(values.numberOfBeneficiaries),
-      funding_source: values.fundingSource,
-      program_docs: serializeFiles(values.programDocuments),
+      academic_degree: emptyStringToNull(values.academicDegreePrograms),
+      no_of_beneficiary_groups: toIntegerOrNull(values.numberOfBeneficiaries),
+      majority_share_funding: values.fundingSource,
     })
 
   if (pbmsError) throw pbmsError
