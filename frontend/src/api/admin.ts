@@ -21,6 +21,15 @@ export const updateUserRole = async (
   if (error) throw error
 }
 
+export const deleteUser = async (userId: string) => {
+  const { error } = await supabase
+    .from("users")
+    .delete()
+    .eq("id", userId)
+
+  if (error) throw error
+}
+
 export const getMyRole = async (userId: string) => {
   const { data, error } = await supabase
     .from("users")

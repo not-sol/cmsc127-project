@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/sidebar";
+import { useUsers, useUpdateUserRole, useDeleteUser } from "@/hooks/use-admin";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,111 +28,72 @@ import {
 
 import {
   Filter,
-  Plus,
   Trash2,
   ArrowUpDown,
+  Loader2,
 } from "lucide-react";
-
-type User = {
-  id: number;
-  name: string;
-  email: string;
-  role: "faculty" | "chair" | "admin";
-  dept: string;
-  initials: string;
-  joined: string;
-};
-
-const initialUsers: User[] = [
-  {
-    id: 1,
-    name: "Juan Dela Cruz",
-    email: "juandelacruz@up.edu.ph",
-    role: "faculty",
-    dept: "DMPCS",
-    initials: "JD",
-    joined: "05/14/2026",
-  },
-  {
-    id: 2,
-    name: "Maria Santos",
-    email: "mariasantos@up.edu.ph",
-    role: "chair",
-    dept: "DMPCS",
-    initials: "MS",
-    joined: "05/10/2026",
-  },
-];
+import type { AppRole } from "@/api/profile";
 
 export default function UserManagementForm() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const { data: users, isLoading, error } = useUsers();
+  const updateRoleMutation = useUpdateUserRole();
+  const deleteUserMutation = useDeleteUser();
 
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
 
-  const [showAdd, setShowAdd] = useState(false);
-
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    role: "faculty",
-    dept: "DMPCS",
-  });
-
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = users?.filter((u) => {
+    const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
     const matchSearch =
       !search ||
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      fullName.includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase());
 
     const matchRole =
       filterRole === "all" || u.role === filterRole;
 
     return matchSearch && matchRole;
-  });
+  }) || [];
 
-  function changeRole(id: number, role: string) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? { ...u, role: role as User["role"] }
-          : u
-      )
+  async function changeRole(id: string, role: AppRole) {
+    try {
+      await updateRoleMutation.mutateAsync({ userId: id, role });
+    } catch (err) {
+      console.error("Failed to update role:", err);
+    }
+  }
+
+  async function handleDeleteUser(id: string) {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    try {
+      await deleteUserMutation.mutateAsync(id);
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-muted/40">
+        <Sidebar />
+        <main className="flex-1 flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#6b0f1a]" />
+          <p className="mt-2 text-sm text-muted-foreground">Loading users...</p>
+        </main>
+      </div>
     );
   }
 
-  function deleteUser(id: number) {
-    setUsers((prev) =>
-      prev.filter((u) => u.id !== id)
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-muted/40">
+        <Sidebar />
+        <main className="flex-1 flex flex-col items-center justify-center">
+          <p className="text-destructive font-medium">Error loading users</p>
+          <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
+        </main>
+      </div>
     );
-  }
-
-  function addUser() {
-    const initials =
-      newUser.name
-        .split(" ")
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase() || "NU";
-
-    const user: User = {
-      id: Date.now(),
-      ...newUser,
-      role: newUser.role as User["role"],
-      initials,
-      joined: new Date().toLocaleDateString(),
-    };
-
-    setUsers((prev) => [...prev, user]);
-
-    setNewUser({
-      name: "",
-      email: "",
-      role: "faculty",
-      dept: "DMPCS",
-    });
-
-    setShowAdd(false);
   }
 
   return (
@@ -198,21 +160,11 @@ export default function UserManagementForm() {
               >
                 <option value="all">All Roles</option>
                 <option value="faculty">Faculty</option>
-                <option value="chair">Dept Chair</option>
+                <option value="department_chair">Dept Chair</option>
                 <option value="admin">Admin</option>
               </select>
 
               <div className="flex-1" />
-
-              {/* Add User */}
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 text-sm bg-foreground text-background hover:bg-foreground/90"
-                onClick={() => setShowAdd(true)}
-              >
-                <Plus size={13} />
-                Add User
-              </Button>
             </div>
 
             {/* Table */}
@@ -238,11 +190,7 @@ export default function UserManagementForm() {
                   </TableHead>
 
                   <TableHead className="text-xs font-semibold">
-                    Department
-                  </TableHead>
-
-                  <TableHead className="text-xs font-semibold">
-                    Joined
+                    Employment
                   </TableHead>
 
                   <TableHead className="text-xs font-semibold text-right">
@@ -258,12 +206,12 @@ export default function UserManagementForm() {
                     {/* User */}
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#6b0f1a] text-white flex items-center justify-center text-xs font-medium">
-                          {u.initials}
+                        <div className="w-8 h-8 rounded-full bg-[#6b0f1a] text-white flex items-center justify-center text-xs font-medium uppercase">
+                          {u.first_name?.[0]}{u.last_name?.[0]}
                         </div>
 
                         <span className="text-sm font-medium">
-                          {u.name}
+                          {u.first_name} {u.last_name}
                         </span>
                       </div>
                     </TableCell>
@@ -277,16 +225,17 @@ export default function UserManagementForm() {
                     <TableCell>
                       <select
                         value={u.role}
+                        disabled={updateRoleMutation.isPending}
                         onChange={(e) =>
-                          changeRole(u.id, e.target.value)
+                          changeRole(u.id, e.target.value as AppRole)
                         }
-                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                        className="h-8 rounded-md border border-input bg-background px-2 text-xs disabled:opacity-50"
                       >
                         <option value="faculty">
                           Faculty
                         </option>
 
-                        <option value="chair">
+                        <option value="department_chair">
                           Dept Chair
                         </option>
 
@@ -296,14 +245,9 @@ export default function UserManagementForm() {
                       </select>
                     </TableCell>
 
-                    {/* Department */}
+                    {/* Employment */}
                     <TableCell className="text-sm">
-                      {u.dept}
-                    </TableCell>
-
-                    {/* Joined */}
-                    <TableCell className="text-sm">
-                      {u.joined}
+                      {u.employment_type || "N/A"}
                     </TableCell>
 
                     {/* Actions */}
@@ -312,8 +256,9 @@ export default function UserManagementForm() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => deleteUser(u.id)}
+                          disabled={deleteUserMutation.isPending}
+                          className="h-7 w-7 text-destructive hover:text-destructive disabled:opacity-50"
+                          onClick={() => handleDeleteUser(u.id)}
                         >
                           <Trash2 size={13} />
                         </Button>
@@ -339,20 +284,14 @@ export default function UserManagementForm() {
                     />
                   </PaginationItem>
 
-                  {[1, 2, 3].map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        isActive={page === 1}
-                        className="h-7 w-7 text-xs"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-
                   <PaginationItem>
-                    <PaginationEllipsis className="h-7 w-7" />
+                    <PaginationLink
+                      href="#"
+                      isActive
+                      className="h-7 w-7 text-xs"
+                    >
+                      1
+                    </PaginationLink>
                   </PaginationItem>
 
                   <PaginationItem>
@@ -366,85 +305,6 @@ export default function UserManagementForm() {
             </div>
           </div>
         </div>
-
-        {/* Add User Modal */}
-        {showAdd && (
-          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-            <div className="bg-background rounded-lg border w-full max-w-md p-6 space-y-4">
-
-              <div>
-                <h3 className="text-lg font-semibold">
-                  Add User
-                </h3>
-
-                <p className="text-sm text-muted-foreground">
-                  Create a new user account
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Input
-                  placeholder="Full Name"
-                  value={newUser.name}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                />
-
-                <Input
-                  placeholder="UP Email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({
-                      ...prev,
-                      email: e.target.value,
-                    }))
-                  }
-                />
-
-                <select
-                  value={newUser.role}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({
-                      ...prev,
-                      role: e.target.value,
-                    }))
-                  }
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="faculty">
-                    Faculty
-                  </option>
-
-                  <option value="chair">
-                    Dept Chair
-                  </option>
-
-                  <option value="admin">
-                    Admin
-                  </option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAdd(false)}
-                >
-                  Cancel
-                </Button>
-
-                <Button onClick={addUser}>
-                  Add User
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

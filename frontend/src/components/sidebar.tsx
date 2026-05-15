@@ -12,7 +12,12 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.href === "/user-management") return isAdmin;
+    return true;
+  });
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-[#6b0f1a] px-4 py-6">
@@ -29,7 +34,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 flex-1">
-        {navItems.map(({ icon: Icon, label, href }) => (
+        {filteredNavItems.map(({ icon: Icon, label, href }) => (
           <Link
             key={label}
             to={href}
