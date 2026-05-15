@@ -1,6 +1,6 @@
 // form-a.api.ts
 import type { FormValues as FormAValues } from "@/features/forms/form-a/form-a-schema"
-import { emptyStringToNull, serializeFiles } from "@/api/forms/shared"
+import { emptyStringToNull, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client" // your supabase client
 
 export type CreateFormAInput = {
@@ -17,7 +17,11 @@ function toSqlDate(val: string): string {
 }
 
 export async function createFormARecord({ values }: CreateFormAInput) {
-  // 1. Insert into isip_publication_forms first to get the entry_id
+  // 1. Upload files first
+  const pubProofPath = await uploadFiles(values.pubProof, "publication_proof")
+  const utilProofPath = await uploadFiles(values.pubUtilProof, "publication_proof")
+
+  // 2. Insert into isip_publication_forms first to get the entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_publication_forms")
     .insert({
@@ -32,7 +36,7 @@ export async function createFormARecord({ values }: CreateFormAInput) {
       ched_recognized: values.isChedRecognized === "Yes",
       peer_reviewed: values.peerRev === "Yes",
       other_reputable_database: emptyStringToNull(values.otherDB),
-      publication_proof: serializeFiles(values.pubProof),
+      publication_proof: pubProofPath || "", // NOT NULL in schema
       remarks: emptyStringToNull(values.pubSupRemarks),
       related_kras: emptyStringToNull(values.pubRelatedKRAs),
     })
@@ -41,7 +45,7 @@ export async function createFormARecord({ values }: CreateFormAInput) {
 
   if (isipError) throw isipError
 
-  // 2. Insert into pbms_publication_forms using the returned entry_id
+  // 3. Insert into pbms_publication_forms using the returned entry_id
   const { error: pbmsError } = await supabase
     .from("pbms_publication_forms")
     .insert({
@@ -51,10 +55,10 @@ export async function createFormARecord({ values }: CreateFormAInput) {
       publisher_location: values.pubrLocr,
       editor_name: emptyStringToNull(values.edrName),
       volume_issue_no: emptyStringToNull(values.vonumInum),
-      doi: values.doiUrl || "",           // NOT NULL — see note below
+      doi: values.doiUrl || "",           // NOT NULL
       isbn: emptyStringToNull(values.isbn),
       number_of_citation: values.citationNum ? Number(values.citationNum) : null,
-      utilization_proof: serializeFiles(values.pubUtilProof) ?? null,
+      utilization_proof: utilProofPath,
     })
 
   if (pbmsError) throw pbmsError
