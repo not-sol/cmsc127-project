@@ -10,14 +10,13 @@ import { useAuthStore } from "@/store/auth-store"
 
 export default function FormCOralOrPoster() {
   const createFormCRecord = useCreateFormCRecord()
-  const userId = useAuthStore((state) => state.user?.id)
 
   const onSubmit = async (data: FormValues) => {
     await createFormCRecord.mutateAsync({
       values: data,
-      submittedBy: userId,
     })
   }
+
 
   return (
     <div className="p-8">
