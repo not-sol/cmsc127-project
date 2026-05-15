@@ -1,7 +1,8 @@
 // form-c.api.ts
 import type { FormValues as FormCValues } from "@/features/forms/form-c/form-c-schema"
-import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
+import { emptyStringToNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
+import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 
 export type CreateFormCInput = {
   values: FormCValues
@@ -9,12 +10,15 @@ export type CreateFormCInput = {
 }
 
 export async function createFormCRecord({ values, reportId }: CreateFormCInput) {
-  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  // 1. Upload files first
+  const attachmentPath = await uploadFiles(values.presentationAttachments, STORAGE_BUCKETS.FORM_C)
+
+  // 2. Insert into the base 'forms' table first to get a valid entry_id
   const { data: formData, error: formError } = await supabase
     .from("forms")
     .insert({
       title: values.titlePresented,
-      author: "", // values doesn't seem to have author for Form C?
+      author: "", // Form C doesn't seem to have author in values
       report_id: reportId,
     })
     .select("entry_id")
@@ -27,7 +31,7 @@ export async function createFormCRecord({ values, reportId }: CreateFormCInput) 
 
   const entryId = formData.entry_id
 
-  // 2. Insert into isip_oral_forms using the returned entry_id
+  // 3. Insert into isip_oral_forms using the returned entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_oral_forms")
     .insert({
@@ -35,7 +39,7 @@ export async function createFormCRecord({ values, reportId }: CreateFormCInput) 
       paper_title: values.titlePresented,
       presentation_type: values.presentationType,   // "oral" | "poster"
       event_type: values.eventType,                 // "conference" | "forum" | "seminar" | "workshop"
-      attachments: serializeFiles(values.presentationAttachments),
+      attachments: attachmentPath || "", // Ensuring it's a string as per schema
       remarks: emptyStringToNull(values.presentationRemarks),
       related_kras: emptyStringToNull(values.presentationRelatedKRAs),
     })
@@ -47,7 +51,7 @@ export async function createFormCRecord({ values, reportId }: CreateFormCInput) 
     throw isipError
   }
 
-  // 3. Insert into pbms_oral_forms using the same entry_id
+  // 4. Insert into pbms_oral_forms using the same entry_id
   const { error: pbmsError } = await supabase
     .from("pbms_oral_forms")
     .insert({
@@ -69,3 +73,4 @@ export async function createFormCRecord({ values, reportId }: CreateFormCInput) 
 
   return { entry_id: entryId }
 }
+
