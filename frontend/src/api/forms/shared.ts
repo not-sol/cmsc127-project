@@ -134,18 +134,40 @@ export async function uploadFiles(
 }
 
 export async function uploadAllFiles(value: unknown, bucket: string, path?: string): Promise<string[]> {
-  if (!value) return [];
+  if (!value) {
+    console.log(`[Supabase Storage] Upload skipped for bucket "${bucket}": no file input provided.`);
+    return [];
+  }
 
-  if (typeof value === "string") return value.trim() ? [value] : [];
+  if (typeof value === "string") {
+    if (value.trim()) {
+      console.log(`[Supabase Storage] Upload skipped for bucket "${bucket}": existing storage path reused.`);
+      return [value];
+    }
+
+    console.log(`[Supabase Storage] Upload skipped for bucket "${bucket}": empty existing path.`);
+    return [];
+  }
 
   const files =
     value instanceof File
       ? [value]
+      : typeof FileList !== "undefined" && value instanceof FileList
+        ? Array.from(value).filter((file): file is File => file instanceof File)
       : Array.isArray(value)
         ? value.filter((file): file is File => file instanceof File)
         : [];
 
-  if (files.length === 0) return [];
+  if (files.length === 0) {
+    console.error("[Supabase Storage] Incorrect attachment value: no File instances found. Refusing to store raw file metadata.", {
+      bucket,
+      receivedType: Array.isArray(value) ? "array" : typeof value,
+      value,
+    });
+    return [];
+  }
+
+  console.log(`[Supabase Storage] Upload executing for bucket "${bucket}": ${files.length} file(s).`);
 
   const uploadedPaths: string[] = [];
 
@@ -167,7 +189,26 @@ export async function uploadAllFiles(value: unknown, bucket: string, path?: stri
     throw error;
   }
 
+  console.log(`[Supabase Storage] Returned path(s) for bucket "${bucket}":`, uploadedPaths);
   return uploadedPaths;
+}
+
+export async function uploadFilesAsStoragePathText(
+  value: unknown,
+  bucket: string,
+  options: { path?: string; required?: boolean } = {}
+): Promise<string> {
+  const uploadedPaths = await uploadAllFiles(value, bucket, options.path);
+
+  if (uploadedPaths.length === 0) {
+    if (options.required) {
+      throw new Error(`At least one attachment must be uploaded to ${bucket}.`);
+    }
+
+    return "";
+  }
+
+  return uploadedPaths.length === 1 ? uploadedPaths[0] : JSON.stringify(uploadedPaths);
 }
 
 export async function insertFormRecord<TPayload extends Record<string, unknown>>(
