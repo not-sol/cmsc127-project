@@ -38,6 +38,9 @@ export default function FormBGrantsAndFellowships() {
           totalFundingPesos: "0.00",
           otherFundSource: "",
           majoritySource: "genFundCurYr",
+          supportingAttachments: undefined,
+          researchRemarks: "",
+          researchRelatedKRAs: "",
         }}
         onSubmit={onSubmit}
         submitError={getMutationErrorMessage(createFormBRecord.error)}
