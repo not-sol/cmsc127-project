@@ -1,7 +1,8 @@
 // form-d.api.ts
 import type { FormValues as FormDValues } from "@/features/forms/form-d/form-d-schema"
-import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
+import { emptyStringToNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
+import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 
 export type CreateFormDInput = {
   values: FormDValues
@@ -9,7 +10,10 @@ export type CreateFormDInput = {
 }
 
 export async function createFormDRecord({ values, reportId }: CreateFormDInput) {
-  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  // 1. Upload files first
+  const attachmentPath = await uploadFiles(values.patentAttachments, STORAGE_BUCKETS.FORM_D)
+
+  // 2. Insert into the base 'forms' table first to get a valid entry_id
   const { data: formData, error: formError } = await supabase
     .from("forms")
     .insert({
@@ -27,12 +31,12 @@ export async function createFormDRecord({ values, reportId }: CreateFormDInput) 
 
   const entryId = formData.entry_id
 
-  // 2. Insert into isip_patents_forms to get the entry_id
+  // 3. Insert into isip_patents_forms to get the entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_patents_forms")
     .insert({
       entry_id: entryId,
-      attachments: serializeFiles(values.patentAttachments),
+      attachments: attachmentPath || "",
       remarks: emptyStringToNull(values.patentRemarks),
     })
     .select("entry_id")
@@ -43,7 +47,7 @@ export async function createFormDRecord({ values, reportId }: CreateFormDInput) 
     throw isipError
   }
 
-  // 3. Insert into pbms_patents_forms using the returned entry_id
+  // 4. Insert into pbms_patents_forms using the returned entry_id
   const { error: pbmsError } = await supabase
     .from("pbms_patents_forms")
     .insert({
@@ -68,3 +72,4 @@ export async function createFormDRecord({ values, reportId }: CreateFormDInput) 
 
   return { entry_id: entryId }
 }
+
