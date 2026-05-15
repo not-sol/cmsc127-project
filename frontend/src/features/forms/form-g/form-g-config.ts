@@ -178,17 +178,16 @@ export const formGFields: FormFieldConfig<FormGValues>[] = [
     name: "attachments",
     label: "Attachments",
     description:
-      "Upload training materials, certificates, or attendance sheets.",
-    multiple: true,
+      "Upload one training material, certificate, or attendance sheet.",
+    multiple: false,
     allowedMimeTypes: [
       "image/*",
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ],
-    maxFiles: 10,
+    maxFiles: 1,
     maxFileSize: 1000 * 1000 * 10,
-    optional: true,
   },
   {
     type: "textarea",
