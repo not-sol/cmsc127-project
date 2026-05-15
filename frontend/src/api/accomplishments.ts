@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase/client";
 
 export interface Accomplishment {
-  entry_id: number;
+  id: string;
+  entry_id?: number;
   activity_title: string;
   start_date: string;
   end_date?: string;
@@ -10,24 +11,31 @@ export interface Accomplishment {
   attachments?: string;
   remarks?: string;
   related_kras?: string;
+  submitted_by?: string;
 }
 
-export type CreateAccomplishmentInput = Omit<Accomplishment, "entry_id">;
+export type CreateAccomplishmentInput = Omit<Accomplishment, "id" | "entry_id" | "submitted_by">;
 
 /**
  * Fetches all accomplishments from the database.
  */
 export async function fetchAccomplishments(): Promise<Accomplishment[]> {
-  const { data, error } = await supabase
-    .from("isip_other_accomplishments_forms")
-    .select("*")
-    .order("start_date", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("isip_other_accomplishments_forms")
+      .select("*")
+      .order("start_date", { ascending: false });
 
-  if (error) {
-    throw new Error(`Failed to fetch accomplishments: ${error.message}`);
+    if (error) {
+      console.error("Error fetching accomplishments:", error);
+      throw new Error(`Failed to fetch accomplishments: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Unexpected error in fetchAccomplishments:", error);
+    throw error;
   }
-
-  return data || [];
 }
 
 /**
@@ -36,15 +44,31 @@ export async function fetchAccomplishments(): Promise<Accomplishment[]> {
 export async function createAccomplishment(
   input: CreateAccomplishmentInput
 ): Promise<Accomplishment> {
-  const { data, error } = await supabase
-    .from("isip_other_accomplishments_forms")
-    .insert(input)
-    .select()
-    .single();
+  try {
+    // Get current user for submitted_by
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { data, error } = await supabase
+      .from("isip_other_accomplishments_forms")
+      .insert({
+        ...input,
+        submitted_by: user?.id
+      })
+      .select()
+      .single();
 
-  if (error) {
-    throw new Error(`Failed to create accomplishment: ${error.message}`);
+    if (error) {
+      console.error("Error creating accomplishment:", error);
+      // Handle 409 Conflict specifically if needed
+      if (error.code === '23505') {
+        throw new Error("A duplicate accomplishment entry already exists.");
+      }
+      throw new Error(`Failed to create accomplishment: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Unexpected error in createAccomplishment:", error);
+    throw error;
   }
-
-  return data;
 }
