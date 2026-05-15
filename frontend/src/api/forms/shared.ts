@@ -59,15 +59,19 @@ export async function uploadFile(file: File, bucket: string, path?: string): Pro
   const fileName = `${Date.now()}-${file.name}`;
   const filePath = path ? `${path}/${fileName}` : fileName;
 
+  console.log(`[Supabase Storage] Attempting upload to bucket: "${bucket}", path: "${filePath}"`);
+
   // The "Bucket not found" error happens here if the bucket does not exist in Supabase
   const { error } = await supabase.storage
     .from(bucket)
     .upload(filePath, file);
 
   if (error) {
+    console.error(`[Supabase Storage] Upload failed for bucket "${bucket}":`, error);
     throw new Error(`Failed to upload file to bucket "${bucket}": ${error.message}`);
   }
 
+  console.log(`[Supabase Storage] Successfully uploaded to "${bucket}/${filePath}"`);
   return filePath;
 }
 

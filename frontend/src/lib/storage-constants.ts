@@ -1,3 +1,3 @@
 export const STORAGE_BUCKETS = {
-  PUBLICATION_PROOF: "publication_proof",
+  FORM_A: "form-a-bucket",
 } as const;

@@ -19,8 +19,8 @@ function toSqlDate(val: string): string {
 
 export async function createFormARecord({ values }: CreateFormAInput) {
   // 1. Upload files first
-  const pubProofPath = await uploadFiles(values.pubProof, STORAGE_BUCKETS.PUBLICATION_PROOF)
-  const utilProofPath = await uploadFiles(values.pubUtilProof, STORAGE_BUCKETS.PUBLICATION_PROOF)
+  const pubProofPath = await uploadFiles(values.pubProof, STORAGE_BUCKETS.FORM_A)
+  const utilProofPath = await uploadFiles(values.pubUtilProof, STORAGE_BUCKETS.FORM_A)
 
   // 2. Insert into isip_publication_forms first to get the entry_id
   const { data: isipData, error: isipError } = await supabase
