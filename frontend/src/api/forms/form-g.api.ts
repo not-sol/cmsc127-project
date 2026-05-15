@@ -5,31 +5,33 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormGInput = {
   values: FormGValues
-  submittedBy?: string
+  reportId?: number
 }
 
-export async function createFormGRecord({ values, submittedBy }: CreateFormGInput) {
-  // 0. Insert into forms table first to satisfy FK constraint
+export async function createFormGRecord({ values, reportId }: CreateFormGInput) {
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
   const { data: formData, error: formError } = await supabase
     .from("forms")
     .insert({
       title: values.title,
-      author: values.contributingUnit,
-      description: emptyStringToNull(values.remarks),
+      author: "",
+      report_id: reportId,
     })
     .select("entry_id")
     .single()
 
   if (formError) {
-    console.error("Error creating forms record:", formError)
+    console.error("[Supabase] Failed to create base form entry:", formError)
     throw formError
   }
 
-  // 1. Insert into isip_trainings_forms
+  const entryId = formData.entry_id
+
+  // 2. Insert into isip_trainings_forms using the returned entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_trainings_forms")
     .insert({
-      entry_id: formData.entry_id,
+      entry_id: entryId,
       activity_type: values.typeOfActivity,
       training_title: values.title,
       venue: values.venue,
@@ -43,15 +45,15 @@ export async function createFormGRecord({ values, submittedBy }: CreateFormGInpu
     .single()
 
   if (isipError) {
-    console.error("Error creating isip_trainings_forms record:", isipError)
+    console.error("[Supabase] Failed to create ISIP trainings entry:", isipError)
     throw isipError
   }
 
-  // 2. Insert into pbms_trainings_forms
+  // 3. Insert into pbms_trainings_forms
   const { error: pbmsError } = await supabase
     .from("pbms_trainings_forms")
     .insert({
-      entry_id: formData.entry_id,
+      entry_id: entryId,
       contributing_unit: values.contributingUnit,
       special_notes_schedule: emptyStringToNull(values.specialNotes),
       training_hours_required: toIntegerOrNull(values.trainingHours),
@@ -68,9 +70,9 @@ export async function createFormGRecord({ values, submittedBy }: CreateFormGInpu
     })
 
   if (pbmsError) {
-    console.error("Error creating pbms_trainings_forms record:", pbmsError)
+    console.error("[Supabase] Failed to create PBMS trainings entry:", pbmsError)
     throw pbmsError
   }
 
-  return isipData
+  return { entry_id: entryId }
 }

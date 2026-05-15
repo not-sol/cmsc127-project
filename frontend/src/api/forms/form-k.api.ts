@@ -5,32 +5,57 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormKInput = {
   values: FormKOtherValues
-  submittedBy?: string
+  reportId?: number
 }
 
-export async function createFormKRecord({ values, submittedBy }: CreateFormKInput) {
-  try {
-    const { data, error } = await supabase
-      .from("form_k_other_accomplishments")
-      .insert({
-        title: values.title,
-        description: values.description,
-        accomplishment_date: toIsoDate(values.date),
-        end_date: values.endDate ? toIsoDate(values.endDate) : null,
-        supporting_documents: serializeFiles(values.supportingDocuments),
-        submitted_by: submittedBy,
-      })
-      .select("id")
-      .single()
+export async function createFormKRecord({ values, reportId }: CreateFormKInput) {
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const { data: formData, error: formError } = await supabase
+    .from("forms")
+    .insert({
+      title: values.title,
+      author: "",
+      report_id: reportId,
+    })
+    .select("entry_id")
+    .single()
 
-    if (error) {
-      console.error("Error creating Form K record:", error)
-      throw error
-    }
-
-    return data
-  } catch (error) {
-    console.error("Unexpected error in createFormKRecord:", error)
-    throw error
+  if (formError) {
+    console.error("[Supabase] Failed to create base form entry:", formError)
+    throw formError
   }
+
+  const entryId = formData.entry_id
+
+  // 2. Insert into isip_other_accomplishments_forms using the returned entry_id
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_other_accomplishments_forms")
+    .insert({
+      entry_id: entryId,
+      attachments: serializeFiles(values.supportingDocuments),
+    })
+    .select("entry_id")
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to create ISIP other accomplishments entry:", isipError)
+    throw isipError
+  }
+
+  // 3. Insert into pbms_other_accomplishments_forms
+  const { error: pbmsError } = await supabase
+    .from("pbms_other_accomplishments_forms")
+    .insert({
+      entry_id: entryId,
+      accomplishment_title: values.title,
+      accomplishment_description: values.description,
+      accomplishment_date: toIsoDate(values.date),
+    })
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to create PBMS other accomplishments entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return { entry_id: entryId }
 }

@@ -94,7 +94,14 @@ const formASchema = z.object({
   // A.4 Supporting Documents
   pubProof: z
     .any()
-    .refine((files) => files?.length > 0, "Proof of Publication is required."),
+    .refine((val) => {
+      if (!val) return false;
+      if (val instanceof File) return true;
+      if (Array.isArray(val)) return val.length > 0;
+      if (typeof FileList !== "undefined" && val instanceof FileList) return val.length > 0;
+      if (typeof val === "string") return val.length > 0;
+      return true;
+    }, "Proof of Publication is required."),
   pubUtilProof: z
     .any()
     .optional(), // Set as optional or required based on your needs

@@ -5,31 +5,33 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormJInput = {
   values: FormJAuthorshipValues
-  submittedBy?: string
+  reportId?: number
 }
 
-export async function createFormJRecord({ values, submittedBy }: CreateFormJInput) {
-  // 1. Insert into forms table first to satisfy FK constraint
+export async function createFormJRecord({ values, reportId }: CreateFormJInput) {
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
   const { data: formData, error: formError } = await supabase
     .from("forms")
     .insert({
       title: values.titleOfMaterial,
       author: values.authors,
-      description: emptyStringToNull(values.remarks),
+      report_id: reportId,
     })
     .select("entry_id")
     .single()
 
   if (formError) {
-    console.error("Error creating forms record:", formError)
+    console.error("[Supabase] Failed to create base form entry:", formError)
     throw formError
   }
 
-  // 2. Insert into isip_authorship_forms using the entry_id from forms
+  const entryId = formData.entry_id
+
+  // 2. Insert into isip_authorships_forms using the returned entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_authorship_forms")
     .insert({
-      entry_id: formData.entry_id,
+      entry_id: entryId,
       material_title: values.titleOfMaterial,
       author: values.authors, // Mapped to authors_list in schema
       year: toIntegerOrNull(values.year),
@@ -41,9 +43,9 @@ export async function createFormJRecord({ values, submittedBy }: CreateFormJInpu
     .single()
 
   if (isipError) {
-    console.error("Error creating isip_authorship_forms record:", isipError)
+    console.error("[Supabase] Failed to create ISIP authorships entry:", isipError)
     throw isipError
   }
 
-  return isipData
+  return { entry_id: entryId }
 }

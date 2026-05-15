@@ -40,29 +40,54 @@ export function toIntegerOrNull(value?: string | null) {
 }
 
 export function serializeFiles(value: unknown): SerializedFile[] {
-  if (value instanceof File) {
-    return [
-      {
-        name: value.name,
-        size: value.size,
-        type: value.type,
-        lastModified: value.lastModified,
-      },
-    ]
+  const files =
+    value instanceof File
+      ? [value]
+      : Array.isArray(value)
+        ? value.filter((f): f is File => f instanceof File)
+        : []
+
+  return files.map((file) => ({
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    lastModified: file.lastModified,
+  }))
+}
+
+export async function uploadFile(file: File, bucket: string, path?: string): Promise<string> {
+  const fileName = `${Date.now()}-${file.name}`;
+  const filePath = path ? `${path}/${fileName}` : fileName;
+
+  console.log(`[Supabase Storage] Attempting upload to bucket: "${bucket}", path: "${filePath}"`);
+
+  // The "Bucket not found" error happens here if the bucket does not exist in Supabase
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file);
+
+  if (error) {
+    console.error(`[Supabase Storage] Upload failed for bucket "${bucket}":`, error);
+    throw new Error(`Failed to upload file to bucket "${bucket}": ${error.message}`);
   }
 
-  if (Array.isArray(value)) {
-    return value
-      .filter((file): file is File => file instanceof File)
-      .map((file) => ({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified,
-      }))
-  }
+  console.log(`[Supabase Storage] Successfully uploaded to "${bucket}/${filePath}"`);
+  return filePath;
+}
 
-  return []
+export async function uploadFiles(value: unknown, bucket: string, path?: string): Promise<string | null> {
+  if (!value) return null;
+
+  // If it's already a string (existing attachment), just return it
+  if (typeof value === "string") return value;
+
+  const files = value instanceof File ? [value] : Array.isArray(value) ? value.filter((f): f is File => f instanceof File) : [];
+
+  if (files.length === 0) return null;
+
+  // For now, we only handle the first file if it's a single text column
+  const uploadedPath = await uploadFile(files[0], bucket, path);
+  return uploadedPath;
 }
 
 export async function insertFormRecord<TPayload extends Record<string, unknown>>(
