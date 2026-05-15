@@ -77,17 +77,9 @@ export default function ResetPasswordCard() {
         <CardHeader className="px-8 pt-8 pb-4 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">Password updated</CardTitle>
           <CardDescription>
-            Your password has been successfully reset. Redirecting to login...
+            Your password has been successfully reset. Redirecting to FAT UPMin...
           </CardDescription>
         </CardHeader>
-        <CardFooter className="justify-center px-8 pt-2 pb-8">
-          <Link
-            to="/login"
-            className="font-medium text-primary hover:underline underline-offset-4"
-          >
-            Go to login now
-          </Link>
-        </CardFooter>
       </Card>
     );
   }
