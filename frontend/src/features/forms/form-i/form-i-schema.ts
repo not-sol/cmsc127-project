@@ -1,5 +1,34 @@
 import * as z from "zod"
 
+function getFileInputType(value: unknown) {
+  if (value instanceof File) return "File"
+  if (Array.isArray(value)) return "File[]"
+  if (typeof FileList !== "undefined" && value instanceof FileList) return "FileList"
+  if (value === null) return "null"
+  return typeof value
+}
+
+const singlePdfFileSchema = z
+  .custom<File>(
+    (value) => {
+      const inputType = getFileInputType(value)
+      console.log("[Form I validation] moaDocument input type:", inputType)
+
+      if (Array.isArray(value)) {
+        console.warn("[Form I validation] Schema mismatch: expected a single File, received File[].")
+        return false
+      }
+
+      return value instanceof File
+    },
+    {
+      message: "Please upload one signed MOA / MOU / Partnership Agreement PDF.",
+    }
+  )
+  .refine((file) => file.type === "application/pdf", {
+    message: "The signed agreement must be a PDF file.",
+  })
+
 const formIPartnershipSchema = z
   .object({
     contributingUnit: z.enum(["CSMOD", "DBSES", "DFSC", "DMPCS"], {
@@ -60,9 +89,7 @@ const formIPartnershipSchema = z
     partnershipEffectivityEndDate: z.date({
       message: "Partnership effectivity end date is required.",
     }),
-    moaDocument: z
-      .array(z.instanceof(File))
-      .min(1, "Please upload the signed MOA / MOU / Partnership Agreement."),
+    moaDocument: singlePdfFileSchema,
     remarks: z
       .string()
       .max(2000, "Remarks must be at most 2000 characters.")
