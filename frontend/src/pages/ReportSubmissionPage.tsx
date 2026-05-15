@@ -28,7 +28,6 @@ import {
 
 import {
   Filter,
-  Trash2,
   ArrowUpDown,
   Eye,
 } from "lucide-react";
@@ -75,6 +74,9 @@ const sampleSubmissions: Submission[] = [
 ];
 
 export default function ReportSubmissionPage() {
+  const [viewingReport, setViewingReport] =
+  useState<Submission | null>(null);
+
   const [submissions, setSubmissions] =
     useState<Submission[]>(sampleSubmissions);
 
@@ -467,24 +469,33 @@ export default function ReportSubmissionPage() {
                       </TableCell>
 
                       {/* Actions */}
-                      <TableCell>
+                    <TableCell>
                         <div className="flex items-center justify-end gap-2">
 
-                          {/* Review Button */}
-                          <Button
+                            {/* View Button */}
+                            <Button
                             size="sm"
                             variant="outline"
                             className="h-7 gap-1 text-xs"
-                            onClick={() =>
-                              openReview(r)
-                            }
-                          >
+                            onClick={() => setViewingReport(r)}
+                            >
                             <Eye size={12} />
+                            View
+                            </Button>
+
+                            {/* Review Button */}
+                            <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1 text-xs"
+                            onClick={() => openReview(r)}
+                            >
                             Review
-                          </Button>
+                            </Button>
 
                         </div>
-                      </TableCell>
+                    </TableCell>
+
 
                     </TableRow>
                   );
@@ -537,6 +548,150 @@ export default function ReportSubmissionPage() {
             </div>
           </div>
         </div>
+
+        {/* View Report Modal */}
+        {viewingReport && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+            <div className="bg-background rounded-lg border w-full max-w-3xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+
+            {/* Header */}
+            <div className="flex items-start justify-between">
+                <div>
+                <h2 className="text-2xl font-semibold">
+                    {viewingReport.title}
+                </h2>
+
+                <p className="text-sm text-muted-foreground mt-1">
+                    {viewingReport.author} · {viewingReport.dept}
+                </p>
+                </div>
+
+                <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewingReport(null)}
+                >
+                Close
+                </Button>
+            </div>
+
+            {/* Report Info */}
+            <div className="grid grid-cols-2 gap-4">
+
+                <div className="rounded-md border p-4">
+                <p className="text-xs text-muted-foreground mb-1">
+                    Reporting Period
+                </p>
+
+                <p className="text-sm font-medium">
+                    {viewingReport.period}
+                </p>
+                </div>
+
+                <div className="rounded-md border p-4">
+                <p className="text-xs text-muted-foreground mb-1">
+                    Date Submitted
+                </p>
+
+                <p className="text-sm font-medium">
+                    {viewingReport.submitted}
+                </p>
+                </div>
+
+                <div className="rounded-md border p-4">
+                <p className="text-xs text-muted-foreground mb-1">
+                    Total Entries
+                </p>
+
+                <p className="text-sm font-medium">
+                    {viewingReport.entries}
+                </p>
+                </div>
+
+                <div className="rounded-md border p-4">
+                <p className="text-xs text-muted-foreground mb-1">
+                    Status
+                </p>
+
+                <p className="text-sm font-medium">
+                    {viewingReport.status}
+                </p>
+                </div>
+
+            </div>
+
+            {/* Placeholder Report Content */}
+            <div className="rounded-md border p-5 space-y-4">
+
+                <div>
+                <h3 className="text-lg font-semibold mb-2">
+                    Accomplishment Entries
+                </h3>
+
+                <p className="text-sm text-muted-foreground">
+                    This section is where the actual submitted
+                    accomplishment entries, publications,
+                    research outputs, extension activities,
+                    and other report details will appear.
+                </p>
+                </div>
+
+                <div className="rounded-md bg-muted/40 p-4 border">
+                <p className="text-sm">
+                    Sample Entry:
+                </p>
+
+                <ul className="list-disc ml-5 mt-2 text-sm text-muted-foreground space-y-1">
+                    <li>
+                    Published research paper in IEEE Journal
+                    </li>
+                    <li>
+                    Conducted extension program for local communities
+                    </li>
+                    <li>
+                    Presented paper at international conference
+                    </li>
+                </ul>
+                </div>
+
+            </div>
+
+            {/* Chair Comments */}
+            {viewingReport.comments && (
+                <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4">
+                <p className="text-sm font-medium mb-1">
+                    Chair Comments
+                </p>
+
+                <p className="text-sm text-muted-foreground">
+                    {viewingReport.comments}
+                </p>
+                </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 pt-2">
+
+                <Button
+                variant="outline"
+                onClick={() => setViewingReport(null)}
+                >
+                Close
+                </Button>
+
+                <Button
+                onClick={() => {
+                    setViewingReport(null);
+                    openReview(viewingReport);
+                }}
+                >
+                Go to Review
+                </Button>
+
+            </div>
+            </div>
+        </div>
+        )}
 
         {/* Review Modal */}
         {selectedReport && (
