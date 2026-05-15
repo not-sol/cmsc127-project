@@ -22,7 +22,8 @@ export const registerSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Invalid UP email address").endsWith("@up.edu.ph", "Must be a UP email address"),
+  email: z.string().email("Invalid UP email address")
+  // .endsWith("@up.edu.ph", "Must be a UP email address"),
 });
 
 export const resetPasswordSchema = z.object({

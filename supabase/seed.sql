@@ -53,8 +53,7 @@ INSERT INTO auth.identities (
   provider_id,
   last_sign_in_at, 
   created_at, 
-  updated_at,
-  email
+  updated_at
 )
 VALUES (
   gen_random_uuid(),
@@ -64,8 +63,7 @@ VALUES (
   'd0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0',
   now(),
   now(),
-  now(),
-  'test@up.edu.ph'
+  now()
 ) ON CONFLICT (provider, provider_id) DO NOTHING;
 
 INSERT INTO public.users (id, email, first_name, last_name, role)
