@@ -10,14 +10,13 @@ import { useAuthStore } from "@/store/auth-store"
 
 export default function FormDPatents() {
   const createFormDRecord = useCreateFormDRecord()
-  const userId = useAuthStore((state) => state.user?.id)
 
   const onSubmit = async (data: FormValues) => {
     await createFormDRecord.mutateAsync({
       values: data,
-      submittedBy: userId,
     })
   }
+
 
   return (
     <div className="p-8">
