@@ -39,7 +39,7 @@ export default function FormIPartnership() {
         typeOfPartnershipAgreement: undefined,
         partnershipEffectivityStartDate: undefined,
         partnershipEffectivityEndDate: undefined,
-        moaDocument: [],
+        moaDocument: undefined,
         remarks: "",
       }}
       onSubmit={onSubmit}
