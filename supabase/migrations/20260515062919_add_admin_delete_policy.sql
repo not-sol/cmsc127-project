@@ -1,3 +1,5 @@
+drop policy if exists "Admins can delete users" on public.users;
+
 create policy "Admins can delete users"
   on public.users
   for delete
