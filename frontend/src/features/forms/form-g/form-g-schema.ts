@@ -63,7 +63,16 @@ const formGSchema = z.object({
   relatedExtensionProgram: z.string(),
 
   // G.4 Supporting Documents
-  attachments: z.array(z.instanceof(File)),
+  attachments: z
+    .any()
+    .refine((val) => {
+      if (!val) return false
+      if (val instanceof File) return true
+      if (Array.isArray(val)) return val.filter((file) => file instanceof File).length === 1
+      if (typeof FileList !== "undefined" && val instanceof FileList) return val.length === 1
+      if (typeof val === "string") return val.trim().length > 0
+      return false
+    }, "Exactly one attachment is required."),
   remarks: z.string().max(2000, "Remarks must be at most 2000 characters."),
   relatedKras: z
     .string()

@@ -63,6 +63,22 @@ export function serializeFiles(value: unknown): SerializedFile[] {
   }))
 }
 
+export function logSupabaseError(context: string, error: unknown) {
+  const supabaseError = error as {
+    code?: string
+    message?: string
+    details?: string
+    hint?: string
+  } | null
+
+  console.error(context, {
+    code: supabaseError?.code,
+    message: supabaseError?.message,
+    details: supabaseError?.details,
+    hint: supabaseError?.hint,
+  })
+}
+
 export async function uploadFile(file: File, bucket: string, path?: string): Promise<string> {
   const uniqueId =
     typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -88,7 +104,12 @@ export async function uploadFile(file: File, bucket: string, path?: string): Pro
   return filePath;
 }
 
-export async function uploadFiles(value: unknown, bucket: string, path?: string): Promise<string | null> {
+export async function uploadFiles(
+  value: unknown,
+  bucket: string,
+  path?: string,
+  existingPath?: string | null
+): Promise<string | null> {
   if (!value) return null;
 
   // If it's already a string (existing attachment), just return it
@@ -100,6 +121,15 @@ export async function uploadFiles(value: unknown, bucket: string, path?: string)
 
   // For now, we only handle the first file if it's a single text column
   const uploadedPath = await uploadFile(files[0], bucket, path);
+
+  if (existingPath && existingPath !== uploadedPath) {
+    const { error } = await supabase.storage.from(bucket).remove([existingPath]);
+
+    if (error) {
+      logSupabaseError(`[Supabase Storage] Failed to replace old file in bucket "${bucket}"`, error);
+    }
+  }
+
   return uploadedPath;
 }
 
