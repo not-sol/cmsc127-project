@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Sidebar from "@/components/sidebar";
-import { useUsers, useUpdateUserRole, useDeleteUser } from "@/hooks/use-admin";
+import { useUsers, useUpdateUserRole, useDeleteUser, useDepartments } from "@/hooks/use-admin";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,49 +17,64 @@ import {
 } from "@/components/ui/table";
 
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-
-import {
   Filter,
   Trash2,
   ArrowUpDown,
   Loader2,
+  User,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  UserPlus,
+  UserMinus,
 } from "lucide-react";
 import type { AppRole } from "@/api/profile";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function UserManagementForm() {
-  const { data: users, isLoading, error } = useUsers();
+  const { data: users, isLoading: usersLoading, error: usersError } = useUsers();
+  const { data: departments, isLoading: deptsLoading, error: deptsError } = useDepartments();
   const updateRoleMutation = useUpdateUserRole();
   const deleteUserMutation = useDeleteUser();
 
   const [search, setSearch] = useState("");
-  const [filterRole, setFilterRole] = useState("all");
+  const [expandedDepts, setExpandedDepts] = useState<Record<number, boolean>>({});
 
-  const filteredUsers = users?.filter((u) => {
-    const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
-    const matchSearch =
-      !search ||
-      fullName.includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
+  const groupedData = useMemo(() => {
+    if (!users || !departments) return [];
 
-    const matchRole =
-      filterRole === "all" || u.role === filterRole;
+    const searchLower = search.toLowerCase();
 
-    return matchSearch && matchRole;
-  }) || [];
+    return departments.map(dept => {
+      const deptUsers = users.filter(u => u.department_id === dept.department_id);
 
-  async function changeRole(id: string, role: AppRole) {
+      const filteredUsers = deptUsers.filter(u => {
+        const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
+        return !search || fullName.includes(searchLower) || u.email.toLowerCase().includes(searchLower);
+      });
+
+      const chair = filteredUsers.find(u => u.role === "department_chair");
+      const faculty = filteredUsers.filter(u => u.role === "faculty" || u.role === "admin");
+
+      return {
+        ...dept,
+        chair,
+        faculty,
+        totalInDept: filteredUsers.length
+      };
+    }).filter(dept => dept.totalInDept > 0 || !search);
+  }, [users, departments, search]);
+
+  const toggleDept = (id: number) => {
+    setExpandedDepts(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  async function handleRoleChange(userId: string, newRole: AppRole) {
     try {
-      await updateRoleMutation.mutateAsync({ userId: id, role });
+      await updateRoleMutation.mutateAsync({ userId, role: newRole });
     } catch (err) {
       console.error("Failed to update role:", err);
+      alert("Failed to update role. A department might already have a chair.");
     }
   }
 
@@ -72,25 +87,27 @@ export default function UserManagementForm() {
     }
   }
 
-  if (isLoading) {
+  if (usersLoading || deptsLoading) {
     return (
       <div className="flex min-h-screen bg-muted/40">
         <Sidebar />
         <main className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#6b0f1a]" />
-          <p className="mt-2 text-sm text-muted-foreground">Loading users...</p>
+          <p className="mt-2 text-sm text-muted-foreground">Loading management data...</p>
         </main>
       </div>
     );
   }
 
-  if (error) {
+  if (usersError || deptsError) {
     return (
       <div className="flex min-h-screen bg-muted/40">
         <Sidebar />
         <main className="flex-1 flex flex-col items-center justify-center">
-          <p className="text-destructive font-medium">Error loading users</p>
-          <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
+          <p className="text-destructive font-medium">Error loading data</p>
+          <p className="text-sm text-muted-foreground">
+            {((usersError || deptsError) as Error).message}
+          </p>
         </main>
       </div>
     );
@@ -104,205 +121,179 @@ export default function UserManagementForm() {
         {/* Top bar */}
         <div className="h-12 bg-[#6b0f1a]" />
 
-        <div className="flex-1 px-8 py-8">
-          <h2 className="text-2xl font-bold mb-6">
-            User Management
-          </h2>
+        <div className="flex-1 px-8 py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">
+              User Management
+            </h2>
 
-          {/* Table Card */}
-          <div className="rounded-lg border p-4 flex flex-col gap-4 bg-background">
-
-            {/* Toolbar */}
-            <div className="flex items-center gap-2">
-
-              {/* Search */}
-              <div className="relative flex-1 max-w-xs">
-                <svg
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-
-                <Input
-                  className="pl-8 h-8 text-sm"
-                  placeholder="Search by name or email"
-                  value={search}
-                  onChange={(e) =>
-                    setSearch(e.target.value)
-                  }
-                />
-              </div>
-
-              {/* Filters */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-sm"
+            <div className="relative w-72">
+              <svg
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <Filter size={13} />
-                Filters
-              </Button>
-
-              {/* Role Filter */}
-              <select
-                value={filterRole}
-                onChange={(e) =>
-                  setFilterRole(e.target.value)
-                }
-                className="h-8 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="all">All Roles</option>
-                <option value="faculty">Faculty</option>
-                <option value="department_chair">Dept Chair</option>
-                <option value="admin">Admin</option>
-              </select>
-
-              <div className="flex-1" />
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <Input
+                className="pl-8 h-9 text-sm"
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
+          </div>
 
-            {/* Table */}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs font-semibold">
-                    User
-                  </TableHead>
+          <div className="space-y-4">
+            {groupedData.map((dept) => (
+              <Card key={dept.department_id} className="overflow-hidden border-none shadow-sm">
+                <CardHeader
+                  className="bg-background hover:bg-muted/50 transition-colors cursor-pointer py-4 px-6 select-none"
+                  onClick={() => toggleDept(dept.department_id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#6b0f1a]/10 rounded-lg text-[#6b0f1a]">
+                        <User size={18} />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-bold">{dept.department_name}</CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                          {dept.totalInDept} members • {dept.chair ? "Chair assigned" : "No chair assigned"}
+                        </p>
+                      </div>
+                    </div>
+                    {expandedDepts[dept.department_id] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </div>
+                </CardHeader>
 
-                  <TableHead className="text-xs font-semibold">
-                    Email
-                  </TableHead>
-
-                  <TableHead className="text-xs font-semibold">
-                    <span className="flex items-center gap-1">
-                      Role
-                      <ArrowUpDown
-                        size={12}
-                        className="text-muted-foreground"
-                      />
-                    </span>
-                  </TableHead>
-
-                  <TableHead className="text-xs font-semibold">
-                    Employment
-                  </TableHead>
-
-                  <TableHead className="text-xs font-semibold text-right">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {filteredUsers.map((u) => (
-                  <TableRow key={u.id}>
-
-                    {/* User */}
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#6b0f1a] text-white flex items-center justify-center text-xs font-medium uppercase">
-                          {u.first_name?.[0]}{u.last_name?.[0]}
+                {expandedDepts[dept.department_id] && (
+                  <CardContent className="p-6 bg-muted/10 border-t">
+                    <div className="space-y-8">
+                      {/* Department Chair Section */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <ShieldCheck size={16} className="text-[#6b0f1a]" />
+                          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                            Department Chair
+                          </h3>
                         </div>
 
-                        <span className="text-sm font-medium">
-                          {u.first_name} {u.last_name}
-                        </span>
+                        {dept.chair ? (
+                          <div className="flex items-center justify-between p-4 bg-background rounded-lg border border-[#6b0f1a]/20 shadow-sm">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-[#6b0f1a] text-white flex items-center justify-center font-bold">
+                                {dept.chair.first_name?.[0]}{dept.chair.last_name?.[0]}
+                              </div>
+                              <div>
+                                <p className="font-semibold">{dept.chair.first_name} {dept.chair.last_name}</p>
+                                <p className="text-sm text-muted-foreground">{dept.chair.email}</p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2 text-xs"
+                              disabled={updateRoleMutation.isPending}
+                              onClick={() => handleRoleChange(dept.chair.id, 'faculty')}
+                            >
+                              <UserMinus size={14} />
+                              Demote to Faculty
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="p-4 bg-background/50 border border-dashed rounded-lg text-center">
+                            <p className="text-sm text-muted-foreground">No chair assigned to this department.</p>
+                          </div>
+                        )}
                       </div>
-                    </TableCell>
 
-                    {/* Email */}
-                    <TableCell className="text-sm">
-                      {u.email}
-                    </TableCell>
+                      {/* Faculty List Section */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <User size={16} className="text-muted-foreground" />
+                          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                            Faculty Members
+                          </h3>
+                        </div>
 
-                    {/* Role */}
-                    <TableCell>
-                      <select
-                        value={u.role}
-                        disabled={updateRoleMutation.isPending}
-                        onChange={(e) =>
-                          changeRole(u.id, e.target.value as AppRole)
-                        }
-                        className="h-8 rounded-md border border-input bg-background px-2 text-xs disabled:opacity-50"
-                      >
-                        <option value="faculty">
-                          Faculty
-                        </option>
-
-                        <option value="department_chair">
-                          Dept Chair
-                        </option>
-
-                        <option value="admin">
-                          Admin
-                        </option>
-                      </select>
-                    </TableCell>
-
-                    {/* Employment */}
-                    <TableCell className="text-sm">
-                      {u.employment_type || "N/A"}
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={deleteUserMutation.isPending}
-                          className="h-7 w-7 text-destructive hover:text-destructive disabled:opacity-50"
-                          onClick={() => handleDeleteUser(u.id)}
-                        >
-                          <Trash2 size={13} />
-                        </Button>
+                        <div className="rounded-lg border bg-background">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-[300px] text-xs font-bold uppercase">Name</TableHead>
+                                <TableHead className="text-xs font-bold uppercase">Email</TableHead>
+                                <TableHead className="text-xs font-bold uppercase">Employment</TableHead>
+                                <TableHead className="text-right text-xs font-bold uppercase">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {dept.faculty.length > 0 ? (
+                                dept.faculty.map((f) => (
+                                  <TableRow key={f.id}>
+                                    <TableCell>
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                          {f.first_name?.[0]}{f.last_name?.[0]}
+                                        </div>
+                                        <span className="text-sm font-medium">{f.first_name} {f.last_name}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-sm">{f.email}</TableCell>
+                                    <TableCell className="text-sm">{f.employment_type || "N/A"}</TableCell>
+                                    <TableCell className="text-right">
+                                      <div className="flex items-center justify-end gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 gap-1.5 text-xs hover:bg-[#6b0f1a]/5 hover:text-[#6b0f1a]"
+                                          disabled={updateRoleMutation.isPending || !!dept.chair}
+                                          onClick={() => handleRoleChange(f.id, 'department_chair')}
+                                          title={dept.chair ? "Demote current chair first" : "Promote to Chair"}
+                                        >
+                                          <UserPlus size={14} />
+                                          Promote
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                                          disabled={deleteUserMutation.isPending}
+                                          onClick={() => handleDeleteUser(f.id)}
+                                        >
+                                          <Trash2 size={14} />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                    No other faculty members found.
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            ))}
 
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-xs text-muted-foreground">
-                Showing {filteredUsers.length} users
-              </span>
-
-              <Pagination className="w-auto mx-0">
-                <PaginationContent className="gap-0.5">
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      className="h-7 px-2 text-xs"
-                    />
-                  </PaginationItem>
-
-                  <PaginationItem>
-                    <PaginationLink
-                      href="#"
-                      isActive
-                      className="h-7 w-7 text-xs"
-                    >
-                      1
-                    </PaginationLink>
-                  </PaginationItem>
-
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      className="h-7 px-2 text-xs"
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+            {groupedData.length === 0 && !usersLoading && (
+              <div className="text-center py-20 bg-background rounded-lg border border-dashed">
+                <p className="text-muted-foreground">No users found matching your search.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

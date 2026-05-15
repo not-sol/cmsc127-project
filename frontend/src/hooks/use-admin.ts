@@ -1,10 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUsers, updateUserRole, deleteUser } from "@/api/admin";
+import { getUsers, updateUserRole, deleteUser, getDepartments } from "@/api/admin";
 
 export function useUsers() {
   return useQuery({
     queryKey: ["users"],
     queryFn: getUsers,
+  });
+}
+
+export function useDepartments() {
+  return useQuery({
+    queryKey: ["departments"],
+    queryFn: getDepartments,
   });
 }
 
