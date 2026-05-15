@@ -1,5 +1,5 @@
 // form-f.api.ts
-import type { FormFValues as FormFValues } from "@/features/forms/form-f/form-f-schema"
+import type { FormFValues } from "@/features/forms/form-f/form-f-schema"
 import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 

@@ -29,7 +29,7 @@ export async function createFormIRecord({ values, reportId }: CreateFormIInput) 
 
   // 2. Insert into isip_partnerships_forms using the returned entry_id
   const { data: isipData, error: isipError } = await supabase
-    .from("isip_partnerships_forms")
+    .from("isip_partnership_forms")
     .insert({
       entry_id: entryId,
       partnership_title: values.titleOfExtensionPartnership,

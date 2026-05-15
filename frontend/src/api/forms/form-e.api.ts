@@ -1,5 +1,5 @@
 // form-e.api.ts
-import type { FormEValues as FormEValues } from "@/features/forms/form-e/form-e-schema"
+import type { FormEValues } from "@/features/forms/form-e/form-e-schema"
 import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 

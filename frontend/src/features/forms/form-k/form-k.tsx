@@ -13,10 +13,15 @@ export default function FormKOther() {
   const userId = useAuthStore((state) => state.user?.id)
 
   async function onSubmit(data: FormKOtherValues) {
-    await createFormKRecord.mutateAsync({
-      values: data,
-      submittedBy: userId,
-    })
+    try {
+      await createFormKRecord.mutateAsync({
+        values: data,
+        submittedBy: userId,
+      })
+    } catch (error) {
+      console.error("Form submission failed:", error)
+      // Error is handled by the mutation and displayed via submitError prop
+    }
   }
 
   return (
