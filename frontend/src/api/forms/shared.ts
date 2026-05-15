@@ -18,7 +18,15 @@ export function emptyStringToNull(value?: string | null) {
 }
 
 export function toIsoDate(value?: Date | null) {
-  return value ? value.toISOString() : null
+  if (!value) {
+    return null
+  }
+
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, "0")
+  const day = String(value.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
 }
 
 export function toNumberOrNull(value?: string | null) {
@@ -56,7 +64,12 @@ export function serializeFiles(value: unknown): SerializedFile[] {
 }
 
 export async function uploadFile(file: File, bucket: string, path?: string): Promise<string> {
-  const fileName = `${Date.now()}-${file.name}`;
+  const uniqueId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const safeName = file.name.replaceAll(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "")
+  const fileName = `${uniqueId}-${safeName || "upload"}`
   const filePath = path ? `${path}/${fileName}` : fileName;
 
   console.log(`[Supabase Storage] Attempting upload to bucket: "${bucket}", path: "${filePath}"`);
@@ -88,6 +101,43 @@ export async function uploadFiles(value: unknown, bucket: string, path?: string)
   // For now, we only handle the first file if it's a single text column
   const uploadedPath = await uploadFile(files[0], bucket, path);
   return uploadedPath;
+}
+
+export async function uploadAllFiles(value: unknown, bucket: string, path?: string): Promise<string[]> {
+  if (!value) return [];
+
+  if (typeof value === "string") return value.trim() ? [value] : [];
+
+  const files =
+    value instanceof File
+      ? [value]
+      : Array.isArray(value)
+        ? value.filter((file): file is File => file instanceof File)
+        : [];
+
+  if (files.length === 0) return [];
+
+  const uploadedPaths: string[] = [];
+
+  try {
+    for (const file of files) {
+      uploadedPaths.push(await uploadFile(file, bucket, path));
+    }
+  } catch (error) {
+    if (uploadedPaths.length > 0) {
+      const { error: cleanupError } = await supabase.storage
+        .from(bucket)
+        .remove(uploadedPaths);
+
+      if (cleanupError) {
+        console.error(`[Supabase Storage] Failed to clean up uploads in bucket "${bucket}":`, cleanupError);
+      }
+    }
+
+    throw error;
+  }
+
+  return uploadedPaths;
 }
 
 export async function insertFormRecord<TPayload extends Record<string, unknown>>(

@@ -47,6 +47,7 @@ export const formEFields: FormFieldConfig<FormEValues>[] = [
     ],
     otherOption: {
       name: "otherType",
+      value: "other",
       label: "Other (specify)",
       placeholder: "Specify the type of output",
       clearOnDeselect: true,
@@ -105,14 +106,12 @@ export const formEFields: FormFieldConfig<FormEValues>[] = [
     name: "eventStartDate",
     label: "Event Start Date",
     description: "Select the start date of the event (MM/DD/YYYY).",
-    optional: true,
   },
   {
     type: "date-picker",
     name: "eventEndDate",
     label: "Event End Date",
     description: "Select the end date of the event (MM/DD/YYYY).",
-    optional: true,
   },
   {
     type: "date-picker",
@@ -120,7 +119,6 @@ export const formEFields: FormFieldConfig<FormEValues>[] = [
     label: "Date Output Was First Shown / Released",
     description:
       "Select the date the output was first shown or released (MM/DD/YYYY).",
-    optional: true,
   },
   {
     type: "radio",
