@@ -44,10 +44,66 @@ type PartialableSchema<TValues extends FieldValues> = ZodType<TValues, FieldValu
   partial: (mask: Record<string, true>) => ZodType<TValues, FieldValues>
 }
 
+type SchemaWithChecks<TValues extends FieldValues> = PartialableSchema<TValues> & {
+  _def: {
+    checks?: unknown[]
+    type?: string
+  }
+  constructor: new (def: unknown) => PartialableSchema<TValues>
+}
+
+type CheckableSchema<TValues extends FieldValues> = ZodType<TValues, FieldValues> & {
+  check: (...checks: never[]) => ZodType<TValues, FieldValues>
+}
+
 function hasPartial<TValues extends FieldValues>(
   schema: ZodType<TValues, FieldValues>
 ): schema is PartialableSchema<TValues> {
   return typeof (schema as { partial?: unknown }).partial === "function"
+}
+
+function hasObjectChecks<TValues extends FieldValues>(
+  schema: PartialableSchema<TValues>
+): schema is SchemaWithChecks<TValues> {
+  const schemaDef = (schema as { _def?: { checks?: unknown[]; type?: string } })._def
+
+  return (
+    schemaDef?.type === "object" &&
+    Array.isArray(schemaDef.checks) &&
+    schemaDef.checks.length > 0
+  )
+}
+
+function hasCheck<TValues extends FieldValues>(
+  schema: ZodType<TValues, FieldValues>
+): schema is CheckableSchema<TValues> {
+  return typeof (schema as { check?: unknown }).check === "function"
+}
+
+function partialObjectSchema<TValues extends FieldValues>(
+  schema: PartialableSchema<TValues>,
+  partialMask: Record<string, true>
+) {
+  if (!hasObjectChecks(schema)) {
+    return schema.partial(partialMask)
+  }
+
+  const baseSchema = new schema.constructor({
+    ...schema._def,
+    checks: [],
+  })
+
+  let partialSchema = baseSchema.partial(partialMask)
+
+  if (!hasCheck(partialSchema)) {
+    return partialSchema
+  }
+
+  for (const check of schema._def.checks ?? []) {
+    partialSchema = partialSchema.check(check as never)
+  }
+
+  return partialSchema
 }
 
 function isEmptyOptionalValue(value: unknown) {
@@ -85,7 +141,8 @@ function createFormSchema<TValues extends FieldValues>(
 
   const schema =
     partialFieldNames.length > 0 && hasPartial(formSchema)
-      ? formSchema.partial(
+      ? partialObjectSchema(
+        formSchema,
         Object.fromEntries(partialFieldNames.map((name) => [name, true]))
       )
       : formSchema

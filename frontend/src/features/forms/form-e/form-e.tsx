@@ -3,16 +3,13 @@ import { formEFields } from "@/features/forms/form-e/form-e-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 import { getMutationErrorMessage } from "@/api/forms/shared"
 import { useCreateFormERecord } from "@/hooks/forms/use-form-e-mutation"
-import { useAuthStore } from "@/store/auth-store"
 
 export default function FormE() {
   const createFormERecord = useCreateFormERecord()
-  const userId = useAuthStore((state) => state.user?.id)
 
   async function onSubmit(data: FormEValues) {
     await createFormERecord.mutateAsync({
       values: data,
-      submittedBy: userId,
     })
   }
 
@@ -23,17 +20,17 @@ export default function FormE() {
       defaultValues={{
         linkedResearch: "",
         titleOfArtisticWork: "",
-        typeOfOutput: "",
+        typeOfOutput: undefined,
         otherType: "",
-        typeOfPublicEvent: "",
+        typeOfPublicEvent: undefined,
         titleOfEvent: "",
         organizer: "",
-        locationScope: "",
+        locationScope: undefined,
         eventVenueCityCountry: "",
         eventStartDate: undefined,
         eventEndDate: undefined,
         firstShownReleasedDate: undefined,
-        utilization: "",
+        utilization: undefined,
         proofOfResearchOutput: [],
         proofOfUtilization: [],
         remarks: "",
