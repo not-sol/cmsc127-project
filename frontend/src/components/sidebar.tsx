@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ClipboardList, LayoutGrid, Plus, Download, User, LogOut } from "lucide-react";
+import { ClipboardList, LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -8,6 +8,7 @@ const navItems = [
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
   { icon: ClipboardList, label: "Submitted Reports", href: "/submitted-reports" },
   { icon: Download, label: "Export Records", href: "/exports" },
+  { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" }, //DEPT CHAIR VIEW ONLY
   { icon: User, label: "User Management", href: "/user-management" },
 ];
 
