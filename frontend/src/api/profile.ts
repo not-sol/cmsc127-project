@@ -1,43 +1,33 @@
 import { supabase } from "@/lib/supabase/client";
 
-export interface CreateFacultyProfileParams {
-  faculty_id: string;
+export type AppRole = "faculty" | "department_chair" | "admin";
+
+export interface UserProfile {
   email: string;
-  first_name?: string;
-  last_name?: string;
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  department_id: number | null;
+  role: AppRole;
 }
 
-export async function createFacultyProfile({
-  faculty_id,
-  email,
-  first_name,
-  last_name,
-}: CreateFacultyProfileParams) {
-  const { data, error } = await supabase
-    .from("faculties")
-    .insert({
-      faculty_id,
-      email,
-      first_name,
-      last_name,
-    })
-    .select()
-    .single();
+export async function ensureUserProfile() {
+  const { data, error } = await supabase.rpc("ensure_user_profile");
 
   if (error) {
     throw error;
   }
 
-  return data;
+  return data as UserProfile;
 }
 
-export async function getFacultyProfile(faculty_id: string) {
+export async function getUserProfile(id: string) {
   const { data, error } = await supabase
-    .from("faculties")
+    .from("users")
     .select("*")
-    .eq("faculty_id", faculty_id)
+    .eq("id", id)
     .single();
 
   if (error) throw error;
-  return data;
+  return data as UserProfile;
 }

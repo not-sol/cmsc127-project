@@ -8,6 +8,7 @@ const navItems = [
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
   { icon: Download, label: "Export Records", href: "/exports" },
   { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" }, //DEPT CHAIR VIEW ONLY
+  { icon: User, label: "User Management", href: "/user-management" },
 ];
 
 export default function Sidebar() {

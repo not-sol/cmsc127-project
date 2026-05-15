@@ -16,6 +16,14 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DEPARTMENTS } from "@/lib/constants";
 
 export default function RegisterCard() {
   const { register: signUp, isLoading, registerError } = useAuth();
@@ -24,6 +32,8 @@ export default function RegisterCard() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -33,8 +43,11 @@ export default function RegisterCard() {
       confirmPassword: "",
       firstName: "",
       lastName: "",
+      department: "CSMOD",
     },
   });
+
+  const selectedDepartment = watch("department");
 
   async function onSubmit(data: RegisterFormValues) {
     try {
@@ -113,6 +126,30 @@ export default function RegisterCard() {
             />
             {errors.email && (
               <p className="text-xs text-destructive">{errors.email.message}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="department">Department</Label>
+            <Select
+              value={selectedDepartment}
+              onValueChange={(value: RegisterFormValues["department"]) =>
+                setValue("department", value, { shouldDirty: true, shouldValidate: true })
+              }
+            >
+              <SelectTrigger id="department" className="w-full">
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                {DEPARTMENTS.map((department) => (
+                  <SelectItem key={department} value={department}>
+                    {department}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.department && (
+              <p className="text-xs text-destructive">{errors.department.message}</p>
             )}
           </div>
 
