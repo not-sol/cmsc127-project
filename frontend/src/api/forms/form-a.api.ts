@@ -1,63 +1,51 @@
 // form-a.api.ts
 import type { FormValues as FormAValues } from "@/features/forms/form-a/form-a-schema"
 import { emptyStringToNull, serializeFiles } from "@/api/forms/shared"
-import { supabase } from "@/lib/supabase/client" // your supabase client
+import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormAInput = {
   values: FormAValues
-  entry_id?: string
+  userId: string
 }
 
-function toSqlDate(val: string): string {
-  // If year-only (e.g. "2024"), convert to "2024-01-01"
-  if (/^\d{4}$/.test(val.trim())) return `${val.trim()}-01-01`
-  // Otherwise assume it's already MM/DD/YYYY from your Zod transform
-  const [mm, dd, yyyy] = val.split("/")
-  return `${yyyy}-${mm}-${dd}`
-}
+export async function createFormARecord({ values, userId }: CreateFormAInput) {
+  try {
+    const { data, error } = await supabase
+      .from("form_a_publications")
+      .insert({
+        submitted_by: userId,
+        publication_type: values.pubType,
+        other_publication_type_text: emptyStringToNull(values.otherPubTypeText),
+        publication_title: values.pubTitle,
+        publication_authors: values.pubAuthors,
+        publication_date: values.pubDate,
+        publication_name: values.pubName,
+        publisher_name: values.pubrName,
+        publisher_type: values.pubrType,
+        publisher_location: values.pubrLocr,
+        editor_names: emptyStringToNull(values.edrName),
+        volume_issue: emptyStringToNull(values.vonumInum),
+        doi_url: values.doiUrl || null,
+        isbn_issn: emptyStringToNull(values.isbn),
+        is_isi: values.isIsi === "Yes",
+        is_scopus: values.scopus === "Yes",
+        is_pubmed_medline: values.pubmedMedline === "Yes",
+        is_ched_recognized: values.isChedRecognized === "Yes",
+        is_peer_reviewed: values.peerRev === "Yes",
+        other_database: emptyStringToNull(values.otherDB),
+        citation_count: emptyStringToNull(values.citationNum),
+        proof_of_publication_files: serializeFiles(values.pubProof),
+        proof_of_utilization_files: serializeFiles(values.pubUtilProof) ?? [],
+        remarks: emptyStringToNull(values.pubSupRemarks),
+        related_kras: emptyStringToNull(values.pubRelatedKRAs),
+      })
+      .select("id")
+      .single()
 
-export async function createFormARecord({ values }: CreateFormAInput) {
-  // 1. Insert into isip_publication_forms first to get the entry_id
-  const { data: isipData, error: isipError } = await supabase
-    .from("isip_publication_forms")
-    .insert({
-      publication_type: values.pubType,
-      publication_title: values.pubTitle,
-      publication_author: values.pubAuthors,         // singular column name
-      publication_date_published: toSqlDate(values.pubDate),
-      publication_name: values.pubName,
-      isi: values.isIsi === "Yes",
-      scopus: values.scopus === "Yes",
-      pubmed: values.pubmedMedline === "Yes",
-      ched_recognized: values.isChedRecognized === "Yes",
-      peer_reviewed: values.peerRev === "Yes",
-      other_reputable_database: emptyStringToNull(values.otherDB),
-      publication_proof: serializeFiles(values.pubProof),
-      remarks: emptyStringToNull(values.pubSupRemarks),
-      related_kras: emptyStringToNull(values.pubRelatedKRAs),
-    })
-    .select("entry_id")
-    .single()
-
-  if (isipError) throw isipError
-
-  // 2. Insert into pbms_publication_forms using the returned entry_id
-  const { error: pbmsError } = await supabase
-    .from("pbms_publication_forms")
-    .insert({
-      entry_id: isipData.entry_id,
-      publisher_name: values.pubrName,
-      publisher_type: values.pubrType,
-      publisher_location: values.pubrLocr,
-      editor_name: emptyStringToNull(values.edrName),
-      volume_issue_no: emptyStringToNull(values.vonumInum),
-      doi: values.doiUrl || "",           // NOT NULL — see note below
-      isbn: emptyStringToNull(values.isbn),
-      number_of_citation: values.citationNum ? Number(values.citationNum) : null,
-      utilization_proof: serializeFiles(values.pubUtilProof) ?? null,
-    })
-
-  if (pbmsError) throw pbmsError
-
-  return isipData
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error("Error in createFormARecord:", error)
+    throw error
+  }
 }

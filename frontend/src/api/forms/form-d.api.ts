@@ -5,41 +5,36 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormDInput = {
   values: FormDValues
-  entry_id?: string
+  userId: string
 }
 
-export async function createFormDRecord({ values }: CreateFormDInput) {
-  // 1. Insert into isip_patents_forms to get the entry_id
-  const { data: isipData, error: isipError } = await supabase
-    .from("isip_patents_forms")
-    .insert({
-      attachments: serializeFiles(values.patentAttachments),
-      remarks: emptyStringToNull(values.patentRemarks),
-    })
-    .select("entry_id")
-    .single()
+export async function createFormDRecord({ values, userId }: CreateFormDInput) {
+  try {
+    const { data, error } = await supabase
+      .from("form_d_patents")
+      .insert({
+        submitted_by: userId,
+        linked_research_title: values.researchTitle3,
+        patent_title: values.patentTitle,
+        patent_type: values.patentType,
+        application_number: values.aplNum,
+        inventor_names: values.aplInventors,
+        applicant_names: values.aplApplicants,
+        unexamined_application_date: toIsoDate(values.unexaminedApplicationDate),
+        grant_patent_date: values.grantPatentDate ? toIsoDate(values.grantPatentDate) : null,
+        registration_number: values.regisNum,
+        commercial_product_name: emptyStringToNull(values.commercialProduct),
+        utilization_type: values.utilType,
+        attachments: serializeFiles(values.patentAttachments),
+        remarks: emptyStringToNull(values.patentRemarks),
+      })
+      .select("id")
+      .single()
 
-  if (isipError) throw isipError
-
-  // 2. Insert into pbms_patents_forms using the returned entry_id
-  const { error: pbmsError } = await supabase
-    .from("pbms_patents_forms")
-    .insert({
-      entry_id: isipData.entry_id,
-      linked_research: values.researchTitle3,
-      patent_title: values.patentTitle,
-      patent_type: values.patentType,
-      application_no: Number(values.aplNum),        // numeric column — see note below
-      inventor_name: values.aplInventors,            // singular column name
-      applicant_name: values.aplApplicants,          // singular column name
-      publication_date: toIsoDate(values.unexaminedApplicationDate),
-      grant_date: values.grantPatentDate ? toIsoDate(values.grantPatentDate) : null,
-      registration_no: values.regisNum ? Number(values.regisNum) : null,
-      commercial_product_name: emptyStringToNull(values.commercialProduct),
-      research_utilization_output: values.utilType,
-    })
-
-  if (pbmsError) throw pbmsError
-
-  return isipData
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error("Error in createFormDRecord:", error)
+    throw error
+  }
 }

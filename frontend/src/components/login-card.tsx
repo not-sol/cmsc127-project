@@ -33,8 +33,9 @@ export default function LoginCard() {
   async function onSubmit(data: LoginFormValues) {
     try {
       await login(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      // The error is already handled by the mutation and available via loginError
     }
   }
 
