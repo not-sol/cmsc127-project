@@ -1,21 +1,23 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Plus, Download, User, LogOut } from "lucide-react";
+import { ClipboardList, LayoutGrid, Plus, Download, User, LogOut } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { icon: LayoutGrid, label: "My Reports", href: "/reports" },
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
+  { icon: ClipboardList, label: "Submitted Reports", href: "/submitted-reports" },
   { icon: Download, label: "Export Records", href: "/exports" },
   { icon: User, label: "User Management", href: "/user-management" },
 ];
 
 export default function Sidebar() {
   const location = useLocation();
-  const { logout, isAdmin } = useAuth();
+  const { logout, isAdmin, isChair } = useAuth();
 
   const filteredNavItems = navItems.filter((item) => {
     if (item.href === "/user-management") return isAdmin;
+    if (item.href === "/submitted-reports") return isAdmin || isChair;
     return true;
   });
 

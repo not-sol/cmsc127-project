@@ -22,6 +22,7 @@ import ProtectedRoute from "@/components/protected-route";
 import NewReportPage from "@/pages/NewReportPage";
 import ExportsRecordsPage from "@/pages/ExportRecordsPage";
 import UserManagementForm from "@/pages/UserManagementForm";
+import SubmittedReportsPage from "@/pages/SubmittedReportsPage";
 
 export const router = createBrowserRouter([
   {
@@ -119,6 +120,15 @@ export const router = createBrowserRouter([
       {
         path: "/user-management",
         element: <UserManagementForm />,
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute allowedRoles={["department_chair", "admin"]} />,
+    children: [
+      {
+        path: "/submitted-reports",
+        element: <SubmittedReportsPage />,
       },
     ],
   },
