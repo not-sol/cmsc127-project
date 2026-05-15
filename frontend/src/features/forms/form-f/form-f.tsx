@@ -27,7 +27,7 @@ export default function FormF() {
         details: "",
         startDate: undefined,
         endDate: undefined,
-        attachments: [],
+        attachments: undefined,
         remarks: "",
         relatedKras: "",
       }}
