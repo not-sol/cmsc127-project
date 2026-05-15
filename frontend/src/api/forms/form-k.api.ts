@@ -10,6 +10,14 @@ export type CreateFormKInput = {
   submittedBy?: string
 }
 
+const PBMS_OTHER_ACCOMPLISHMENTS_COLUMNS = [
+  "entry_id",
+  "sub_type",
+  "accomplishment_title",
+  "accomplishment_description",
+  "accomplishment_date",
+] as const
+
 export async function createFormKRecord({ values, reportId }: CreateFormKInput) {
   // 1. Upload supporting documents first. Store only Supabase Storage path text in the database.
   const supportingDocumentPaths = await uploadFilesAsStoragePathText(
@@ -57,6 +65,11 @@ export async function createFormKRecord({ values, reportId }: CreateFormKInput) 
   }
 
   // 4. Insert into pbms_other_accomplishments_forms
+  console.log(
+    "[Supabase] Expected pbms_other_accomplishments_forms columns:",
+    PBMS_OTHER_ACCOMPLISHMENTS_COLUMNS
+  )
+
   const pbmsPayload = {
     entry_id: entryId,
     accomplishment_title: values.title,
