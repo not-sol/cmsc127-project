@@ -22,7 +22,8 @@ const formBSchema = z.object({
     .optional(),
   researchTimeframeMonths: z
     .string()
-    .optional(),
+    .min(1, "Number of months is required.")
+    .refine((v) => !isNaN(Number(v)) && Number(v) >= 0, "Must be a valid number"),
 
   //B.3  Researcher Information
   researcherNames: z

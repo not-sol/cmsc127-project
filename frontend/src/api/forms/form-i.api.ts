@@ -1,56 +1,49 @@
+// form-i.api.ts
 import type { FormIPartnershipValues } from "@/features/forms/form-i/form-i-schema"
-import {
-  emptyStringToNull,
-  insertFormRecord,
-  serializeFiles,
-  toIsoDate,
-} from "@/api/forms/shared"
-
-export const FORM_I_TABLE = "form_i_partnerships"
+import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
+import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormIInput = {
   values: FormIPartnershipValues
-  submittedBy?: string
+  entry_id?: string
 }
 
-export async function createFormIRecord({
-  values,
-  submittedBy,
-}: CreateFormIInput) {
-  return insertFormRecord(FORM_I_TABLE, {
-    submitted_by: submittedBy ?? null,
-    contributing_unit: values.contributingUnit,
-    title_of_extension_partnership: values.titleOfExtensionPartnership,
-    scope_of_work: values.scopeOfWork,
-    partner_stakeholder_name: values.nameOfPartnerStakeholder,
-    stakeholder_category: values.stakeholderCategory,
-    training_courses: values.trainingCourses === "yes",
-    technical_advisory_service: values.technicalAdvisoryService === "yes",
-    information_dissemination: values.informationDissemination === "yes",
-    consultancy: values.consultancy === "yes",
-    community_outreach: values.communityOutreach === "yes",
-    technology_knowledge_transfer: values.technologyKnowledgeTransfer === "yes",
-    organizing_events: values.organizingEvents === "yes",
-    type_of_partnership_agreement: values.typeOfPartnershipAgreement,
-    partnership_effectivity_start_date: toIsoDate(values.partnershipEffectivityStartDate),
-    partnership_effectivity_end_date: toIsoDate(values.partnershipEffectivityEndDate),
-    moa_document: serializeFiles(values.moaDocument),
-    remarks: emptyStringToNull(values.remarks),
-  })
-}
+export async function createFormIRecord({ values }: CreateFormIInput) {
+  // 1. Insert into isip_partnerships_forms
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_partnerships_forms")
+    .insert({
+      partnership_title: values.titleOfExtensionPartnership,
+      work_scope: values.scopeOfWork,
+      training_courses: values.trainingCourses === "yes",
+      advisory_service: values.technicalAdvisoryService === "yes",
+      information_dissemination: values.informationDissemination === "yes",
+      consultancy: values.consultancy === "yes",
+      community_outreach: values.communityOutreach === "yes",
+      knowledge_transfer: values.technologyKnowledgeTransfer === "yes",
+      organizing_events: values.organizingEvents === "yes",
+      remarks: emptyStringToNull(values.remarks),
+    })
+    .select("entry_id")
+    .single()
 
-export const formISupabaseInsertExample = `
-insert into public.${FORM_I_TABLE} (
-  submitted_by,
-  contributing_unit,
-  title_of_extension_partnership,
-  partner_stakeholder_name,
-  type_of_partnership_agreement
-) values (
-  '<user-id>',
-  'CSMOD',
-  'Sample Extension Partnership',
-  'Quezon City LGU',
-  'MOA'
-);
-`.trim()
+  if (isipError) throw isipError
+
+  // 2. Insert into pbms_partnerships_forms
+  const { error: pbmsError } = await supabase
+    .from("pbms_partnerships_forms")
+    .insert({
+      entry_id: isipData.entry_id,
+      contributing_unit: values.contributingUnit,
+      partner_stakeholder_name: values.nameOfPartnerStakeholder,
+      stakeholder_category: values.stakeholderCategory,
+      partnership_agreement_type: values.typeOfPartnershipAgreement,
+      partnership_effectivity_start_date: toIsoDate(values.partnershipEffectivityStartDate),
+      partnership_effectivity_end_date: toIsoDate(values.partnershipEffectivityEndDate),
+      moa_docs: serializeFiles(values.moaDocument),
+    })
+
+  if (pbmsError) throw pbmsError
+
+  return isipData
+}
