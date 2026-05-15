@@ -7,7 +7,7 @@ import { ensureUserProfile } from "@/api/profile";
 import type { Session } from "@supabase/supabase-js";
 
 export default function App() {
-  const { setUser, setSession, setLoading } = useAuthStore();
+  const { setUser, setSession, setProfile, setLoading } = useAuthStore();
 
   useEffect(() => {
     let isMounted = true;
@@ -19,13 +19,15 @@ export default function App() {
       }
 
       try {
+        let profile = null;
         if (session) {
-          await ensureUserProfile();
+          profile = await ensureUserProfile();
         }
 
         if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
+        setProfile(profile);
       } catch (error) {
         console.error("Unable to initialize verified user profile:", error);
         if (session) {

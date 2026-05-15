@@ -23,6 +23,7 @@ import NewReportPage from "@/pages/NewReportPage";
 import ExportsRecordsPage from "@/pages/ExportRecordsPage";
 import ReportSubmissionPage from "@/pages/ReportSubmissionPage";
 import UserManagementForm from "@/pages/UserManagementForm";
+import SubmittedReportsPage from "@/pages/SubmittedReportsPage";
 
 export const router = createBrowserRouter([
   {
@@ -115,12 +116,22 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "/reports",
-    element: <ReportsPage />,
+    element: <ProtectedRoute allowedRoles={["admin"]} />,
+    children: [
+      {
+        path: "/user-management",
+        element: <UserManagementForm />,
+      },
+    ],
   },
   {
-    path: "/reports/create-report",
-    element: <NewReportPage />,
+    element: <ProtectedRoute allowedRoles={["department_chair", "admin"]} />,
+    children: [
+      {
+        path: "/submitted-reports",
+        element: <SubmittedReportsPage />,
+      },
+    ],
   },
   {
     path: "/reports/create-report/new-entry",

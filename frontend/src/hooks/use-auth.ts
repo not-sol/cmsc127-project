@@ -5,7 +5,7 @@ import type { LoginFormValues, RegisterFormValues } from "@/lib/validations/auth
 
 export function useAuth() {
   const queryClient = useQueryClient();
-  const { user, session, loading } = useAuthStore();
+  const { user, session, profile, loading } = useAuthStore();
 
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginFormValues) => signInWithEmail(credentials),
@@ -39,6 +39,11 @@ export function useAuth() {
   return {
     user,
     session,
+    profile,
+    role: profile?.role ?? null,
+    isAdmin: profile?.role === "admin",
+    isChair: profile?.role === "department_chair",
+    isFaculty: profile?.role === "faculty",
     isLoading: loading || loginMutation.isPending || registerMutation.isPending || logoutMutation.isPending || forgotPasswordMutation.isPending || resetPasswordMutation.isPending,
     login: loginMutation.mutateAsync,
     register: registerMutation.mutateAsync,

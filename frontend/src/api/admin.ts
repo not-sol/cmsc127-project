@@ -1,9 +1,20 @@
 import { supabase } from '@/lib/supabase/client'
+import type { UserProfile } from './profile'
 
 export const getUsers = async () => {
   const { data, error } = await supabase
     .from("users")
+    .select("*, departments(department_name)")
+
+  if (error) throw error
+  return data as (UserProfile & { departments: { department_name: string } | null })[]
+}
+
+export const getDepartments = async () => {
+  const { data, error } = await supabase
+    .from("departments")
     .select("*")
+    .order("department_name")
 
   if (error) throw error
   return data
@@ -16,6 +27,15 @@ export const updateUserRole = async (
   const { error } = await supabase
     .from("users")
     .update({ role })
+    .eq("id", userId)
+
+  if (error) throw error
+}
+
+export const deleteUser = async (userId: string) => {
+  const { error } = await supabase
+    .from("users")
+    .delete()
     .eq("id", userId)
 
   if (error) throw error

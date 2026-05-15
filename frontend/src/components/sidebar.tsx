@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
+import { ClipboardList, LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { icon: LayoutGrid, label: "My Reports", href: "/reports" },
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
+  { icon: ClipboardList, label: "Submitted Reports", href: "/submitted-reports" },
   { icon: Download, label: "Export Records", href: "/exports" },
   { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" }, //DEPT CHAIR VIEW ONLY
   { icon: User, label: "User Management", href: "/user-management" },
@@ -13,7 +14,13 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, isAdmin, isChair } = useAuth();
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.href === "/user-management") return isAdmin;
+    if (item.href === "/submitted-reports") return isAdmin || isChair;
+    return true;
+  });
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-[#6b0f1a] px-4 py-6">
@@ -30,7 +37,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 flex-1">
-        {navItems.map(({ icon: Icon, label, href }) => (
+        {filteredNavItems.map(({ icon: Icon, label, href }) => (
           <Link
             key={label}
             to={href}

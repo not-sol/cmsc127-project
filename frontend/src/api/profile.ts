@@ -9,6 +9,8 @@ export interface UserProfile {
   last_name: string | null;
   department_id: number | null;
   role: AppRole;
+  username: string | null;
+  employment_type: string | null;
 }
 
 export async function ensureUserProfile() {
