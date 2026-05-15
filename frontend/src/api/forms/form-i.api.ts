@@ -5,14 +5,31 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormIInput = {
   values: FormIPartnershipValues
-  entry_id?: string
+  submittedBy?: string
 }
 
-export async function createFormIRecord({ values }: CreateFormIInput) {
-  // 1. Insert into isip_partnerships_forms
-  const { data: isipData, error: isipError } = await supabase
-    .from("isip_partnerships_forms")
+export async function createFormIRecord({ values, submittedBy }: CreateFormIInput) {
+  // 0. Insert into forms table first to satisfy FK constraint
+  const { data: formData, error: formError } = await supabase
+    .from("forms")
     .insert({
+      title: values.titleOfExtensionPartnership,
+      author: values.nameOfPartnerStakeholder,
+      description: emptyStringToNull(values.remarks),
+    })
+    .select("entry_id")
+    .single()
+
+  if (formError) {
+    console.error("Error creating forms record:", formError)
+    throw formError
+  }
+
+  // 1. Insert into isip_partnership_forms
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_partnership_forms")
+    .insert({
+      entry_id: formData.entry_id,
       partnership_title: values.titleOfExtensionPartnership,
       work_scope: values.scopeOfWork,
       training_courses: values.trainingCourses === "yes",
@@ -27,13 +44,16 @@ export async function createFormIRecord({ values }: CreateFormIInput) {
     .select("entry_id")
     .single()
 
-  if (isipError) throw isipError
+  if (isipError) {
+    console.error("Error creating isip_partnership_forms record:", isipError)
+    throw isipError
+  }
 
   // 2. Insert into pbms_partnerships_forms
   const { error: pbmsError } = await supabase
     .from("pbms_partnerships_forms")
     .insert({
-      entry_id: isipData.entry_id,
+      entry_id: formData.entry_id,
       contributing_unit: values.contributingUnit,
       partner_stakeholder_name: values.nameOfPartnerStakeholder,
       stakeholder_category: values.stakeholderCategory,
@@ -43,7 +63,10 @@ export async function createFormIRecord({ values }: CreateFormIInput) {
       moa_docs: serializeFiles(values.moaDocument),
     })
 
-  if (pbmsError) throw pbmsError
+  if (pbmsError) {
+    console.error("Error creating pbms_partnerships_forms record:", pbmsError)
+    throw pbmsError
+  }
 
   return isipData
 }

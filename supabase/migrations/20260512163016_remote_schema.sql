@@ -217,7 +217,7 @@ CREATE TABLE IF NOT EXISTS "public"."isip_authorship_forms" (
     "entry_id" bigint NOT NULL,
     "material_title" "text",
     "author" "text",
-    "year" "date",
+    "year" int,
     "attachments" "text",
     "remarks" "text",
     "related_kras" "text"
