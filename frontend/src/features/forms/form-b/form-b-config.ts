@@ -107,6 +107,15 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     name: "supportingAttachments",
     label: "Attachments",
     description: "Upload cover page, title page, acceptance letter, or preprint",
+    multiple: false,
+    maxFiles: 1,
+    allowedMimeTypes: [
+      "image/*",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ],
+    maxFileSize: 1000 * 1000 * 10,
   },
   { //researchRemarks
     type: "textarea",
