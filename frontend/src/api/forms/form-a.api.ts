@@ -1,7 +1,8 @@
 // form-a.api.ts
 import type { FormValues as FormAValues } from "@/features/forms/form-a/form-a-schema"
 import { emptyStringToNull, uploadFiles } from "@/api/forms/shared"
-import { supabase } from "@/lib/supabase/client" // your supabase client
+import { supabase } from "@/lib/supabase/client"
+import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 
 export type CreateFormAInput = {
   values: FormAValues
@@ -18,8 +19,8 @@ function toSqlDate(val: string): string {
 
 export async function createFormARecord({ values }: CreateFormAInput) {
   // 1. Upload files first
-  const pubProofPath = await uploadFiles(values.pubProof, "publication_proof")
-  const utilProofPath = await uploadFiles(values.pubUtilProof, "publication_proof")
+  const pubProofPath = await uploadFiles(values.pubProof, STORAGE_BUCKETS.PUBLICATION_PROOF)
+  const utilProofPath = await uploadFiles(values.pubUtilProof, STORAGE_BUCKETS.PUBLICATION_PROOF)
 
   // 2. Insert into isip_publication_forms first to get the entry_id
   const { data: isipData, error: isipError } = await supabase
