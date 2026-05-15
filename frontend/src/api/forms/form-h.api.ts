@@ -5,14 +5,31 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormHInput = {
   values: FormHValues
-  entry_id?: string
+  submittedBy?: string
 }
 
-export async function createFormHRecord({ values }: CreateFormHInput) {
+export async function createFormHRecord({ values, submittedBy }: CreateFormHInput) {
+  // 0. Insert into forms table first to satisfy FK constraint
+  const { data: formData, error: formError } = await supabase
+    .from("forms")
+    .insert({
+      title: values.title,
+      author: values.contributingUnit,
+      description: emptyStringToNull(values.remarks),
+    })
+    .select("entry_id")
+    .single()
+
+  if (formError) {
+    console.error("Error creating forms record:", formError)
+    throw formError
+  }
+
   // 1. Insert into isip_extension_programs_forms
   const { data: isipData, error: isipError } = await supabase
     .from("isip_extension_programs_forms")
     .insert({
+      entry_id: formData.entry_id,
       extension_title: values.title,
       training_courses: values.trainingCourses === "yes",
       external_clients_technical: values.technicalAdvisoryService === "yes",
@@ -31,20 +48,26 @@ export async function createFormHRecord({ values }: CreateFormHInput) {
     .select("entry_id")
     .single()
 
-  if (isipError) throw isipError
+  if (isipError) {
+    console.error("Error creating isip_extension_programs_forms record:", isipError)
+    throw isipError
+  }
 
   // 2. Insert into pbms_extension_programs_forms
   const { error: pbmsError } = await supabase
     .from("pbms_extension_programs_forms")
     .insert({
-      entry_id: isipData.entry_id,
+      entry_id: formData.entry_id,
       contributing_unit: values.contributingUnit,
       academic_degree: emptyStringToNull(values.academicDegreePrograms),
       no_of_beneficiary_groups: toIntegerOrNull(values.numberOfBeneficiaries),
       majority_share_funding: values.fundingSource,
     })
 
-  if (pbmsError) throw pbmsError
+  if (pbmsError) {
+    console.error("Error creating pbms_extension_programs_forms record:", pbmsError)
+    throw pbmsError
+  }
 
   return isipData
 }

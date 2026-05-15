@@ -5,32 +5,32 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormKInput = {
   values: FormKOtherValues
-  entry_id?: string
+  submittedBy?: string
 }
 
-export async function createFormKRecord({ values }: CreateFormKInput) {
-  // 1. Insert into isip_other_accomplishments_forms
-  const { data: isipData, error: isipError } = await supabase
-    .from("isip_other_accomplishments_forms")
-    .insert({
-      attachments: serializeFiles(values.supportingDocuments),
-    })
-    .select("entry_id")
-    .single()
+export async function createFormKRecord({ values, submittedBy }: CreateFormKInput) {
+  try {
+    const { data, error } = await supabase
+      .from("form_k_other_accomplishments")
+      .insert({
+        title: values.title,
+        description: values.description,
+        accomplishment_date: toIsoDate(values.date),
+        end_date: values.endDate ? toIsoDate(values.endDate) : null,
+        supporting_documents: serializeFiles(values.supportingDocuments),
+        submitted_by: submittedBy,
+      })
+      .select("id")
+      .single()
 
-  if (isipError) throw isipError
+    if (error) {
+      console.error("Error creating Form K record:", error)
+      throw error
+    }
 
-  // 2. Insert into pbms_other_accomplishments_forms
-  const { error: pbmsError } = await supabase
-    .from("pbms_other_accomplishments_forms")
-    .insert({
-      entry_id: isipData.entry_id,
-      accomplishment_title: values.title,
-      accomplishment_description: values.description,
-      accomplishment_date: toIsoDate(values.date),
-    })
-
-  if (pbmsError) throw pbmsError
-
-  return isipData
+    return data
+  } catch (error) {
+    console.error("Unexpected error in createFormKRecord:", error)
+    throw error
+  }
 }

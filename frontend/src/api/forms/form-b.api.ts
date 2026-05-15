@@ -5,43 +5,38 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormBInput = {
   values: FormBValues
-  entry_id?: string
+  userId: string
 }
 
-export async function createFormBRecord({ values }: CreateFormBInput) {
-  // 1. Insert into isip_research_forms to get the entry_id
-  const { data: isipData, error: isipError } = await supabase
-    .from("isip_research_forms")
-    .insert({
-      research_title: values.researchTitle,
-      research_type: values.researchType,
-      start_date: toIsoDate(values.rStartDate),
-      end_date: values.rEndDate ? toIsoDate(values.rEndDate) : null,
-      researcher_name: values.researcherNames,        // singular column
-      research_grant: toNumberOrNull(values.upSystemResearchGrantPesos) ?? 0,
-      funding_amount: toNumberOrNull(values.externalFundingAmountPesos) ?? 0,
-      total_funding: toNumberOrNull(values.totalFundingPesos) ?? 0,
-      other_fund_source: emptyStringToNull(values.otherFundSource),
-      attachments: serializeFiles(values.supportingAttachments),
-      remarks: emptyStringToNull(values.researchRemarks),
-      related_kras: emptyStringToNull(values.researchRelatedKRAs),
-    })
-    .select("entry_id")
-    .single()
+export async function createFormBRecord({ values, userId }: CreateFormBInput) {
+  try {
+    const { data, error } = await supabase
+      .from("form_b_grants_and_fellowships")
+      .insert({
+        submitted_by: userId,
+        contributing_unit: values.contrUnit,
+        research_title: values.researchTitle,
+        research_type: values.researchType,
+        research_start_date: toIsoDate(values.rStartDate),
+        research_end_date: values.rEndDate ? toIsoDate(values.rEndDate) : null,
+        research_timeframe_months: values.researchTimeframeMonths,
+        researcher_names: values.researcherNames,
+        up_system_research_grant_pesos: toNumberOrNull(values.upSystemResearchGrantPesos) ?? 0,
+        external_funding_amount_pesos: toNumberOrNull(values.externalFundingAmountPesos) ?? 0,
+        total_funding_pesos: toNumberOrNull(values.totalFundingPesos) ?? 0,
+        other_fund_source: emptyStringToNull(values.otherFundSource),
+        majority_source: values.majoritySource,
+        supporting_attachments: serializeFiles(values.supportingAttachments),
+        remarks: emptyStringToNull(values.researchRemarks),
+        related_kras: emptyStringToNull(values.researchRelatedKRAs),
+      })
+      .select("id")
+      .single()
 
-  if (isipError) throw isipError
-
-  // 2. Insert into pbms_research_forms using the returned entry_id
-  const { error: pbmsError } = await supabase
-    .from("pbms_research_forms")
-    .insert({
-      entry_id: isipData.entry_id,
-      contributing_unit: values.contrUnit,
-      original_timeframe_months: toNumberOrNull(values.researchTimeframeMonths) ?? 0,
-      majority_source_of_funds: values.majoritySource,
-    })
-
-  if (pbmsError) throw pbmsError
-
-  return isipData
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error("Error in createFormBRecord:", error)
+    throw error
+  }
 }
