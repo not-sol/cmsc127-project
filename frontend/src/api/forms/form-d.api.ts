@@ -5,27 +5,49 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormDInput = {
   values: FormDValues
-  entry_id?: string
+  reportId?: number
 }
 
-export async function createFormDRecord({ values }: CreateFormDInput) {
-  // 1. Insert into isip_patents_forms to get the entry_id
+export async function createFormDRecord({ values, reportId }: CreateFormDInput) {
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const { data: formData, error: formError } = await supabase
+    .from("forms")
+    .insert({
+      title: values.patentTitle,
+      author: values.aplInventors,
+      report_id: reportId,
+    })
+    .select("entry_id")
+    .single()
+
+  if (formError) {
+    console.error("[Supabase] Failed to create base form entry:", formError)
+    throw formError
+  }
+
+  const entryId = formData.entry_id
+
+  // 2. Insert into isip_patents_forms to get the entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_patents_forms")
     .insert({
+      entry_id: entryId,
       attachments: serializeFiles(values.patentAttachments),
       remarks: emptyStringToNull(values.patentRemarks),
     })
     .select("entry_id")
     .single()
 
-  if (isipError) throw isipError
+  if (isipError) {
+    console.error("[Supabase] Failed to create ISIP patents entry:", isipError)
+    throw isipError
+  }
 
-  // 2. Insert into pbms_patents_forms using the returned entry_id
+  // 3. Insert into pbms_patents_forms using the returned entry_id
   const { error: pbmsError } = await supabase
     .from("pbms_patents_forms")
     .insert({
-      entry_id: isipData.entry_id,
+      entry_id: entryId,
       linked_research: values.researchTitle3,
       patent_title: values.patentTitle,
       patent_type: values.patentType,
@@ -39,7 +61,10 @@ export async function createFormDRecord({ values }: CreateFormDInput) {
       research_utilization_output: values.utilType,
     })
 
-  if (pbmsError) throw pbmsError
+  if (pbmsError) {
+    console.error("[Supabase] Failed to create PBMS patents entry:", pbmsError)
+    throw pbmsError
+  }
 
-  return isipData
+  return { entry_id: entryId }
 }

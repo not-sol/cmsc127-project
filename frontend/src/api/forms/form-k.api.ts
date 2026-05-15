@@ -5,32 +5,57 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormKInput = {
   values: FormKOtherValues
-  entry_id?: string
+  reportId?: number
 }
 
-export async function createFormKRecord({ values }: CreateFormKInput) {
-  // 1. Insert into isip_other_accomplishments_forms
+export async function createFormKRecord({ values, reportId }: CreateFormKInput) {
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const { data: formData, error: formError } = await supabase
+    .from("forms")
+    .insert({
+      title: values.title,
+      author: "",
+      report_id: reportId,
+    })
+    .select("entry_id")
+    .single()
+
+  if (formError) {
+    console.error("[Supabase] Failed to create base form entry:", formError)
+    throw formError
+  }
+
+  const entryId = formData.entry_id
+
+  // 2. Insert into isip_other_accomplishments_forms using the returned entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_other_accomplishments_forms")
     .insert({
+      entry_id: entryId,
       attachments: serializeFiles(values.supportingDocuments),
     })
     .select("entry_id")
     .single()
 
-  if (isipError) throw isipError
+  if (isipError) {
+    console.error("[Supabase] Failed to create ISIP other accomplishments entry:", isipError)
+    throw isipError
+  }
 
-  // 2. Insert into pbms_other_accomplishments_forms
+  // 3. Insert into pbms_other_accomplishments_forms
   const { error: pbmsError } = await supabase
     .from("pbms_other_accomplishments_forms")
     .insert({
-      entry_id: isipData.entry_id,
+      entry_id: entryId,
       accomplishment_title: values.title,
       accomplishment_description: values.description,
       accomplishment_date: toIsoDate(values.date),
     })
 
-  if (pbmsError) throw pbmsError
+  if (pbmsError) {
+    console.error("[Supabase] Failed to create PBMS other accomplishments entry:", pbmsError)
+    throw pbmsError
+  }
 
-  return isipData
+  return { entry_id: entryId }
 }

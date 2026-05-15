@@ -5,14 +5,33 @@ import { supabase } from "@/lib/supabase/client"
 
 export type CreateFormIInput = {
   values: FormIPartnershipValues
-  entry_id?: string
+  reportId?: number
 }
 
-export async function createFormIRecord({ values }: CreateFormIInput) {
-  // 1. Insert into isip_partnerships_forms
+export async function createFormIRecord({ values, reportId }: CreateFormIInput) {
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const { data: formData, error: formError } = await supabase
+    .from("forms")
+    .insert({
+      title: values.titleOfExtensionPartnership,
+      author: "",
+      report_id: reportId,
+    })
+    .select("entry_id")
+    .single()
+
+  if (formError) {
+    console.error("[Supabase] Failed to create base form entry:", formError)
+    throw formError
+  }
+
+  const entryId = formData.entry_id
+
+  // 2. Insert into isip_partnerships_forms using the returned entry_id
   const { data: isipData, error: isipError } = await supabase
     .from("isip_partnerships_forms")
     .insert({
+      entry_id: entryId,
       partnership_title: values.titleOfExtensionPartnership,
       work_scope: values.scopeOfWork,
       training_courses: values.trainingCourses === "yes",
@@ -27,13 +46,16 @@ export async function createFormIRecord({ values }: CreateFormIInput) {
     .select("entry_id")
     .single()
 
-  if (isipError) throw isipError
+  if (isipError) {
+    console.error("[Supabase] Failed to create ISIP partnership entry:", isipError)
+    throw isipError
+  }
 
-  // 2. Insert into pbms_partnerships_forms
+  // 3. Insert into pbms_partnerships_forms using the same entry_id
   const { error: pbmsError } = await supabase
     .from("pbms_partnerships_forms")
     .insert({
-      entry_id: isipData.entry_id,
+      entry_id: entryId,
       contributing_unit: values.contributingUnit,
       partner_stakeholder_name: values.nameOfPartnerStakeholder,
       stakeholder_category: values.stakeholderCategory,
@@ -43,7 +65,10 @@ export async function createFormIRecord({ values }: CreateFormIInput) {
       moa_docs: serializeFiles(values.moaDocument),
     })
 
-  if (pbmsError) throw pbmsError
+  if (pbmsError) {
+    console.error("[Supabase] Failed to create PBMS partnership entry:", pbmsError)
+    throw pbmsError
+  }
 
-  return isipData
+  return { entry_id: entryId }
 }
