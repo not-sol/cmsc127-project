@@ -120,3 +120,47 @@ export async function createFormERecord({ values, reportId }: CreateFormEInput) 
     throw error
   }
 }
+
+export async function getFormERecord(entryId: number): Promise<FormEValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_creative_work_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP creative work entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_creative_work_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS creative work entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    linkedResearch: pbmsData.linked_research,
+    titleOfArtisticWork: isipData.creative_work_title,
+    typeOfOutput: pbmsData.output_type,
+    otherType: isipData.other_type || "",
+    typeOfPublicEvent: pbmsData.public_event_type,
+    titleOfEvent: pbmsData.event_title,
+    organizer: pbmsData.organizer_name,
+    locationScope: pbmsData.event_scope,
+    eventVenueCityCountry: pbmsData.event_venue,
+    eventStartDate: new Date(isipData.event_start_date),
+    eventEndDate: new Date(isipData.event_end_date),
+    firstShownReleasedDate: new Date(pbmsData.date_released),
+    utilization: pbmsData.utilization_research_output,
+    proofOfResearchOutput: isipData.research_proof,
+    proofOfUtilization: pbmsData.utilization_proof,
+    remarks: isipData.remarks || "",
+    relatedKras: isipData.related_kras || "",
+  }
+}

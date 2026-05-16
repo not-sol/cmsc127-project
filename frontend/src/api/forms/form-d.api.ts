@@ -73,3 +73,43 @@ export async function createFormDRecord({ values, reportId }: CreateFormDInput) 
   return { entry_id: entryId }
 }
 
+export async function getFormDRecord(entryId: number): Promise<FormDValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_patents_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP patents entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_patents_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS patents entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    researchTitle3: pbmsData.linked_research,
+    patentTitle: pbmsData.patent_title,
+    patentType: pbmsData.patent_type,
+    aplNum: String(pbmsData.application_no),
+    aplInventors: pbmsData.inventor_name,
+    aplApplicants: pbmsData.applicant_name,
+    unexaminedApplicationDate: new Date(pbmsData.publication_date),
+    grantPatentDate: pbmsData.grant_date ? new Date(pbmsData.grant_date) : undefined,
+    regisNum: pbmsData.registration_no ? String(pbmsData.registration_no) : "",
+    commercialProduct: pbmsData.commercial_product_name || "",
+    utilType: pbmsData.research_utilization_output,
+    patentAttachments: isipData.attachments,
+    patentRemarks: isipData.remarks || "",
+  }
+}
+

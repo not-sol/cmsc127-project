@@ -1,6 +1,8 @@
 import Sidebar from "@/components/sidebar"
-import FormCOralOrPoster from "@/features/forms/form-c/form-c"
-import { ChevronRight } from "lucide-react"
+import FormCTrainingAndEducation from "@/features/forms/form-c/form-c"
+import { ArrowLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom"
 
 function Breadcrumb() {
   return (
@@ -14,12 +16,14 @@ function Breadcrumb() {
         Create/Edit Report
       </a>
       <ChevronRight size={12} />
-      <span className="text-white">Form C: Oral Paper or Poster Presentations</span>
+      <span className="text-white">Form C: Training and Education</span>
     </div>
   )
 }
 
-export default function FormCOralOrPosterPage() {
+export default function FormCTrainingAndEducationPage() {
+  const navigate = useNavigate()
+
   return (
     <div className="flex min-h-screen bg-muted/40">
       <Sidebar />
@@ -30,10 +34,21 @@ export default function FormCOralOrPosterPage() {
         </div>
 
         <div className="flex-1 px-8 py-8">
-          <h2 className="text-2xl font-bold mb-6">Form C: Oral Paper or Poster Presentations</h2>
-          <FormCOralOrPoster />
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              size="sm"
+              onClick={() => navigate("/reports/create-report")}
+              className="gap-2 hover:bg-[#5a0a0a]"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+            <h2 className="text-2xl font-bold">Form C: Training and Education</h2>
+          </div>
+          <FormCTrainingAndEducation />
         </div>
       </main>
     </div>
   )
 }
+

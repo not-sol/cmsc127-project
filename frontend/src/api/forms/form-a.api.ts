@@ -17,6 +17,16 @@ function toSqlDate(val: string): string {
   return `${yyyy}-${mm}-${dd}`
 }
 
+function fromSqlDate(sqlDate: string): string {
+  if (!sqlDate) return ""
+  // If it's YYYY-MM-DD, convert to MM/DD/YYYY
+  if (/^\d{4}-\d{2}-\d{2}$/.test(sqlDate)) {
+    const [yyyy, mm, dd] = sqlDate.split("-")
+    return `${mm}/${dd}/${yyyy}`
+  }
+  return sqlDate
+}
+
 export async function createFormARecord({ values, reportId }: CreateFormAInput) {
   // 1. Upload files first
   const pubProofPath = await uploadFiles(values.pubProof, STORAGE_BUCKETS.FORM_A)
@@ -89,4 +99,56 @@ export async function createFormARecord({ values, reportId }: CreateFormAInput) 
   }
 
   return { entry_id: entryId }
+}
+
+export async function getFormARecord(entryId: number): Promise<FormAValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_publication_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP publication entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_publication_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS publication entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    pubType: isipData.publication_type,
+    pubTitle: isipData.publication_title,
+    pubAuthors: isipData.publication_author,
+    pubDate: fromSqlDate(isipData.publication_date_published),
+    pubName: isipData.publication_name,
+    isIsi: isipData.isi ? "Yes" : "No",
+    scopus: isipData.scopus ? "Yes" : "No",
+    pubmedMedline: isipData.pubmed ? "Yes" : "No",
+    isChedRecognized: isipData.ched_recognized ? "Yes" : "No",
+    peerRev: isipData.peer_reviewed ? "Yes" : "No",
+    otherDB: isipData.other_reputable_database || "",
+    pubProof: isipData.publication_proof,
+    pubSupRemarks: isipData.remarks || "",
+    pubRelatedKRAs: isipData.related_kras || "",
+
+    pubrName: pbmsData.publisher_name,
+    pubrType: pbmsData.publisher_type,
+    pubrLocr: pbmsData.publisher_location,
+    edrName: pbmsData.editor_name || "",
+    vonumInum: pbmsData.volume_issue_no || "",
+    doiUrl: pbmsData.doi || "",
+    isbn: pbmsData.isbn || "",
+    citationNum: String(pbmsData.number_of_citation || 0),
+    pubUtilProof: pbmsData.utilization_proof,
+    otherPubTypeText: "", // Not stored in DB currently or derived from pubType
+  }
 }

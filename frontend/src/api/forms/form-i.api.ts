@@ -121,3 +121,47 @@ export async function createFormIRecord({ values, reportId, existingMoaDocumentP
 
   return { entry_id: entryId }
 }
+
+export async function getFormIRecord(entryId: number): Promise<FormIPartnershipValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_partnership_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP partnership entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_partnerships_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS partnership entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    contributingUnit: pbmsData.contributing_unit,
+    titleOfExtensionPartnership: isipData.partnership_title,
+    scopeOfWork: "", // Default to empty as it's not explicitly in these tables
+    nameOfPartnerStakeholder: pbmsData.partner_stakeholder_name,
+    stakeholderCategory: pbmsData.stakeholder_category,
+    trainingCourses: isipData.training_courses ? "yes" : "no",
+    technicalAdvisoryService: isipData.advisory_service ? "yes" : "no",
+    informationDissemination: isipData.information_dissemination ? "yes" : "no",
+    consultancy: isipData.consultancy ? "yes" : "no",
+    communityOutreach: isipData.community_outreach ? "yes" : "no",
+    technologyKnowledgeTransfer: isipData.knowledge_transfer ? "yes" : "no",
+    organizingEvents: isipData.organizing_events ? "yes" : "no",
+    typeOfPartnershipAgreement: pbmsData.partnership_agreement_type,
+    partnershipEffectivityStartDate: new Date(pbmsData.partnership_effectivity_start_date),
+    partnershipEffectivityEndDate: new Date(pbmsData.partnership_effectivity_end_date),
+    moaDocument: pbmsData.partnership_agreement,
+    remarks: isipData.remarks || "",
+  }
+}

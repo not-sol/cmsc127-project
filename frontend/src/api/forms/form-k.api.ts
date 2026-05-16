@@ -90,3 +90,35 @@ export async function createFormKRecord({ values, reportId }: CreateFormKInput) 
 
   return { entry_id: entryId }
 }
+
+export async function getFormKRecord(entryId: number): Promise<FormKOtherValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_other_accomplishments_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP other accomplishments entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_other_accomplishments_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS other accomplishments entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    title: isipData.activity_title,
+    description: pbmsData.accomplishment_description,
+    date: new Date(isipData.start_date),
+    endDate: isipData.end_date ? new Date(isipData.end_date) : undefined,
+    supportingDocuments: isipData.attachments,
+  }
+}

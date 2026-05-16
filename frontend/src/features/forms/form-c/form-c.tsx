@@ -5,26 +5,46 @@ import {
 import { formFields } from "@/features/forms/form-c/form-c-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 import { getMutationErrorMessage } from "@/api/forms/shared"
-import { useCreateFormCRecord } from "@/hooks/forms/use-form-c-mutation"
-import { useAuthStore } from "@/store/auth-store"
+import { useCreateFormCRecord, useFormCRecord } from "@/hooks/forms/use-form-c-mutation"
+import { deleteReportEntry } from "@/api/entries"
+import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormCOralOrPoster() {
+  const navigate = useNavigate()
   const createFormCRecord = useCreateFormCRecord()
+  const [searchParams] = useSearchParams()
+  const editingEntryId = Number(searchParams.get("entryId"))
+  const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+
+  const { data: existingData, isLoading: isLoadingExisting } = useFormCRecord(editingEntryId)
 
   const onSubmit = async (data: FormValues) => {
+    if (isEditing) {
+      await deleteReportEntry(editingEntryId)
+    }
+
     await createFormCRecord.mutateAsync({
       values: data,
     })
+
+    navigate("/reports/create-report")
   }
 
+  if (isEditing && isLoadingExisting) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <p className="text-muted-foreground animate-pulse">Loading existing entry...</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-8">
-      {/* <h2 className="text-xl font-bold mb-4">SECTION C — ORAL PAPER OR POSTER PRESENTATIONS</h2> */}
+    <div className="max-w-3xl mx-auto">
+      {/* <h2 className="text-xl font-bold mb-4">SECTION C — PAPER PRESENTATIONS</h2> */}
       <DynamicForm<FormValues>
         formSchema={formCSchema}
         formFields={formFields}
-        defaultValues={{
+        defaultValues={existingData || {
           researchTitle2: "",
           titlePresented: "",
           presentationType: "oral",
@@ -35,12 +55,17 @@ export default function FormCOralOrPoster() {
           conferenceAddress: "",
           conferenceStartDate: new Date(),
           conferenceEndDate: undefined,
-          presentationDate: new Date()
+          presentationDate: new Date(),
+          presentationRemarks: "",
+          presentationRelatedKRAs: "",
         }}
         onSubmit={onSubmit}
+        submitLabel={isEditing ? "Update" : "Submit"}
         submitError={getMutationErrorMessage(createFormCRecord.error)}
         submitSuccess={
-          createFormCRecord.isSuccess ? "Presentation entry created successfully." : undefined
+          createFormCRecord.isSuccess
+            ? `Presentation entry ${isEditing ? "updated" : "created"} successfully.`
+            : undefined
         }
       />
     </div>

@@ -2,50 +2,74 @@ import { formESchema, type FormEValues } from "@/features/forms/form-e/form-e-sc
 import { formEFields } from "@/features/forms/form-e/form-e-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 import { getMutationErrorMessage } from "@/api/forms/shared"
-import { useCreateFormERecord } from "@/hooks/forms/use-form-e-mutation"
+import { useCreateFormERecord, useFormERecord } from "@/hooks/forms/use-form-e-mutation"
+import { deleteReportEntry } from "@/api/entries"
+import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormE() {
+  const navigate = useNavigate()
   const createFormERecord = useCreateFormERecord()
+  const [searchParams] = useSearchParams()
+  const editingEntryId = Number(searchParams.get("entryId"))
+  const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+
+  const { data: existingData, isLoading: isLoadingExisting } = useFormERecord(editingEntryId)
 
   async function onSubmit(data: FormEValues) {
+    if (isEditing) {
+      await deleteReportEntry(editingEntryId)
+    }
+
     await createFormERecord.mutateAsync({
       values: data,
     })
+
+    navigate("/reports/create-report")
+  }
+
+  if (isEditing && isLoadingExisting) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <p className="text-muted-foreground animate-pulse">Loading existing entry...</p>
+      </div>
+    )
   }
 
   return (
-    <DynamicForm<FormEValues>
-      formSchema={formESchema}
-      formFields={formEFields}
-      defaultValues={{
-        linkedResearch: "",
-        titleOfArtisticWork: "",
-        typeOfOutput: undefined,
-        otherType: "",
-        typeOfPublicEvent: undefined,
-        titleOfEvent: "",
-        organizer: "",
-        locationScope: undefined,
-        eventVenueCityCountry: "",
-        eventStartDate: undefined,
-        eventEndDate: undefined,
-        firstShownReleasedDate: undefined,
-        utilization: undefined,
-        proofOfResearchOutput: [],
-        proofOfUtilization: [],
-        remarks: "",
-        relatedKras: "",
-      }}
-      onSubmit={onSubmit}
-      title="Form E: Creative Work Output / Other Research Output"
-      description="Use this form to record creative or research outputs not categorized as publications, paper presentations, or patents. The output must have been exposed in a public event (exhibition, performance, or publication)."
-      submitLabel="Submit"
-      submitError={getMutationErrorMessage(createFormERecord.error)}
-      submitSuccess={
-        createFormERecord.isSuccess
-          ? "Creative work output entry created successfully."
-          : undefined
-      }
-    />
+    <div className="max-w-3xl mx-auto">
+      <DynamicForm<FormEValues>
+            formSchema={formESchema}
+            formFields={formEFields}
+            defaultValues={existingData || {
+              linkedResearch: "",
+              titleOfArtisticWork: "",
+              typeOfOutput: undefined,
+              otherType: "",
+              typeOfPublicEvent: undefined,
+              titleOfEvent: "",
+              organizer: "",
+              locationScope: undefined,
+              eventVenueCityCountry: "",
+              eventStartDate: undefined,
+              eventEndDate: undefined,
+              firstShownReleasedDate: undefined,
+              utilization: undefined,
+              proofOfResearchOutput: [],
+              proofOfUtilization: [],
+              remarks: "",
+              relatedKras: "",
+            }}
+            onSubmit={onSubmit}
+            // title="Form E: Creative Work Output / Other Research Output"
+            description="Use this form to record creative or research outputs not categorized as publications, paper presentations, or patents. The output must have been exposed in a public event (exhibition, performance, or publication)."
+            submitLabel={isEditing ? "Update" : "Submit"}
+            submitError={getMutationErrorMessage(createFormERecord.error)}
+            submitSuccess={
+              createFormERecord.isSuccess
+                ? `Creative work output entry ${isEditing ? "updated" : "created"} successfully.`
+                : undefined
+            }
+          />
+    </div>
   )
 }
