@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Sidebar from "@/components/sidebar";
-import { useUsers, useUpdateUserRole, useDeleteUser, useDepartments } from "@/hooks/use-admin";
+import { useUsers, useUpdateUserRole, useDeleteUser, useDepartments, useUpdateUserDepartment } from "@/hooks/use-admin";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +17,7 @@ import {
 } from "@/components/ui/table";
 
 import {
-  Filter,
   Trash2,
-  ArrowUpDown,
   Loader2,
   User,
   ShieldCheck,
@@ -27,14 +25,25 @@ import {
   ChevronUp,
   UserPlus,
   UserMinus,
+  ArrowRightLeft,
 } from "lucide-react";
-import type { AppRole } from "@/api/profile";
+import type { AppRole, UserProfile } from "@/api/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type GroupedUser = UserProfile & { departments: { department_name: string } | null };
 
 export default function UserManagementForm() {
   const { data: users, isLoading: usersLoading, error: usersError } = useUsers();
   const { data: departments, isLoading: deptsLoading, error: deptsError } = useDepartments();
   const updateRoleMutation = useUpdateUserRole();
+  const updateDeptMutation = useUpdateUserDepartment();
   const deleteUserMutation = useDeleteUser();
 
   const [search, setSearch] = useState("");
@@ -75,6 +84,15 @@ export default function UserManagementForm() {
     } catch (err) {
       console.error("Failed to update role:", err);
       alert("Failed to update role. A department might already have a chair.");
+    }
+  }
+
+  async function handleDeptChange(userId: string, newDeptId: string) {
+    try {
+      await updateDeptMutation.mutateAsync({ userId, departmentId: parseInt(newDeptId) });
+    } catch (err) {
+      console.error("Failed to update department:", err);
+      alert("Failed to update department.");
     }
   }
 
@@ -195,16 +213,34 @@ export default function UserManagementForm() {
                                 <p className="text-sm text-muted-foreground">{dept.chair.email}</p>
                               </div>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-2 text-xs"
-                              disabled={updateRoleMutation.isPending}
-                              onClick={() => handleRoleChange(dept.chair.id, 'faculty')}
-                            >
-                              <UserMinus size={14} />
-                              Demote to Faculty
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Select
+                                    value={dept.chair.department_id?.toString()}
+                                    onValueChange={(val) => handleDeptChange(dept.chair!.id, val)}
+                                >
+                                    <SelectTrigger className="w-[200px] h-8 text-xs">
+                                        <ArrowRightLeft size={12} className="mr-2" />
+                                        <SelectValue placeholder="Move Department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {departments?.map((d) => (
+                                            <SelectItem key={d.department_id} value={d.department_id.toString()}>
+                                                {d.department_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 gap-2 text-xs"
+                                  disabled={updateRoleMutation.isPending}
+                                  onClick={() => handleRoleChange(dept.chair!.id, 'faculty')}
+                                >
+                                  <UserMinus size={14} />
+                                  Demote
+                                </Button>
+                            </div>
                           </div>
                         ) : (
                           <div className="p-4 bg-background/50 border border-dashed rounded-lg text-center">
@@ -222,20 +258,20 @@ export default function UserManagementForm() {
                           </h3>
                         </div>
 
-                        <div className="rounded-lg border bg-background">
+                        <div className="rounded-lg border bg-background overflow-hidden">
                           <Table>
                             <TableHeader>
-                              <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-[300px] text-xs font-bold uppercase">Name</TableHead>
-                                <TableHead className="text-xs font-bold uppercase">Email</TableHead>
-                                <TableHead className="text-xs font-bold uppercase">Employment</TableHead>
-                                <TableHead className="text-right text-xs font-bold uppercase">Actions</TableHead>
+                              <TableRow className="hover:bg-transparent bg-muted/50">
+                                <TableHead className="w-[250px] text-xs font-bold uppercase py-3">Name</TableHead>
+                                <TableHead className="text-xs font-bold uppercase py-3">Email</TableHead>
+                                <TableHead className="w-[180px] text-xs font-bold uppercase py-3">Move Dept</TableHead>
+                                <TableHead className="text-right text-xs font-bold uppercase py-3">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {dept.faculty.length > 0 ? (
-                                dept.faculty.map((f) => (
-                                  <TableRow key={f.id}>
+                                (dept.faculty as GroupedUser[]).map((f) => (
+                                  <TableRow key={f.id} className="hover:bg-muted/5">
                                     <TableCell>
                                       <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
@@ -244,8 +280,24 @@ export default function UserManagementForm() {
                                         <span className="text-sm font-medium">{f.first_name} {f.last_name}</span>
                                       </div>
                                     </TableCell>
-                                    <TableCell className="text-sm">{f.email}</TableCell>
-                                    <TableCell className="text-sm">{f.employment_type || "N/A"}</TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">{f.email}</TableCell>
+                                    <TableCell>
+                                        <Select
+                                            value={f.department_id?.toString()}
+                                            onValueChange={(val) => handleDeptChange(f.id, val)}
+                                        >
+                                            <SelectTrigger className="w-full h-8 text-xs bg-transparent border-dashed">
+                                                <SelectValue placeholder="Move" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {departments?.map((d) => (
+                                                    <SelectItem key={d.department_id} value={d.department_id.toString()}>
+                                                        {d.department_name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                       <div className="flex items-center justify-end gap-1">
                                         <Button

@@ -32,7 +32,7 @@ export async function createFormCRecord({ values, reportId }: CreateFormCInput) 
   const entryId = formData.entry_id
 
   // 3. Insert into isip_oral_forms using the returned entry_id
-  const { data: isipData, error: isipError } = await supabase
+  const { error: isipError } = await supabase
     .from("isip_oral_forms")
     .insert({
       entry_id: entryId,

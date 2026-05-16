@@ -13,5 +13,28 @@ export const ENTRY_TYPES = [
 ];
 
 export const ROLES = ["faculty", "department_chair", "admin"];
-export const DEPARTMENTS = ["CSMOD", "DBSES", "DFSC", "DMPCS"] as const;
+
+export const COLLEGE_DEPARTMENTS = {
+  "College of Humanities & Social Sciences": [
+    "Department of Architecture",
+    "Department of Humanities",
+    "Department of Social Sciences",
+    "Department of Human Kinetics",
+    "CHSS Office of the Dean & College Secretary"
+  ],
+  "College of Science and Mathematics": [
+    "Department of Biological Science & Environmental Studies",
+    "Department of Food Science & Chemistry",
+    "Department of Mathematics, Physics & Computer Science",
+    "CSM Office of the Dean & College Secretary"
+  ],
+  "School of Management (SOM)": [
+    "School of Management (SOM)"
+  ]
+} as const;
+
+export const COLLEGES = Object.keys(COLLEGE_DEPARTMENTS) as (keyof typeof COLLEGE_DEPARTMENTS)[];
+
+export const DEPARTMENTS = Object.values(COLLEGE_DEPARTMENTS).flat();
+
 export const STATUSES = ["Draft", "Waiting for Approval", "Partially Approved", "Fully Approved"];

@@ -131,71 +131,11 @@ export const router = createBrowserRouter([
         path: "/submitted-reports",
         element: <SubmittedReportsPage />,
       },
+      {
+        path: "/report-submissions",
+        element: <ReportSubmissionPage />,
+      },
     ],
-  },
-  {
-    path: "/reports/create-report/new-entry",
-    element: <NewEntryPage />,
-  },
-  {
-    path: "/exports",
-    element: <ExportsRecordsPage />,
-  },
-  {
-    path: "/report-submissions",
-    element: <ReportSubmissionPage />,
-  },
-  {
-    path: "/user-management",
-    element: <UserManagementForm />,
-  },
-  {
-    path: "/test-form",
-    element: <TestForm />,
-  },
-  {
-    path: "/form-k",
-    element: <FormKOtherPage />,
-  },
-  {
-    path: "/form-j",
-    element: <FormJAuthorshipPage />,
-  },
-  {
-    path: "/form-i",
-    element: <FormIPartnershipPage />,
-  },
-  {
-    path: "/form-g",
-    element: <FormGPage />,
-  },
-  {
-    path: "/form-h",
-    element: <FormHPage />,
-  },
-  {
-    path: "/form-e",
-    element: <FormEPage />,
-  },
-  {
-    path: "/form-f",
-    element: <FormFPage />,
-  },
-  {
-    path: "/form-a",
-    element: <FormAPublicationsPage />,
-  },
-  {
-    path: "/form-b",
-    element: <FormBGrantsAndFellowshipsPage />,
-  },
-  {
-    path: "/form-c",
-    element: <FormCOralOrPosterPage />,
-  },
-  {
-    path: "/form-d",
-    element: <FormDPage />,
   },
   {
     path: "/",
@@ -206,3 +146,4 @@ export const router = createBrowserRouter([
     element: <Navigate to="/login" replace />,
   },
 ]);
+

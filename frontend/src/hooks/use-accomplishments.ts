@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchAccomplishments,
   createAccomplishment,
-  type CreateAccomplishmentInput,
 } from "@/api/accomplishments";
 
 const ACCOMPLISHMENTS_QUERY_KEY = ["accomplishments"];

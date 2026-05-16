@@ -21,7 +21,7 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && role && !allowedRoles.includes(role as AppRole)) {
+  if (allowedRoles && (!role || !allowedRoles.includes(role as AppRole))) {
     return <Navigate to="/reports" replace />;
   }
 

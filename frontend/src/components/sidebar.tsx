@@ -18,13 +18,13 @@ export default function Sidebar() {
 
   const filteredNavItems = navItems.filter((item) => {
     if (item.href === "/user-management") return isAdmin;
-    if (item.href === "/submitted-reports") return isAdmin || isChair;
+    if (item.href === "/submitted-reports" || item.href === "/report-submissions") return isAdmin || isChair;
     return true;
   });
 
   return (
     <aside
-      className="relative flex flex-col w-64 min-h-screen px-4 py-6"
+      className="sticky top-0 h-screen w-64 shrink-0 flex flex-col px-4 py-6 overflow-y-auto"
       style={{
         backgroundImage: "linear-gradient(to left, #430409 0%, rgba(107,15,26,0.85) 90%, rgba(107,15,26,0.2) 100%)",
         backgroundColor: "#6b0f1a",

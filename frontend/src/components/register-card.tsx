@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEPARTMENTS } from "@/lib/constants";
+import { COLLEGE_DEPARTMENTS, COLLEGES } from "@/lib/constants";
 
 export default function RegisterCard() {
   const { register: signUp, isLoading, registerError } = useAuth();
@@ -43,16 +43,30 @@ export default function RegisterCard() {
       confirmPassword: "",
       firstName: "",
       lastName: "",
-      department: "CSMOD",
+      college: "College of Science and Mathematics",
+      department: "Department of Biological Science & Environmental Studies",
     },
   });
 
+  const selectedCollege = watch("college");
   const selectedDepartment = watch("department");
+
+  const availableDepartments = selectedCollege 
+    ? COLLEGE_DEPARTMENTS[selectedCollege as keyof typeof COLLEGE_DEPARTMENTS] 
+    : [];
+
+  useEffect(() => {
+    const departments = availableDepartments as unknown as string[];
+    if (selectedCollege === "School of Management (SOM)") {
+      setValue("department", "School of Management (SOM)", { shouldValidate: true });
+    } else if (departments.length > 0 && !departments.includes(selectedDepartment)) {
+      setValue("department", departments[0], { shouldValidate: true });
+    }
+  }, [selectedCollege, availableDepartments, selectedDepartment, setValue]);
 
   async function onSubmit(data: RegisterFormValues) {
     try {
       const result = await signUp(data);
-      // If result is returned, it means registration was initiated
       if (result?.user) {
         setIsSuccess(true);
       }
@@ -88,7 +102,6 @@ export default function RegisterCard() {
         <CardHeader className="px-8 pt-8 pb-4">
           <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
         </CardHeader>
-...
 
         <CardContent className="flex flex-col gap-4 px-8">
           <div className="grid grid-cols-2 gap-4">
@@ -130,18 +143,43 @@ export default function RegisterCard() {
           </div>
 
           <div className="flex flex-col gap-2">
+            <Label htmlFor="college">College</Label>
+            <Select
+              value={selectedCollege}
+              onValueChange={(value) =>
+                setValue("college", value as any, { shouldDirty: true, shouldValidate: true })
+              }
+            >
+              <SelectTrigger id="college" className="w-full">
+                <SelectValue placeholder="Select college" />
+              </SelectTrigger>
+              <SelectContent>
+                {COLLEGES.map((college) => (
+                  <SelectItem key={college} value={college}>
+                    {college}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.college && (
+              <p className="text-xs text-destructive">{errors.college.message}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
             <Label htmlFor="department">Department</Label>
             <Select
               value={selectedDepartment}
-              onValueChange={(value: RegisterFormValues["department"]) =>
-                setValue("department", value, { shouldDirty: true, shouldValidate: true })
+              disabled={selectedCollege === "School of Management (SOM)"}
+              onValueChange={(value) =>
+                setValue("department", value as any, { shouldDirty: true, shouldValidate: true })
               }
             >
               <SelectTrigger id="department" className="w-full">
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
-                {DEPARTMENTS.map((department) => (
+                {availableDepartments.map((department) => (
                   <SelectItem key={department} value={department}>
                     {department}
                   </SelectItem>
