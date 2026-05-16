@@ -1,72 +1,123 @@
 // form-i.api.ts
 import type { FormIPartnershipValues } from "@/features/forms/form-i/form-i-schema"
-import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
+import { emptyStringToNull, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
+import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 
 export type CreateFormIInput = {
   values: FormIPartnershipValues
+  reportId?: number
   submittedBy?: string
+  existingMoaDocumentPath?: string | null
 }
 
-export async function createFormIRecord({ values, submittedBy }: CreateFormIInput) {
-  // 0. Insert into forms table first to satisfy FK constraint
+function getMoaDocumentInputType(value: unknown) {
+  if (value instanceof File) return "File"
+  if (Array.isArray(value)) return "File[]"
+  if (typeof FileList !== "undefined" && value instanceof FileList) return "FileList"
+  if (typeof value === "string") return "string"
+  if (value === null) return "null"
+  return typeof value
+}
+
+function assertSingleMoaDocument(value: unknown) {
+  const inputType = getMoaDocumentInputType(value)
+  console.log("[Form I API] moaDocument input type:", inputType)
+
+  if (Array.isArray(value) || (typeof FileList !== "undefined" && value instanceof FileList)) {
+    console.error("[Form I API] Validation schema mismatch: Form I expects a single File, not File[].")
+    throw new Error("Form I accepts exactly one signed agreement PDF. Please remove extra files and submit one PDF.")
+  }
+
+  if (value instanceof File && value.type !== "application/pdf") {
+    throw new Error("Form I accepts PDF files only.")
+  }
+
+  if (!(value instanceof File) && typeof value !== "string") {
+    throw new Error("Please upload one signed MOA / MOU / Partnership Agreement PDF.")
+  }
+}
+
+export async function createFormIRecord({ values, reportId, existingMoaDocumentPath }: CreateFormIInput) {
+  // 1. Upload the single PDF first so the database stores a valid storage path.
+  assertSingleMoaDocument(values.moaDocument)
+
+  const moaDocumentPath = await uploadFiles(
+    values.moaDocument,
+    STORAGE_BUCKETS.FORM_I,
+    undefined,
+    existingMoaDocumentPath
+  )
+
+  if (!moaDocumentPath) {
+    throw new Error("A signed agreement PDF is required before submitting Form I.")
+  }
+
+  // 2. Insert into the base 'forms' table first to get a valid entry_id
   const { data: formData, error: formError } = await supabase
     .from("forms")
     .insert({
       title: values.titleOfExtensionPartnership,
-      author: values.nameOfPartnerStakeholder,
-      description: emptyStringToNull(values.remarks),
+      author: "",
+      report_id: reportId,
     })
     .select("entry_id")
     .single()
 
   if (formError) {
-    console.error("Error creating forms record:", formError)
+    logSupabaseError("[Supabase] Failed to create base form entry", formError)
     throw formError
   }
 
-  // 1. Insert into isip_partnership_forms
-  const { data: isipData, error: isipError } = await supabase
+  const entryId = formData.entry_id
+
+  // 3. Insert into isip_partnership_forms using the returned entry_id.
+  const isipPayload = {
+    entry_id: entryId,
+    partnership_title: values.titleOfExtensionPartnership,
+    training_courses: values.trainingCourses,
+    advisory_service: values.technicalAdvisoryService,
+    information_dissemination: values.informationDissemination,
+    consultancy: values.consultancy,
+    community_outreach: values.communityOutreach,
+    knowledge_transfer: values.technologyKnowledgeTransfer,
+    organizing_events: values.organizingEvents,
+    remarks: emptyStringToNull(values.remarks),
+  }
+
+  console.log("[Supabase] Form I ISIP payload:", isipPayload)
+
+  const { error: isipError } = await supabase
     .from("isip_partnership_forms")
-    .insert({
-      entry_id: formData.entry_id,
-      partnership_title: values.titleOfExtensionPartnership,
-      work_scope: values.scopeOfWork,
-      training_courses: values.trainingCourses === "yes",
-      advisory_service: values.technicalAdvisoryService === "yes",
-      information_dissemination: values.informationDissemination === "yes",
-      consultancy: values.consultancy === "yes",
-      community_outreach: values.communityOutreach === "yes",
-      knowledge_transfer: values.technologyKnowledgeTransfer === "yes",
-      organizing_events: values.organizingEvents === "yes",
-      remarks: emptyStringToNull(values.remarks),
-    })
-    .select("entry_id")
-    .single()
+    .insert(isipPayload)
 
   if (isipError) {
-    console.error("Error creating isip_partnership_forms record:", isipError)
+    logSupabaseError("[Supabase] Failed to create ISIP partnership entry", isipError)
     throw isipError
   }
 
-  // 2. Insert into pbms_partnerships_forms
+  // 4. Insert into pbms_partnerships_forms using the same entry_id.
+  const pbmsPayload = {
+    entry_id: entryId,
+    contributing_unit: values.contributingUnit,
+    partner_stakeholder_name: values.nameOfPartnerStakeholder,
+    stakeholder_category: values.stakeholderCategory,
+    partnership_agreement_type: values.typeOfPartnershipAgreement,
+    partnership_effectivity_start_date: toIsoDate(values.partnershipEffectivityStartDate),
+    partnership_effectivity_end_date: toIsoDate(values.partnershipEffectivityEndDate),
+    partnership_agreement: moaDocumentPath,
+  }
+
+  console.log("[Supabase] Form I PBMS payload:", pbmsPayload)
+
   const { error: pbmsError } = await supabase
     .from("pbms_partnerships_forms")
-    .insert({
-      entry_id: formData.entry_id,
-      contributing_unit: values.contributingUnit,
-      partner_stakeholder_name: values.nameOfPartnerStakeholder,
-      stakeholder_category: values.stakeholderCategory,
-      partnership_agreement_type: values.typeOfPartnershipAgreement,
-      partnership_effectivity_start_date: toIsoDate(values.partnershipEffectivityStartDate),
-      partnership_effectivity_end_date: toIsoDate(values.partnershipEffectivityEndDate),
-      moa_docs: serializeFiles(values.moaDocument),
-    })
+    .insert(pbmsPayload)
 
   if (pbmsError) {
-    console.error("Error creating pbms_partnerships_forms record:", pbmsError)
+    logSupabaseError("[Supabase] Failed to create PBMS partnership entry", pbmsError)
     throw pbmsError
   }
 
-  return isipData
+  return { entry_id: entryId }
 }

@@ -37,7 +37,14 @@ const formCSchema = z.object({
   // C.3 Supporting Documents
   presentationAttachments: z
     .any()
-    .refine((files) => files?.length > 0, "At least one (1) attachment is required."),
+    .refine((val) => {
+      if (!val) return false;
+      if (val instanceof File) return true;
+      if (Array.isArray(val)) return val.length > 0;
+      if (typeof FileList !== "undefined" && val instanceof FileList) return val.length > 0;
+      if (typeof val === "string") return val.length > 0;
+      return true;
+    }, "At least one (1) attachment is required."),
   presentationRemarks: z
    .string().optional(),
   presentationRelatedKRAs: z

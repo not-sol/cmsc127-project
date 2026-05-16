@@ -10,14 +10,14 @@ import { useAuthStore } from "@/store/auth-store"
 
 export default function FormAPublications() {
   const createFormARecord = useCreateFormARecord()
-  const userId = useAuthStore((state) => state.user?.id)
 
   const onSubmit = async (data: FormValues) => {
     await createFormARecord.mutateAsync({
       values: data,
-      submittedBy: userId,
+      // reportId: ... // TODO: Get reportId from URL or state
     })
   }
+
 
   return (
     <div className="p-8">

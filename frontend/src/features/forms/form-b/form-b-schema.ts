@@ -1,5 +1,44 @@
 import * as z from "zod"
 
+function getAttachmentInputType(value: unknown) {
+  if (value instanceof File) return "File"
+  if (Array.isArray(value)) return "File[]"
+  if (typeof FileList !== "undefined" && value instanceof FileList) return "FileList"
+  if (typeof value === "string") return "existing-path"
+  if (value === null) return "null"
+  return typeof value
+}
+
+const singleAttachmentSchema = z
+  .any()
+  .refine((value) => {
+    const inputType = getAttachmentInputType(value)
+    const hasExistingAttachment = typeof value === "string" && value.trim().length > 0
+
+    console.log("[Form B validation] supportingAttachments input type:", inputType)
+    console.log("[Form B validation] existing attachment present:", hasExistingAttachment)
+
+    if (value instanceof File) {
+      return true
+    }
+
+    if (hasExistingAttachment) {
+      return true
+    }
+
+    if (Array.isArray(value)) {
+      console.warn("[Form B validation] Schema mismatch: expected one File or existing path, received File[].")
+      return value.filter((file) => file instanceof File).length === 1
+    }
+
+    if (typeof FileList !== "undefined" && value instanceof FileList) {
+      console.warn("[Form B validation] Schema mismatch: expected one File or existing path, received FileList.")
+      return value.length === 1
+    }
+
+    return false
+  }, "At least one (1) attachment is required unless an existing attachment is already saved.")
+
 const formBSchema = z.object({
 
   //B.1 Research Identification
@@ -49,9 +88,7 @@ const formBSchema = z.object({
   }),
   
   // B.5 Supporting Documents
-  supportingAttachments: z
-    .any()
-    .refine((files) => files?.length > 0, "At least one (1) attachment is required."),
+  supportingAttachments: singleAttachmentSchema,
   researchRemarks: z
    .string().optional(),
   researchRelatedKRAs: z

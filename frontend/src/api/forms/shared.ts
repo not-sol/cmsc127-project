@@ -18,7 +18,15 @@ export function emptyStringToNull(value?: string | null) {
 }
 
 export function toIsoDate(value?: Date | null) {
-  return value ? value.toISOString() : null
+  if (!value) {
+    return null
+  }
+
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, "0")
+  const day = String(value.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
 }
 
 export function toNumberOrNull(value?: string | null) {
@@ -40,29 +48,167 @@ export function toIntegerOrNull(value?: string | null) {
 }
 
 export function serializeFiles(value: unknown): SerializedFile[] {
-  if (value instanceof File) {
-    return [
-      {
-        name: value.name,
-        size: value.size,
-        type: value.type,
-        lastModified: value.lastModified,
-      },
-    ]
+  const files =
+    value instanceof File
+      ? [value]
+      : Array.isArray(value)
+        ? value.filter((f): f is File => f instanceof File)
+        : []
+
+  return files.map((file) => ({
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    lastModified: file.lastModified,
+  }))
+}
+
+export function logSupabaseError(context: string, error: unknown) {
+  const supabaseError = error as {
+    code?: string
+    message?: string
+    details?: string
+    hint?: string
+  } | null
+
+  console.error(context, {
+    code: supabaseError?.code,
+    message: supabaseError?.message,
+    details: supabaseError?.details,
+    hint: supabaseError?.hint,
+  })
+}
+
+export async function uploadFile(file: File, bucket: string, path?: string): Promise<string> {
+  const uniqueId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const safeName = file.name.replaceAll(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "")
+  const fileName = `${uniqueId}-${safeName || "upload"}`
+  const filePath = path ? `${path}/${fileName}` : fileName;
+
+  console.log(`[Supabase Storage] Attempting upload to bucket: "${bucket}", path: "${filePath}"`);
+
+  // The "Bucket not found" error happens here if the bucket does not exist in Supabase
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file);
+
+  if (error) {
+    console.error(`[Supabase Storage] Upload failed for bucket "${bucket}":`, error);
+    throw new Error(`Failed to upload file to bucket "${bucket}": ${error.message}`);
   }
 
-  if (Array.isArray(value)) {
-    return value
-      .filter((file): file is File => file instanceof File)
-      .map((file) => ({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified,
-      }))
+  console.log(`[Supabase Storage] Successfully uploaded to "${bucket}/${filePath}"`);
+  return filePath;
+}
+
+export async function uploadFiles(
+  value: unknown,
+  bucket: string,
+  path?: string,
+  existingPath?: string | null
+): Promise<string | null> {
+  if (!value) return null;
+
+  // If it's already a string (existing attachment), just return it
+  if (typeof value === "string") return value;
+
+  const files = value instanceof File ? [value] : Array.isArray(value) ? value.filter((f): f is File => f instanceof File) : [];
+
+  if (files.length === 0) return null;
+
+  // For now, we only handle the first file if it's a single text column
+  const uploadedPath = await uploadFile(files[0], bucket, path);
+
+  if (existingPath && existingPath !== uploadedPath) {
+    const { error } = await supabase.storage.from(bucket).remove([existingPath]);
+
+    if (error) {
+      logSupabaseError(`[Supabase Storage] Failed to replace old file in bucket "${bucket}"`, error);
+    }
   }
 
-  return []
+  return uploadedPath;
+}
+
+export async function uploadAllFiles(value: unknown, bucket: string, path?: string): Promise<string[]> {
+  if (!value) {
+    console.log(`[Supabase Storage] Upload skipped for bucket "${bucket}": no file input provided.`);
+    return [];
+  }
+
+  if (typeof value === "string") {
+    if (value.trim()) {
+      console.log(`[Supabase Storage] Upload skipped for bucket "${bucket}": existing storage path reused.`);
+      return [value];
+    }
+
+    console.log(`[Supabase Storage] Upload skipped for bucket "${bucket}": empty existing path.`);
+    return [];
+  }
+
+  const files =
+    value instanceof File
+      ? [value]
+      : typeof FileList !== "undefined" && value instanceof FileList
+        ? Array.from(value).filter((file): file is File => file instanceof File)
+      : Array.isArray(value)
+        ? value.filter((file): file is File => file instanceof File)
+        : [];
+
+  if (files.length === 0) {
+    console.error("[Supabase Storage] Incorrect attachment value: no File instances found. Refusing to store raw file metadata.", {
+      bucket,
+      receivedType: Array.isArray(value) ? "array" : typeof value,
+      value,
+    });
+    return [];
+  }
+
+  console.log(`[Supabase Storage] Upload executing for bucket "${bucket}": ${files.length} file(s).`);
+
+  const uploadedPaths: string[] = [];
+
+  try {
+    for (const file of files) {
+      uploadedPaths.push(await uploadFile(file, bucket, path));
+    }
+  } catch (error) {
+    if (uploadedPaths.length > 0) {
+      const { error: cleanupError } = await supabase.storage
+        .from(bucket)
+        .remove(uploadedPaths);
+
+      if (cleanupError) {
+        console.error(`[Supabase Storage] Failed to clean up uploads in bucket "${bucket}":`, cleanupError);
+      }
+    }
+
+    throw error;
+  }
+
+  console.log(`[Supabase Storage] Returned path(s) for bucket "${bucket}":`, uploadedPaths);
+  return uploadedPaths;
+}
+
+export async function uploadFilesAsStoragePathText(
+  value: unknown,
+  bucket: string,
+  options: { path?: string; required?: boolean } = {}
+): Promise<string> {
+  const uploadedPaths = await uploadAllFiles(value, bucket, options.path);
+
+  if (uploadedPaths.length === 0) {
+    if (options.required) {
+      throw new Error(`At least one attachment must be uploaded to ${bucket}.`);
+    }
+
+    return "";
+  }
+
+  return uploadedPaths.length === 1 ? uploadedPaths[0] : JSON.stringify(uploadedPaths);
 }
 
 export async function insertFormRecord<TPayload extends Record<string, unknown>>(

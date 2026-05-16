@@ -1,36 +1,109 @@
 // form-f.api.ts
 import type { FormFValues } from "@/features/forms/form-f/form-f-schema"
-import { emptyStringToNull, serializeFiles, toIsoDate } from "@/api/forms/shared"
+import { emptyStringToNull, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
+import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 
 export type CreateFormFInput = {
   values: FormFValues
-  userId: string
+  reportId?: number
+  submittedBy?: string
+  existingAttachmentPath?: string | null
 }
 
-export async function createFormFRecord({ values, userId }: CreateFormFInput) {
-  try {
-    const { data, error } = await supabase
-      .from("form_f_awards_and_grants")
-      .insert({
-        submitted_by: userId,
-        type: values.type,
-        award_grant_title: values.awardGrantTitle,
-        source_awarding_body: values.sourceAwardingBody,
-        details: values.details,
-        start_date: toIsoDate(values.startDate),
-        end_date: toIsoDate(values.endDate),
-        attachments: serializeFiles(values.attachments),
-        remarks: emptyStringToNull(values.remarks),
-        related_kras: emptyStringToNull(values.relatedKras),
-      })
-      .select("id")
-      .single()
+const ISIP_AWARDS_TABLE = "isip_awards_forms"
+const LEGACY_MISSING_TABLE = "isip_awards_grants_forms"
 
-    if (error) throw error
-    return data
-  } catch (error) {
-    console.error("Error in createFormFRecord:", error)
-    throw error
+function getAttachmentInputType(value: unknown) {
+  if (value instanceof File) return "File"
+  if (Array.isArray(value)) return "File[]"
+  if (typeof FileList !== "undefined" && value instanceof FileList) return "FileList"
+  if (typeof value === "string") return "existing-path"
+  if (value === null) return "null"
+  return typeof value
+}
+
+async function resolveAttachmentPath(value: unknown, existingAttachmentPath?: string | null) {
+  console.log("[Form F API] attachments input type:", getAttachmentInputType(value))
+
+  if (Array.isArray(value) && value.filter((file) => file instanceof File).length > 1) {
+    throw new Error("Form F supports only one attachment. Please remove extra files.")
   }
+
+  if (typeof FileList !== "undefined" && value instanceof FileList && value.length > 1) {
+    throw new Error("Form F supports only one attachment. Please remove extra files.")
+  }
+
+  if (!value && existingAttachmentPath) {
+    console.log("[Supabase Storage] Form F upload skipped: existing attachment path reused.")
+    return existingAttachmentPath
+  }
+
+  const attachmentPath = await uploadFiles(
+    value,
+    STORAGE_BUCKETS.FORM_F,
+    undefined,
+    existingAttachmentPath
+  )
+
+  if (attachmentPath) {
+    console.log("[Supabase Storage] Form F returned storage path:", attachmentPath)
+  } else {
+    console.log("[Supabase Storage] Form F upload skipped: no attachment provided.")
+  }
+
+  return attachmentPath ?? ""
+}
+
+export async function createFormFRecord({ values, reportId, existingAttachmentPath }: CreateFormFInput) {
+  console.log("[Supabase] Form F expected table:", ISIP_AWARDS_TABLE)
+  console.log("[Supabase] Form F legacy missing table:", LEGACY_MISSING_TABLE)
+
+  // 1. Upload the optional single attachment before inserting rows.
+  const attachmentPath = await resolveAttachmentPath(values.attachments, existingAttachmentPath)
+
+  // 2. Insert into the base 'forms' table first to get a valid entry_id
+  const { data: formData, error: formError } = await supabase
+    .from("forms")
+    .insert({
+      title: values.awardGrantTitle,
+      author: "",
+      report_id: reportId,
+    })
+    .select("entry_id")
+    .single()
+
+  if (formError) {
+    logSupabaseError("[Supabase] Failed to create base form entry", formError)
+    throw formError
+  }
+
+  const entryId = formData.entry_id
+
+  // 3. Insert into the real ISIP awards table using the returned entry_id.
+  const isipPayload = {
+    entry_id: entryId,
+    type: values.type,
+    award: values.awardGrantTitle,
+    source: values.sourceAwardingBody,
+    details: values.details,
+    start_date: toIsoDate(values.startDate),
+    end_date: toIsoDate(values.endDate),
+    attachments: attachmentPath,
+    remarks: emptyStringToNull(values.remarks),
+    related_kras: emptyStringToNull(values.relatedKras),
+  }
+
+  console.log("[Supabase] Form F ISIP payload:", isipPayload)
+
+  const { error: isipError } = await supabase
+    .from(ISIP_AWARDS_TABLE)
+    .insert(isipPayload)
+
+  if (isipError) {
+    logSupabaseError("[Supabase] Failed to create ISIP awards entry", isipError)
+    throw isipError
+  }
+
+  return { entry_id: entryId }
 }
