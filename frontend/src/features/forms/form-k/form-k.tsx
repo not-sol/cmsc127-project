@@ -47,18 +47,19 @@ export default function FormKOther() {
   }
 
   return (
-    <DynamicForm<FormKOtherValues>
-      formSchema={formKOtherSchema}
-      formFields={formKOtherFields}
-      defaultValues={existingData || {
-        title: "",
+    <div className="max-w-3xl mx-auto">
+      <DynamicForm<FormKOtherValues>
+        formSchema={formKOtherSchema}
+        formFields={formKOtherFields}
+        defaultValues={existingData || {
+          title: "",
         description: "",
         date: undefined,
         endDate: undefined,
         supportingDocuments: [],
       }}
       onSubmit={onSubmit}
-      title="Form K: Other Accomplishment"
+      //title="Form K: Other Accomplishment"
       description="Use this form to record significant accomplishments that do not fall under a predefined category. Provide a clear description and upload any relevant supporting documents."
       submitLabel={isEditing ? "Update" : "Submit"}
       submitError={getMutationErrorMessage(createFormKRecord.error)}
@@ -68,5 +69,6 @@ export default function FormKOther() {
           : undefined
       }
     />
+    </div>
   )
 }

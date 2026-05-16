@@ -42,7 +42,7 @@ export default function FormBGrantsAndFellowships() {
   }
 
   return (
-    <div className="p-8">
+    <div className="max-w-3xl mx-auto">
       {/* <h2 className="text-xl font-bold mb-4">SECTION B — GRANTS AND FELLOWSHIPS</h2> */}
       <DynamicForm<FormValues>
         formSchema={formBSchema}

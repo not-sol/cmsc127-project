@@ -39,11 +39,12 @@ export default function FormG() {
   }
 
   return (
-    <DynamicForm<FormGValues>
-      formSchema={formGSchema}
-      formFields={formGFields}
-      defaultValues={existingData || {
-        contributingUnit: "",
+    <div className="max-w-3xl mx-auto">
+      <DynamicForm<FormGValues>
+        formSchema={formGSchema}
+        formFields={formGFields}
+        defaultValues={existingData || {
+          contributingUnit: "",
         typeOfActivity: "",
         title: "",
         venue: "",
@@ -66,7 +67,7 @@ export default function FormG() {
         relatedKras: "",
       }}
       onSubmit={onSubmit}
-      title="Form G: Training / Workshop / Seminar Conducted"
+      //title="Form G: Training / Workshop / Seminar Conducted"
       description="Use this form to record training activities conducted by faculty. Trainings attended as a participant should be recorded in Section I (Other Accomplishments)."
       submitLabel={isEditing ? "Update" : "Submit"}
       submitError={getMutationErrorMessage(createFormGRecord.error)}
@@ -76,5 +77,6 @@ export default function FormG() {
           : undefined
       }
     />
+    </div>
   )
 }

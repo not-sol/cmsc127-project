@@ -1,6 +1,8 @@
 import Sidebar from "@/components/sidebar"
 import FormG from "@/features/forms/form-g/form-g"
-import { ChevronRight } from "lucide-react"
+import { ArrowLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom"
 
 function Breadcrumb() {
   return (
@@ -20,6 +22,8 @@ function Breadcrumb() {
 }
 
 export default function FormGPage() {
+  const navigate = useNavigate()
+
   return (
     <div className="flex min-h-screen bg-muted/40">
       <Sidebar />
@@ -30,9 +34,19 @@ export default function FormGPage() {
         </div>
 
         <div className="flex-1 px-8 py-8">
-          <h2 className="text-2xl font-bold mb-6">
-            Form G: Training / Workshop / Seminar Conducted
-          </h2>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              size="sm"
+              onClick={() => navigate("/reports/create-report")}
+              className="gap-2 hover:bg-[#5a0a0a]"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+            <h2 className="text-2xl font-bold">
+              Form G: Training / Workshop / Seminar Conducted
+            </h2>
+          </div>
           <FormG />
         </div>
       </main>

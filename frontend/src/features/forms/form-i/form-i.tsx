@@ -42,11 +42,12 @@ export default function FormIPartnership() {
   }
 
   return (
-    <DynamicForm<FormIPartnershipValues>
-      formSchema={formIPartnershipSchema}
-      formFields={formIPartnershipFields}
-      defaultValues={existingData || {
-        contributingUnit: undefined,
+    <div className="max-w-3xl mx-auto">
+      <DynamicForm<FormIPartnershipValues>
+        formSchema={formIPartnershipSchema}
+        formFields={formIPartnershipFields}
+        defaultValues={existingData || {
+          contributingUnit: undefined,
         titleOfExtensionPartnership: "",
         scopeOfWork: "",
         nameOfPartnerStakeholder: "",
@@ -65,7 +66,7 @@ export default function FormIPartnership() {
         remarks: "",
       }}
       onSubmit={onSubmit}
-      title="Form I: Partnership with Stakeholders"
+      //title="Form I: Partnership with Stakeholders"
       description="Use this form to record formal partnerships established with stakeholders through a MOA, MOU, or similar partnership agreement recognized by UP."
       submitLabel={isEditing ? "Update" : "Submit"}
       submitError={getMutationErrorMessage(createFormIRecord.error)}
@@ -75,5 +76,6 @@ export default function FormIPartnership() {
           : undefined
       }
     />
+    </div>
   )
 }

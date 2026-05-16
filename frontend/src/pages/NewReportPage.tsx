@@ -9,8 +9,9 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Eye,
   X,
+  CalendarIcon,
+  Filter,
 } from "lucide-react";
 
 import {
@@ -35,7 +36,9 @@ import {
   fetchReportEntries,
   type ReportEntry,
 } from "@/api/entries";
-import { Filter } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 function Breadcrumb() {
   return (
@@ -71,12 +74,12 @@ export default function NewEntryPage() {
 
   const [title, setTitle] = useState("");
   const [remarks, setRemarks] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [search, setSearch] = useState("");
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
-  const [filterStartDate, setFilterStartDate] = useState<string>("");
-  const [filterEndDate, setFilterEndDate] = useState<string>("");
+  const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
+  const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
   const [viewEntry, setViewEntry] = useState<ReportEntry | null>(null);
 
   const routeMap: Record<string, string> = {
@@ -118,12 +121,12 @@ export default function NewEntryPage() {
         const entryTime = new Date(entry.dateValue).getTime();
 
         if (filterStartDate) {
-          const start = new Date(filterStartDate).getTime();
+          const start = filterStartDate.getTime();
           if (entryTime < start) return false;
         }
 
         if (filterEndDate) {
-          const end = new Date(filterEndDate).getTime();
+          const end = filterEndDate.getTime();
           if (entryTime > end) return false;
         }
 
@@ -180,6 +183,7 @@ export default function NewEntryPage() {
               <div className="flex flex-col gap-1.5">
                 <Label>Accomplishment Report Title</Label>
                 <Input
+                  className="bg-[#f5f5f5]"
                   placeholder="Enter report title here"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
@@ -189,20 +193,54 @@ export default function NewEntryPage() {
               <div className="flex items-center gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label>Start Date</Label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(event) => setStartDate(event.target.value)}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal bg-[#f5f5f5]",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 ">
                   <Label>End Date</Label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(event) => setEndDate(event.target.value)}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal bg-[#f5f5f5]",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
@@ -211,7 +249,7 @@ export default function NewEntryPage() {
               <Label>Remarks</Label>
               <Textarea
                 placeholder="Type remarks here."
-                className="resize-none h-24"
+                className="resize-none h-24 bg-[#f5f5f5]"
                 value={remarks}
                 onChange={(event) => setRemarks(event.target.value)}
               />
@@ -254,8 +292,8 @@ export default function NewEntryPage() {
                         className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setSelectedSections([]);
-                          setFilterStartDate("");
-                          setFilterEndDate("");
+                          setFilterStartDate(undefined);
+                          setFilterEndDate(undefined);
                         }}
                       >
                         Clear all
@@ -294,23 +332,55 @@ export default function NewEntryPage() {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <Label htmlFor="filter-start" className="text-[10px]">From</Label>
-                          <Input 
-                            id="filter-start" 
-                            type="date" 
-                            className="h-8 text-xs" 
-                            value={filterStartDate}
-                            onChange={(e) => setFilterStartDate(e.target.value)}
-                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="filter-start"
+                                variant="outline"
+                                className={cn(
+                                  "w-full h-8 justify-start text-left font-normal text-xs",
+                                  !filterStartDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-3 w-3" />
+                                {filterStartDate ? format(filterStartDate, "MM/dd/yyyy") : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={filterStartDate}
+                                onSelect={setFilterStartDate}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor="filter-end" className="text-[10px]">To</Label>
-                          <Input 
-                            id="filter-end" 
-                            type="date" 
-                            className="h-8 text-xs" 
-                            value={filterEndDate}
-                            onChange={(e) => setFilterEndDate(e.target.value)}
-                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="filter-end"
+                                variant="outline"
+                                className={cn(
+                                  "w-full h-8 justify-start text-left font-normal text-xs",
+                                  !filterEndDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-3 w-3" />
+                                {filterEndDate ? format(filterEndDate, "MM/dd/yyyy") : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={filterEndDate}
+                                onSelect={setFilterEndDate}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       </div>
                     </div>
@@ -339,7 +409,6 @@ export default function NewEntryPage() {
                         <span className="font-semibold">{entryType.letter}.</span>
                         <span>{entryType.label}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{entryType.pbms}</span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

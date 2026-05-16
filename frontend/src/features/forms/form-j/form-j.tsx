@@ -42,11 +42,12 @@ export default function FormJAuthorship() {
   }
 
   return (
-    <DynamicForm<FormJAuthorshipValues>
-      formSchema={formJAuthorshipSchema}
-      formFields={formJAuthorshipFields}
-      defaultValues={existingData || {
-        titleOfMaterial: "",
+    <div className="max-w-3xl mx-auto">
+      <DynamicForm<FormJAuthorshipValues>
+        formSchema={formJAuthorshipSchema}
+        formFields={formJAuthorshipFields}
+        defaultValues={existingData || {
+          titleOfMaterial: "",
         authors: "",
         year: "",
         attachments: [],
@@ -54,7 +55,7 @@ export default function FormJAuthorship() {
         relatedKRAs: "",
       }}
       onSubmit={onSubmit}
-      title="Form J: Authorships (Audio-Visual Materials / Learning Objects / Manuals)"
+      //title="Form J: Authorships (Audio-Visual Materials / Learning Objects / Manuals)"
       description="Use this form to record authorship of instructional materials that do not qualify as publications, such as laboratory manuals, lecture manuals, and learning objects."
       submitLabel={isEditing ? "Update" : "Submit"}
       submitError={getMutationErrorMessage(createFormJRecord.error)}
@@ -64,5 +65,6 @@ export default function FormJAuthorship() {
           : undefined
       }
     />
+    </div>
   )
 }

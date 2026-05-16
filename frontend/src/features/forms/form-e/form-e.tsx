@@ -36,38 +36,40 @@ export default function FormE() {
   }
 
   return (
-    <DynamicForm<FormEValues>
-      formSchema={formESchema}
-      formFields={formEFields}
-      defaultValues={existingData || {
-        linkedResearch: "",
-        titleOfArtisticWork: "",
-        typeOfOutput: undefined,
-        otherType: "",
-        typeOfPublicEvent: undefined,
-        titleOfEvent: "",
-        organizer: "",
-        locationScope: undefined,
-        eventVenueCityCountry: "",
-        eventStartDate: undefined,
-        eventEndDate: undefined,
-        firstShownReleasedDate: undefined,
-        utilization: undefined,
-        proofOfResearchOutput: [],
-        proofOfUtilization: [],
-        remarks: "",
-        relatedKras: "",
-      }}
-      onSubmit={onSubmit}
-      title="Form E: Creative Work Output / Other Research Output"
-      description="Use this form to record creative or research outputs not categorized as publications, paper presentations, or patents. The output must have been exposed in a public event (exhibition, performance, or publication)."
-      submitLabel={isEditing ? "Update" : "Submit"}
-      submitError={getMutationErrorMessage(createFormERecord.error)}
-      submitSuccess={
-        createFormERecord.isSuccess
-          ? `Creative work output entry ${isEditing ? "updated" : "created"} successfully.`
-          : undefined
-      }
-    />
+    <div className="max-w-3xl mx-auto">
+      <DynamicForm<FormEValues>
+            formSchema={formESchema}
+            formFields={formEFields}
+            defaultValues={existingData || {
+              linkedResearch: "",
+              titleOfArtisticWork: "",
+              typeOfOutput: undefined,
+              otherType: "",
+              typeOfPublicEvent: undefined,
+              titleOfEvent: "",
+              organizer: "",
+              locationScope: undefined,
+              eventVenueCityCountry: "",
+              eventStartDate: undefined,
+              eventEndDate: undefined,
+              firstShownReleasedDate: undefined,
+              utilization: undefined,
+              proofOfResearchOutput: [],
+              proofOfUtilization: [],
+              remarks: "",
+              relatedKras: "",
+            }}
+            onSubmit={onSubmit}
+            // title="Form E: Creative Work Output / Other Research Output"
+            description="Use this form to record creative or research outputs not categorized as publications, paper presentations, or patents. The output must have been exposed in a public event (exhibition, performance, or publication)."
+            submitLabel={isEditing ? "Update" : "Submit"}
+            submitError={getMutationErrorMessage(createFormERecord.error)}
+            submitSuccess={
+              createFormERecord.isSuccess
+                ? `Creative work output entry ${isEditing ? "updated" : "created"} successfully.`
+                : undefined
+            }
+          />
+    </div>
   )
 }

@@ -39,11 +39,12 @@ export default function FormH() {
   }
 
   return (
-    <DynamicForm<FormHValues>
-      formSchema={formHSchema}
-      formFields={formHFields}
-      defaultValues={existingData || {
-        contributingUnit: "",
+    <div className="max-w-3xl mx-auto">
+      <DynamicForm<FormHValues>
+        formSchema={formHSchema}
+        formFields={formHFields}
+        defaultValues={existingData || {
+          contributingUnit: "",
         title: "",
         trainingCourses: "",
         technicalAdvisoryService: "",
@@ -63,7 +64,7 @@ export default function FormH() {
         remarks: "",
       }}
       onSubmit={onSubmit}
-      title="Form H: Extension Program"
+      //title="Form H: Extension Program"
       description="Use this form to record extension programs conducted by the department. An Extension Program must be part of the approved Extension Work Agenda and must be a holistic, integrated program — not individual extension activities."
       submitLabel={isEditing ? "Update" : "Submit"}
       submitError={getMutationErrorMessage(createFormHRecord.error)}
@@ -73,5 +74,6 @@ export default function FormH() {
           : undefined
       }
     />
+    </div>
   )
 }

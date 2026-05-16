@@ -40,7 +40,7 @@ export default function FormAPublications() {
   }
 
   return (
-    <div className="p-8">
+    <div className="max-w-3xl mx-auto">
       {/* <h2 className="text-xl font-bold mb-4">SECTION A — PUBLICATIONS</h2> */}
       <DynamicForm<FormValues>
         formSchema={formASchema}

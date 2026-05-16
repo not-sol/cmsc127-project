@@ -39,6 +39,7 @@ export default function FormF() {
   }
 
   return (
+    <div className="max-w-3xl mx-auto">
     <DynamicForm<FormFValues>
       formSchema={formFSchema}
       formFields={formFFields}
@@ -54,7 +55,7 @@ export default function FormF() {
         relatedKras: "",
       }}
       onSubmit={onSubmit}
-      title="Form F: Awards / Grants"
+      //title="Form F: Awards / Grants"
       description="Use this form to record awards and grants received. Awards and grants are recorded for completeness and support performance narratives."
       submitLabel={isEditing ? "Update" : "Submit"}
       submitError={getMutationErrorMessage(createFormFRecord.error)}
@@ -64,5 +65,6 @@ export default function FormF() {
           : undefined
       }
     />
+    </div>
   )
 }

@@ -39,7 +39,7 @@ export default function FormCOralOrPoster() {
   }
 
   return (
-    <div className="p-8">
+    <div className="max-w-3xl mx-auto">
       {/* <h2 className="text-xl font-bold mb-4">SECTION C — PAPER PRESENTATIONS</h2> */}
       <DynamicForm<FormValues>
         formSchema={formCSchema}
