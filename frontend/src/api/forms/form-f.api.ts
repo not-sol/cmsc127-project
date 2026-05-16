@@ -107,3 +107,28 @@ export async function createFormFRecord({ values, reportId, existingAttachmentPa
 
   return { entry_id: entryId }
 }
+
+export async function getFormFRecord(entryId: number): Promise<FormFValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from(ISIP_AWARDS_TABLE)
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP awards entry:", isipError)
+    throw isipError
+  }
+
+  return {
+    type: isipData.type,
+    awardGrantTitle: isipData.award,
+    sourceAwardingBody: isipData.source,
+    details: isipData.details,
+    startDate: isipData.start_date ? new Date(isipData.start_date) : undefined,
+    endDate: isipData.end_date ? new Date(isipData.end_date) : undefined,
+    attachments: isipData.attachments,
+    remarks: isipData.remarks || "",
+    relatedKras: isipData.related_kras || "",
+  }
+}

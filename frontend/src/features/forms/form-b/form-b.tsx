@@ -5,18 +5,40 @@ import {
 import { formFields } from "@/features/forms/form-b/form-b-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 import { getMutationErrorMessage } from "@/api/forms/shared"
-import { useCreateFormBRecord } from "@/hooks/forms/use-form-b-mutation"
+import { useCreateFormBRecord, useFormBRecord } from "@/hooks/forms/use-form-b-mutation"
 import { useAuthStore } from "@/store/auth-store"
+import { deleteReportEntry } from "@/api/entries"
+import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormBGrantsAndFellowships() {
+  const navigate = useNavigate()
   const createFormBRecord = useCreateFormBRecord()
   const userId = useAuthStore((state) => state.user?.id)
+  const [searchParams] = useSearchParams()
+  const editingEntryId = Number(searchParams.get("entryId"))
+  const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+
+  const { data: existingData, isLoading: isLoadingExisting } = useFormBRecord(editingEntryId)
 
   const onSubmit = async (data: FormValues) => {
+    if (isEditing) {
+      await deleteReportEntry(editingEntryId)
+    }
+
     await createFormBRecord.mutateAsync({
       values: data,
       submittedBy: userId,
     })
+
+    navigate("/reports/create-report")
+  }
+
+  if (isEditing && isLoadingExisting) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <p className="text-muted-foreground animate-pulse">Loading existing entry...</p>
+      </div>
+    )
   }
 
   return (
@@ -25,7 +47,7 @@ export default function FormBGrantsAndFellowships() {
       <DynamicForm<FormValues>
         formSchema={formBSchema}
         formFields={formFields}
-        defaultValues={{
+        defaultValues={existingData || {
           contrUnit: "csmod",
           researchTitle: "",
           researchType: "basic",
@@ -43,10 +65,11 @@ export default function FormBGrantsAndFellowships() {
           researchRelatedKRAs: "",
         }}
         onSubmit={onSubmit}
+        submitLabel={isEditing ? "Update" : "Submit"}
         submitError={getMutationErrorMessage(createFormBRecord.error)}
         submitSuccess={
           createFormBRecord.isSuccess
-            ? "Research grant or fellowship entry created successfully."
+            ? `Research grant or fellowship entry ${isEditing ? "updated" : "created"} successfully.`
             : undefined
         }
       />

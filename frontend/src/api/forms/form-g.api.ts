@@ -97,3 +97,51 @@ export async function createFormGRecord({ values, reportId, existingAttachmentPa
 
   return { entry_id: entryId }
 }
+
+export async function getFormGRecord(entryId: number): Promise<FormGValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_trainings_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP trainings entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_trainings_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS trainings entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    contributingUnit: pbmsData.contributing_unit,
+    typeOfActivity: isipData.activity_type,
+    title: isipData.training_title,
+    venue: isipData.venue,
+    startDate: new Date(isipData.start_date),
+    endDate: new Date(isipData.end_date),
+    specialNotes: pbmsData.special_notes_schedule || "",
+    trainingHours: String(pbmsData.training_hours_required || 0),
+    totalTrainees: String(pbmsData.total_trainees_number || 0),
+    fundingSource: pbmsData.majority_share_funding,
+    sampleSize: String(pbmsData.sample_size || 0),
+    responsesPoor: String(pbmsData.no_of_responses_poor || 0),
+    responsesFair: String(pbmsData.no_of_responses_fair || 0),
+    responsesSatisfactory: String(pbmsData.no_of_responses_satisfactory || 0),
+    responsesVerySatisfactory: String(pbmsData.no_of_responses_very_satisfactory || 0),
+    responsesOutstanding: String(pbmsData.no_of_responses_outstanding || 0),
+    isPartOfExtensionProgram: pbmsData.part_extension_program,
+    relatedExtensionProgram: pbmsData.related_extension_program_title || "",
+    attachments: isipData.attachments,
+    remarks: isipData.remarks || "",
+    relatedKras: isipData.related_kras || "",
+  }
+}

@@ -84,3 +84,48 @@ export async function createFormHRecord({ values, reportId }: CreateFormHInput) 
 
   return { entry_id: entryId }
 }
+
+export async function getFormHRecord(entryId: number): Promise<FormHValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_extension_programs_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP extension programs entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_extension_programs_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS extension programs entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    contributingUnit: pbmsData.contributing_unit,
+    title: isipData.extension_title,
+    trainingCourses: isipData.training_courses ? "yes" : "no",
+    technicalAdvisoryService: isipData.external_clients_technical ? "yes" : "no",
+    informationDissemination: isipData.information_dissemination ? "yes" : "no",
+    consultancy: isipData.external_clients_consultancy ? "yes" : "no",
+    communityOutreach: isipData.community_outreach ? "yes" : "no",
+    technologyTransfer: isipData.knowledge_transfer ? "yes" : "no",
+    organizing: isipData.organizing ? "yes" : "no",
+    academicDegreePrograms: pbmsData.academic_degree || "",
+    scopeOfWork: isipData.work_scope,
+    startDate: new Date(isipData.start_date),
+    endDate: new Date(isipData.end_date),
+    targetBeneficiary: isipData.target_beneficiary_group,
+    numberOfBeneficiaries: String(pbmsData.no_of_beneficiary_groups || 0),
+    fundingSource: pbmsData.majority_share_funding,
+    programDocuments: isipData.program_description, // String representation from storage
+    remarks: isipData.remarks || "",
+  }
+}

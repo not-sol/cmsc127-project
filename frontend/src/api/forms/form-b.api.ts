@@ -208,3 +208,45 @@ export async function updateFormBRecord({
 
   return { entry_id: entryId }
 }
+
+export async function getFormBRecord(entryId: number): Promise<FormBValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_research_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP research entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_research_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS research entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    contrUnit: pbmsData.contributing_unit,
+    researchTitle: isipData.research_title,
+    researchType: isipData.research_type,
+    rStartDate: new Date(isipData.start_date),
+    rEndDate: isipData.end_date ? new Date(isipData.end_date) : undefined,
+    researchTimeframeMonths: String(pbmsData.original_timeframe_months),
+    researcherNames: isipData.researcher_name,
+    upSystemResearchGrantPesos: String(isipData.research_grant),
+    externalFundingAmountPesos: String(isipData.funding_amount),
+    totalFundingPesos: String(isipData.total_funding),
+    otherFundSource: isipData.other_fund_source || "",
+    majoritySource: pbmsData.majority_source_of_funds,
+    supportingAttachments: isipData.attachments,
+    researchRemarks: isipData.remarks || "",
+    researchRelatedKRAs: isipData.related_kras || "",
+  }
+}

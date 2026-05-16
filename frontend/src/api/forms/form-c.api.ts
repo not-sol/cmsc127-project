@@ -74,3 +74,44 @@ export async function createFormCRecord({ values, reportId }: CreateFormCInput) 
   return { entry_id: entryId }
 }
 
+export async function getFormCRecord(entryId: number): Promise<FormCValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_oral_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP oral entry:", isipError)
+    throw isipError
+  }
+
+  const { data: pbmsData, error: pbmsError } = await supabase
+    .from("pbms_oral_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (pbmsError) {
+    console.error("[Supabase] Failed to fetch PBMS oral entry:", pbmsError)
+    throw pbmsError
+  }
+
+  return {
+    researchTitle2: pbmsData.linked_research,
+    titlePresented: isipData.paper_title,
+    presentationType: isipData.presentation_type,
+    eventType: isipData.event_type,
+    eventTitle: pbmsData.conference_title,
+    organizerName: pbmsData.organizer_name,
+    conferenceLocation: pbmsData.conference_location,
+    conferenceAddress: pbmsData.venue,
+    conferenceStartDate: new Date(pbmsData.conference_start_date),
+    conferenceEndDate: pbmsData.conference_end_date ? new Date(pbmsData.conference_end_date) : undefined,
+    presentationDate: new Date(pbmsData.presentation_date),
+    presentationAttachments: isipData.attachments,
+    presentationRemarks: isipData.remarks || "",
+    presentationRelatedKRAs: isipData.related_kras || "",
+  }
+}
+

@@ -5,19 +5,39 @@ import {
 import { formFields } from "@/features/forms/form-a/form-a-config"
 import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 import { getMutationErrorMessage } from "@/api/forms/shared"
-import { useCreateFormARecord } from "@/hooks/forms/use-form-a-mutation"
-import { useAuthStore } from "@/store/auth-store"
+import { useCreateFormARecord, useFormARecord } from "@/hooks/forms/use-form-a-mutation"
+import { deleteReportEntry } from "@/api/entries"
+import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormAPublications() {
+  const navigate = useNavigate()
   const createFormARecord = useCreateFormARecord()
+  const [searchParams] = useSearchParams()
+  const editingEntryId = Number(searchParams.get("entryId"))
+  const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+
+  const { data: existingData, isLoading: isLoadingExisting } = useFormARecord(editingEntryId)
 
   const onSubmit = async (data: FormValues) => {
+    if (isEditing) {
+      await deleteReportEntry(editingEntryId)
+    }
+
     await createFormARecord.mutateAsync({
       values: data,
       // reportId: ... // TODO: Get reportId from URL or state
     })
+
+    navigate("/reports/create-report")
   }
 
+  if (isEditing && isLoadingExisting) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <p className="text-muted-foreground animate-pulse">Loading existing entry...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8">
@@ -25,12 +45,13 @@ export default function FormAPublications() {
       <DynamicForm<FormValues>
         formSchema={formASchema}
         formFields={formFields}
-        defaultValues={{
+        defaultValues={existingData || {
           pubType: "book",
           pubTitle: "",
           pubAuthors: "",
           pubDate: "",
           pubName: "",
+          pubrName: "",
           pubrType: "Commercial",
           pubrLocr: "Local",
           isIsi: "No",
@@ -41,9 +62,12 @@ export default function FormAPublications() {
           citationNum: "0",
         }}
         onSubmit={onSubmit}
+        submitLabel={isEditing ? "Update" : "Submit"}
         submitError={getMutationErrorMessage(createFormARecord.error)}
         submitSuccess={
-          createFormARecord.isSuccess ? "Publication entry created successfully." : undefined
+          createFormARecord.isSuccess
+            ? `Publication entry ${isEditing ? "updated" : "created"} successfully.`
+            : undefined
         }
       />
     </div>

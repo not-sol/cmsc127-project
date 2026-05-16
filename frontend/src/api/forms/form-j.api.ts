@@ -56,3 +56,25 @@ export async function createFormJRecord({ values, reportId }: CreateFormJInput) 
 
   return { entry_id: entryId }
 }
+
+export async function getFormJRecord(entryId: number): Promise<FormJAuthorshipValues> {
+  const { data: isipData, error: isipError } = await supabase
+    .from("isip_authorship_forms")
+    .select("*")
+    .eq("entry_id", entryId)
+    .single()
+
+  if (isipError) {
+    console.error("[Supabase] Failed to fetch ISIP authorship entry:", isipError)
+    throw isipError
+  }
+
+  return {
+    titleOfMaterial: isipData.material_title,
+    authors: isipData.author,
+    year: String(isipData.year),
+    attachments: isipData.attachments,
+    remarks: isipData.remarks || "",
+    relatedKRAs: isipData.related_kras || "",
+  }
+}
