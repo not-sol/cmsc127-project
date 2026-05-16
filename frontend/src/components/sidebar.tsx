@@ -23,9 +23,30 @@ export default function Sidebar() {
   });
 
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-[#6b0f1a] px-4 py-6">
+    <aside
+      className="relative flex flex-col w-64 min-h-screen px-4 py-6"
+      style={{
+        backgroundImage: "linear-gradient(to left, #430409 0%, rgba(107,15,26,0.85) 90%, rgba(107,15,26,0.2) 100%)",
+        backgroundColor: "#6b0f1a",
+      }}
+    >
+      
+      <div
+        className="absolute inset-0 -translate-y-2 pointer-events-none"
+        style={{
+          mixBlendMode: "soft-light",
+          backgroundColor: "white",
+          maskImage: "url('/pattern.png')",
+          maskRepeat: "repeat",
+          maskSize: "900px",
+          WebkitMaskImage: "url('/pattern.png')",
+          WebkitMaskRepeat: "repeat",
+          WebkitMaskSize: "900px",
+          opacity: 0.2,
+        }}
+      />
       {/* Logo */}
-      <div className="mb-10 px-2">
+      <div className="relative z-10 mb-10 px-2 py-4">
         <h1 className="text-white font-extrabold text-lg leading-snug tracking-tight">
           Faculty
           <br />
@@ -50,6 +71,8 @@ export default function Sidebar() {
             {label}
           </Link>
         ))}
+
+        
       </nav>
 
       {/* Bottom profile link */}
@@ -72,7 +95,10 @@ export default function Sidebar() {
           <LogOut size={14} className="shrink-0" />
           Log out
         </button>
+        
       </div>
+
+      
     </aside>
   );
 }
