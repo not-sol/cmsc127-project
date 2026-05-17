@@ -5,6 +5,7 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ReportsPage from "@/pages/ReportsPage";
+import AccomplishmentsPage from "@/pages/AccomplishmentsPage";
 import NewEntryPage from "@/pages/NewentryPage";
 import TestForm from "@/features/forms/form-test/test-form";
 import FormKOtherPage from "@/pages/forms/FormKPage";
@@ -52,6 +53,10 @@ export const router = createBrowserRouter([
       {
         path: "/reports",
         element: <ReportsPage />,
+      },
+      {
+        path: "/accomplishments",
+        element: <AccomplishmentsPage />,
       },
       {
         path: "/reports/create-report",
