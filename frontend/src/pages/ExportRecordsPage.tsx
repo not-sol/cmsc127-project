@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Sidebar from "@/components/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Info, RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   buildApprovedReportCsv,
@@ -24,6 +24,10 @@ function formatDate(value?: string | null) {
 }
 
 function getReportTitle(report: ExportableReport) {
+  if (report.title?.trim()) {
+    return report.title;
+  }
+
   return `Report #${report.report_id}`;
 }
 
@@ -93,16 +97,6 @@ export default function ExportsRecordsPage() {
             </Button>
           </div>
 
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-            <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>
-              Eligibility is based on <strong>reviews.status = approved</strong>.
-              CSV rows include a <strong>SourceSystem</strong> and{" "}
-              <strong>SourceTable</strong> column so ISIP and PBMS form fields
-              remain clearly separated.
-            </p>
-          </div>
-
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             <div className="overflow-hidden rounded-lg border bg-background">
               <div className="border-b bg-muted/40 px-5 py-4">
@@ -135,11 +129,10 @@ export default function ExportsRecordsPage() {
                       key={report.report_id}
                       type="button"
                       onClick={() => setSelectedId(report.report_id)}
-                      className={`flex w-full min-w-0 items-start gap-4 border-b px-5 py-4 text-left transition hover:bg-muted/40 ${
-                        isSelected
+                      className={`flex w-full min-w-0 items-start gap-4 border-b px-5 py-4 text-left transition hover:bg-muted/40 ${isSelected
                           ? "border-l-4 border-l-[#6b0f1a] bg-[#6b0f1a]/5"
                           : ""
-                      }`}
+                        }`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">{getReportTitle(report)}</div>

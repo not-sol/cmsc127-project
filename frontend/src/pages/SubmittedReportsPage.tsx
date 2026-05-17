@@ -23,6 +23,7 @@ import {
 import type { ReviewStatus } from "@/api/reports";
 import type { SubmittedReport } from "@/api/submitted-reports";
 import { useSubmittedReports } from "@/hooks/use-submitted-reports";
+import { useAuth } from "@/hooks/use-auth";
 
 type StatusFilter = "all" | "pending" | "reviewed";
 
@@ -56,6 +57,10 @@ function getFacultyName(report: SubmittedReport) {
 }
 
 function getReportTitle(report: SubmittedReport) {
+  if (report.title?.trim()) {
+    return report.title;
+  }
+
   const period =
     report.start_date || report.end_date
       ? `${formatDate(report.start_date)} - ${formatDate(report.end_date)}`
@@ -82,6 +87,7 @@ function getStatusBadge(report: SubmittedReport) {
 
 export default function SubmittedReportsPage() {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
@@ -110,10 +116,12 @@ export default function SubmittedReportsPage() {
       const matchesStatus =
         statusFilter === "all" || report.status === statusFilter;
       const matchesDepartment =
+        role !== "admin" ||
         departmentFilter === "all" ||
         report.department_name === departmentFilter;
       const searchableText = [
         report.report_id,
+        report.title,
         getFacultyName(report),
         report.faculty_email,
         report.department_name,
@@ -130,7 +138,7 @@ export default function SubmittedReportsPage() {
         (!normalizedSearch || searchableText.includes(normalizedSearch))
       );
     });
-  }, [departmentFilter, reports, search, statusFilter]);
+  }, [departmentFilter, reports, role, search, statusFilter]);
 
   const summary = useMemo(
     () => ({
@@ -208,28 +216,30 @@ export default function SubmittedReportsPage() {
                 <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-8"
-                  placeholder="Search faculty, department, remarks, or report ID"
+                  placeholder="Search title, faculty, department, remarks, or report ID"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
               </div>
 
-              <Select
-                value={departmentFilter}
-                onValueChange={setDepartmentFilter}
-              >
-                <SelectTrigger className="w-52">
-                  <SelectValue placeholder="Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All departments</SelectItem>
-                  {departments.map((department) => (
-                    <SelectItem key={department} value={department}>
-                      {department}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {role === "admin" ? (
+                <Select
+                  value={departmentFilter}
+                  onValueChange={setDepartmentFilter}
+                >
+                  <SelectTrigger className="w-52">
+                    <SelectValue placeholder="Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All departments</SelectItem>
+                    {departments.map((department) => (
+                      <SelectItem key={department} value={department}>
+                        {department}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
             </div>
 
             <div className="overflow-hidden rounded-md border">

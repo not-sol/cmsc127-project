@@ -19,6 +19,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/toast";
+import {
   Table,
   TableBody,
   TableCell,
@@ -63,8 +74,8 @@ function formatDate(value?: string | null) {
 }
 
 function getReportTitle(report: ReportSummary) {
-  if (report.remarks?.trim()) {
-    return report.remarks.split(".")[0];
+  if (report.title?.trim()) {
+    return report.title;
   }
 
   return `Report #${report.report_id}`;
@@ -87,12 +98,15 @@ export default function ReportsPage() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
   const [reviewReport, setReviewReport] = useState<ReportSummary | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<ReportSummary | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<ReportSummary | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const reportsQuery = useQuery({
     queryKey: reportsQueryKey,
-    queryFn: getAccessibleReports,
+    queryFn: () => getAccessibleReports(),
     refetchOnWindowFocus: true,
   });
 
@@ -104,8 +118,28 @@ export default function ReportsPage() {
       reportId: number;
       status: ReportStatus;
     }) => updateReportStatus(reportId, status),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: reportsQueryKey });
+      toast({
+        title: variables.status === "archived" ? "Report archived" : "Report restored",
+        description:
+          variables.status === "archived"
+            ? "The report was moved to archived reports."
+            : "The report was restored as a draft.",
+        variant: "success",
+      });
+      setArchiveTarget(null);
+      setRestoreTarget(null);
+    },
+    onError: (error, variables) => {
+      toast({
+        title:
+          variables.status === "archived"
+            ? "Unable to archive report"
+            : "Unable to restore report",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
     },
   });
 
@@ -125,6 +159,7 @@ export default function ReportsPage() {
         getReportingPeriod(report),
         report.status ? statusLabels[report.status] : "",
         report.remarks ?? "",
+        report.title ?? "",
         String(report.report_id),
       ]
         .filter(Boolean)
@@ -133,14 +168,6 @@ export default function ReportsPage() {
   }, [activeReports, archivedReports, search, viewMode]);
 
   const archiveReport = async (report: ReportSummary) => {
-    if (
-      !window.confirm(
-        `Archive ${getReportTitle(report)}? It will move out of the active reports view.`
-      )
-    ) {
-      return;
-    }
-
     await statusMutation.mutateAsync({
       reportId: report.report_id,
       status: "archived",
@@ -351,7 +378,7 @@ export default function ReportsPage() {
                                   size="icon"
                                   className="h-7 w-7 text-muted-foreground hover:text-foreground"
                                   title="Archive report"
-                                  onClick={() => void archiveReport(report)}
+                                  onClick={() => setArchiveTarget(report)}
                                   disabled={statusMutation.isPending}
                                 >
                                   <Archive size={13} />
@@ -363,7 +390,7 @@ export default function ReportsPage() {
                                 size="icon"
                                 className="h-7 w-7"
                                 title="Restore as draft"
-                                onClick={() => void restoreReport(report)}
+                                onClick={() => setRestoreTarget(report)}
                                 disabled={statusMutation.isPending}
                               >
                                 <RotateCcw size={13} />
@@ -458,6 +485,44 @@ export default function ReportsPage() {
           </div>
         </div>
       ) : null}
+
+      <AlertDialog open={archiveTarget !== null} onOpenChange={(open) => !open && setArchiveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this report?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {archiveTarget
+                ? `"${getReportTitle(archiveTarget)}" will move out of the active reports view.`
+                : "This report will move out of the active reports view."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => archiveTarget && void archiveReport(archiveTarget)}>
+              Archive Report
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={restoreTarget !== null} onOpenChange={(open) => !open && setRestoreTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore this report to draft?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {restoreTarget
+                ? `"${getReportTitle(restoreTarget)}" will become editable again as a draft.`
+                : "This report will become editable again as a draft."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => restoreTarget && void restoreReport(restoreTarget)}>
+              Restore Draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
