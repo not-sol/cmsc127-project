@@ -22,12 +22,11 @@ export default function FormE() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormERecord.mutateAsync({
+    const result = await createFormERecord.mutateAsync({
       values: data,
       reportId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

@@ -25,12 +25,11 @@ export default function FormCOralOrPoster() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormCRecord.mutateAsync({
+    const result = await createFormCRecord.mutateAsync({
       values: data,
       reportId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

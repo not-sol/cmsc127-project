@@ -3,6 +3,7 @@ import type { FormJAuthorshipValues } from "@/features/forms/form-j/form-j-schem
 import { emptyStringToNull, logSupabaseError, toIntegerOrNull, uploadFilesAsStoragePathText } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormJInput = {
   values: FormJAuthorshipValues
@@ -10,7 +11,10 @@ export type CreateFormJInput = {
   submittedBy?: string
 }
 
-export async function createFormJRecord({ values, reportId }: CreateFormJInput) {
+export async function createFormJRecord({ values, reportId: initialReportId }: CreateFormJInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload attachments first. Store only Supabase Storage path text in the database.
   const attachmentPaths = await uploadFilesAsStoragePathText(values.attachments, STORAGE_BUCKETS.FORM_J)
 
@@ -54,7 +58,7 @@ export async function createFormJRecord({ values, reportId }: CreateFormJInput) 
     throw isipError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormJRecord(entryId: number): Promise<FormJAuthorshipValues> {

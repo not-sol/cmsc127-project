@@ -3,6 +3,7 @@ import type { FormKOtherValues } from "@/features/forms/form-k/form-k-schema"
 import { logSupabaseError, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormKInput = {
   values: FormKOtherValues
@@ -18,7 +19,10 @@ const PBMS_OTHER_ACCOMPLISHMENTS_COLUMNS = [
   "accomplishment_date",
 ] as const
 
-export async function createFormKRecord({ values, reportId }: CreateFormKInput) {
+export async function createFormKRecord({ values, reportId: initialReportId }: CreateFormKInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload supporting documents first. Store only Supabase Storage path text in the database.
   const supportingDocumentPaths = await uploadFilesAsStoragePathText(
     values.supportingDocuments,
@@ -88,7 +92,7 @@ export async function createFormKRecord({ values, reportId }: CreateFormKInput) 
     throw pbmsError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormKRecord(entryId: number): Promise<FormKOtherValues> {

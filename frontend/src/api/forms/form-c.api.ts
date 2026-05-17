@@ -3,13 +3,17 @@ import type { FormValues as FormCValues } from "@/features/forms/form-c/form-c-s
 import { emptyStringToNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormCInput = {
   values: FormCValues
   reportId?: number
 }
 
-export async function createFormCRecord({ values, reportId }: CreateFormCInput) {
+export async function createFormCRecord({ values, reportId: initialReportId }: CreateFormCInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload files first
   const attachmentPath = await uploadFiles(values.presentationAttachments, STORAGE_BUCKETS.FORM_C)
 
@@ -71,7 +75,7 @@ export async function createFormCRecord({ values, reportId }: CreateFormCInput) 
     throw pbmsError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormCRecord(entryId: number): Promise<FormCValues> {

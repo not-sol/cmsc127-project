@@ -3,6 +3,7 @@ import type { FormFValues } from "@/features/forms/form-f/form-f-schema"
 import { emptyStringToNull, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormFInput = {
   values: FormFValues
@@ -55,9 +56,12 @@ async function resolveAttachmentPath(value: unknown, existingAttachmentPath?: st
   return attachmentPath ?? ""
 }
 
-export async function createFormFRecord({ values, reportId, existingAttachmentPath }: CreateFormFInput) {
+export async function createFormFRecord({ values, reportId: initialReportId, existingAttachmentPath }: CreateFormFInput) {
   console.log("[Supabase] Form F expected table:", ISIP_AWARDS_TABLE)
   console.log("[Supabase] Form F legacy missing table:", LEGACY_MISSING_TABLE)
+
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
 
   // 1. Upload the optional single attachment before inserting rows.
   const attachmentPath = await resolveAttachmentPath(values.attachments, existingAttachmentPath)
@@ -105,7 +109,7 @@ export async function createFormFRecord({ values, reportId, existingAttachmentPa
     throw isipError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormFRecord(entryId: number): Promise<FormFValues> {

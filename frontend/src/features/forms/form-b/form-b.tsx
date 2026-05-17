@@ -27,13 +27,12 @@ export default function FormBGrantsAndFellowships() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormBRecord.mutateAsync({
+    const result = await createFormBRecord.mutateAsync({
       values: data,
       reportId,
       submittedBy: userId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

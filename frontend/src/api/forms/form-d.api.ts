@@ -3,13 +3,17 @@ import type { FormValues as FormDValues } from "@/features/forms/form-d/form-d-s
 import { emptyStringToNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormDInput = {
   values: FormDValues
   reportId?: number
 }
 
-export async function createFormDRecord({ values, reportId }: CreateFormDInput) {
+export async function createFormDRecord({ values, reportId: initialReportId }: CreateFormDInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload files first
   const attachmentPath = await uploadFiles(values.patentAttachments, STORAGE_BUCKETS.FORM_D)
 
@@ -55,7 +59,7 @@ export async function createFormDRecord({ values, reportId }: CreateFormDInput) 
       linked_research: values.researchTitle3,
       patent_title: values.patentTitle,
       patent_type: values.patentType,
-      application_no: Number(values.aplNum),        // numeric column — see note below
+      application_no: values.aplNum ? Number(values.aplNum) : null,
       inventor_name: values.aplInventors,            // singular column name
       applicant_name: values.aplApplicants,          // singular column name
       publication_date: toIsoDate(values.unexaminedApplicationDate),
@@ -70,7 +74,7 @@ export async function createFormDRecord({ values, reportId }: CreateFormDInput) 
     throw pbmsError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormDRecord(entryId: number): Promise<FormDValues> {

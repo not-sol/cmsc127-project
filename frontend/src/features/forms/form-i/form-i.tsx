@@ -27,13 +27,12 @@ export default function FormIPartnership() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormIRecord.mutateAsync({
+    const result = await createFormIRecord.mutateAsync({
       values: data,
       reportId,
       submittedBy: userId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

@@ -25,12 +25,11 @@ export default function FormDPatents() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormDRecord.mutateAsync({
+    const result = await createFormDRecord.mutateAsync({
       values: data,
       reportId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

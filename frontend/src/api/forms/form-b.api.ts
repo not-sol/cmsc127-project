@@ -3,6 +3,7 @@ import type { FormValues as FormBValues } from "@/features/forms/form-b/form-b-s
 import { emptyStringToNull, logSupabaseError, toIsoDate, toNumberOrNull, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormBInput = {
   values: FormBValues
@@ -102,7 +103,10 @@ function createPbmsPayload(values: FormBValues, entryId: number) {
   }
 }
 
-export async function createFormBRecord({ values, reportId, existingAttachmentPath }: CreateFormBInput) {
+export async function createFormBRecord({ values, reportId: initialReportId, existingAttachmentPath }: CreateFormBInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload or reuse the single attachment before inserting rows.
   const attachmentPath = await resolveAttachmentPath(values.supportingAttachments, existingAttachmentPath)
 
@@ -153,7 +157,7 @@ export async function createFormBRecord({ values, reportId, existingAttachmentPa
     throw pbmsError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function updateFormBRecord({

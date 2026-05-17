@@ -52,6 +52,16 @@ export type ReportMetadataInput = {
   departmentId?: number | null;
 };
 
+export async function getOrCreateDraftReportId(
+  reportId?: number | null,
+  input: ReportMetadataInput = {}
+): Promise<number> {
+  if (reportId && Number.isFinite(reportId) && reportId > 0) return reportId;
+
+  const report = await createDraftReport(input);
+  return report.report_id;
+}
+
 export async function getAccessibleReports(): Promise<ReportSummary[]> {
   const [
     { data, error },
@@ -145,18 +155,12 @@ function toReportPayload(input: ReportMetadataInput) {
 }
 
 export async function createDraftReport(input: ReportMetadataInput = {}) {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-
-  const { data, error } = await supabase
-    .from("accomplishment_reports")
-    .insert({
-      ...toReportPayload(input),
-      status: "draft",
-      faculty_id: userData.user.id,
-    })
-    .select("*")
-    .single();
+  const { data, error } = await supabase.rpc("create_draft_accomplishment_report", {
+    p_start_date: input.startDate ?? null,
+    p_end_date: input.endDate ?? null,
+    p_remarks: input.remarks ?? null,
+    p_department_id: input.departmentId ?? null,
+  });
 
   if (error) throw error;
   return data as AccomplishmentReport;
