@@ -39,7 +39,7 @@ export default function FormJAuthorshipPage() {
           <div className="flex items-center gap-4 mb-6">
             <Button
               size="sm"
-              onClick={() => navigate("/reports/create-report")}
+              onClick={() => navigate(-1)}
               className="gap-2 hover:bg-[#5a0a0a]"
             >
               <ArrowLeft size={16} />

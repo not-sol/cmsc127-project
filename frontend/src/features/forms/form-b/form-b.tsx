@@ -8,6 +8,7 @@ import { getMutationErrorMessage } from "@/api/forms/shared"
 import { useCreateFormBRecord, useFormBRecord } from "@/hooks/forms/use-form-b-mutation"
 import { useAuthStore } from "@/store/auth-store"
 import { deleteReportEntry } from "@/api/entries"
+import { getReportEditorPath, getReportIdFromSearchParams } from "@/features/forms/report-navigation"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormBGrantsAndFellowships() {
@@ -17,6 +18,7 @@ export default function FormBGrantsAndFellowships() {
   const [searchParams] = useSearchParams()
   const editingEntryId = Number(searchParams.get("entryId"))
   const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+  const reportId = getReportIdFromSearchParams(searchParams)
 
   const { data: existingData, isLoading: isLoadingExisting } = useFormBRecord(editingEntryId)
 
@@ -27,10 +29,11 @@ export default function FormBGrantsAndFellowships() {
 
     await createFormBRecord.mutateAsync({
       values: data,
+      reportId,
       submittedBy: userId,
     })
 
-    navigate("/reports/create-report")
+    navigate(getReportEditorPath(reportId))
   }
 
   if (isEditing && isLoadingExisting) {

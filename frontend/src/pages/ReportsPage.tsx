@@ -5,11 +5,13 @@ import {
   Archive,
   ArrowUpDown,
   Eye,
+  MessageSquare,
   Pencil,
   Plus,
   RefreshCw,
   RotateCcw,
   Search,
+  X,
 } from "lucide-react";
 
 import Sidebar from "@/components/sidebar";
@@ -73,9 +75,18 @@ function getReportingPeriod(report: ReportSummary) {
   return `${formatDate(report.start_date)} - ${formatDate(report.end_date)}`;
 }
 
+function getReviewerName(report: ReportSummary) {
+  const name = [report.latest_reviewer_first_name, report.latest_reviewer_last_name]
+    .filter(Boolean)
+    .join(" ");
+
+  return name || report.latest_reviewer_email || report.latest_reviewed_by || "Unknown reviewer";
+}
+
 export default function ReportsPage() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
+  const [reviewReport, setReviewReport] = useState<ReportSummary | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -305,18 +316,33 @@ export default function ReportsPage() {
                               size="icon"
                               className="h-7 w-7"
                               title="View report"
-                              onClick={() => navigate("/reports/create-report")}
+                              onClick={() =>
+                                navigate(`/reports/create-report?reportId=${report.report_id}&mode=view`)
+                              }
                             >
                               <Eye size={13} />
                             </Button>
-                            {!isArchived ? (
+                            {status === "reviewed" && report.latest_review_id ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-emerald-700 hover:text-emerald-800"
+                                title="View review details"
+                                onClick={() => setReviewReport(report)}
+                              >
+                                <MessageSquare size={13} />
+                              </Button>
+                            ) : null}
+                            {!isArchived && status === "draft" ? (
                               <>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7"
                                   title="Edit report"
-                                  onClick={() => navigate("/reports/create-report")}
+                                  onClick={() =>
+                                    navigate(`/reports/create-report?reportId=${report.report_id}`)
+                                  }
                                 >
                                   <Pencil size={13} />
                                 </Button>
@@ -365,6 +391,73 @@ export default function ReportsPage() {
           </div>
         </div>
       </main>
+
+      {reviewReport ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-2xl rounded-lg bg-background p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-4 border-b pb-4">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Report #{reviewReport.report_id}
+                </p>
+                <h3 className="text-xl font-semibold">Review Details</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setReviewReport(null)}
+                title="Close"
+              >
+                <X size={14} />
+              </Button>
+            </div>
+
+            <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-md border bg-muted/20 p-3">
+                <dt className="text-xs font-medium uppercase text-muted-foreground">
+                  Review Status
+                </dt>
+                <dd className="mt-1 text-sm">
+                  {reviewReport.latest_review_status === "partially_approved"
+                    ? "Partially approved"
+                    : "Approved"}
+                </dd>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <dt className="text-xs font-medium uppercase text-muted-foreground">
+                  Reviewed By
+                </dt>
+                <dd className="mt-1 text-sm">{getReviewerName(reviewReport)}</dd>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <dt className="text-xs font-medium uppercase text-muted-foreground">
+                  Review Date
+                </dt>
+                <dd className="mt-1 text-sm">
+                  {formatDate(reviewReport.latest_review_date)}
+                </dd>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <dt className="text-xs font-medium uppercase text-muted-foreground">
+                  Review ID
+                </dt>
+                <dd className="mt-1 text-sm">
+                  {reviewReport.latest_review_id ?? "Not linked"}
+                </dd>
+              </div>
+              <div className="rounded-md border bg-muted/20 p-3 sm:col-span-2">
+                <dt className="text-xs font-medium uppercase text-muted-foreground">
+                  Remarks / Comments
+                </dt>
+                <dd className="mt-1 whitespace-pre-wrap text-sm">
+                  {reviewReport.latest_review_remarks || "No review remarks recorded."}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,14 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { ClipboardList, LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
+import { LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { icon: LayoutGrid, label: "My Reports", href: "/reports" },
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
-  { icon: ClipboardList, label: "Submitted Reports", href: "/submitted-reports" },
   { icon: Download, label: "Export Records", href: "/exports" },
-  { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" }, //DEPT CHAIR VIEW ONLY
+  { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" },
   { icon: User, label: "User Management", href: "/user-management" },
 ];
 
@@ -18,7 +17,7 @@ export default function Sidebar() {
 
   const filteredNavItems = navItems.filter((item) => {
     if (item.href === "/user-management") return isAdmin;
-    if (item.href === "/submitted-reports" || item.href === "/report-submissions") return isAdmin || isChair;
+    if (item.href === "/report-submissions") return isAdmin || isChair;
     return true;
   });
 

@@ -21,7 +21,6 @@ import FormDPage from "@/pages/forms/FormDPage";
 import ProtectedRoute from "@/components/protected-route";
 import NewReportPage from "@/pages/NewReportPage";
 import ExportsRecordsPage from "@/pages/ExportRecordsPage";
-import ReportSubmissionPage from "@/pages/ReportSubmissionPage";
 import UserManagementForm from "@/pages/UserManagementForm";
 import SubmittedReportsPage from "@/pages/SubmittedReportsPage";
 
@@ -128,12 +127,8 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute allowedRoles={["department_chair", "admin"]} />,
     children: [
       {
-        path: "/submitted-reports",
-        element: <SubmittedReportsPage />,
-      },
-      {
         path: "/report-submissions",
-        element: <ReportSubmissionPage />,
+        element: <SubmittedReportsPage />,
       },
     ],
   },
@@ -146,4 +141,3 @@ export const router = createBrowserRouter([
     element: <Navigate to="/login" replace />,
   },
 ]);
-

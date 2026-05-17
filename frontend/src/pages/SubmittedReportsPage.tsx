@@ -3,13 +3,19 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Eye,
   RefreshCw,
-  Save,
   Search,
 } from "lucide-react";
 import Sidebar from "@/components/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -28,26 +34,18 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import type { ReviewStatus } from "@/api/reports";
-import type { SubmittedReport } from "@/api/submitted-reports";
+import type {
+  SubmittedReport,
+  SubmittedReportFormDetail,
+} from "@/api/submitted-reports";
 import {
   useCreateReviewDecision,
+  useSubmittedReportDetail,
   useSubmittedReports,
   useUpdateReviewDecision,
-  useUpdateSubmittedReport,
 } from "@/hooks/use-submitted-reports";
 
 type StatusFilter = "all" | "pending" | "reviewed";
-
-type ReportDraft = {
-  startDate: string;
-  endDate: string;
-  remarks: string;
-};
-
-type ReviewDraft = {
-  status: ReviewStatus;
-  remarks: string;
-};
 
 const statusLabels: Record<StatusFilter, string> = {
   all: "All",
@@ -58,6 +56,11 @@ const statusLabels: Record<StatusFilter, string> = {
 const reviewStatusLabels: Record<ReviewStatus, string> = {
   approved: "Approved",
   partially_approved: "Partially approved",
+};
+
+type ReviewDraft = {
+  status: ReviewStatus;
+  remarks: string;
 };
 
 function formatDate(value: string | null) {
@@ -103,12 +106,88 @@ function getStatusBadge(report: SubmittedReport) {
   );
 }
 
+function formatValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map(formatValue).join(", ");
+  }
+
+  if (value && typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+
+  return String(value);
+}
+
+function getFormPreview(form: SubmittedReportFormDetail) {
+  for (const group of form.groups) {
+    const firstValue = Object.values(group.values).find(
+      (value) => value !== null && value !== undefined && value !== ""
+    );
+
+    if (firstValue) return formatValue(firstValue);
+  }
+
+  return "No details recorded";
+}
+
+function FieldGrid({ values }: { values: Record<string, unknown> }) {
+  const entries = Object.entries(values);
+
+  if (entries.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No values recorded for this section.
+      </p>
+    );
+  }
+
+  return (
+    <dl className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {entries.map(([label, value]) => (
+        <div key={label} className="min-w-0 rounded-md border bg-muted/20 p-3">
+          <dt className="break-words text-xs font-medium uppercase text-muted-foreground">
+            {label}
+          </dt>
+          <dd className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed">
+            {formatValue(value)}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function getReportSummaryValues(report: SubmittedReport) {
+  return {
+    "Report ID": report.report_id,
+    Faculty: getFacultyName(report),
+    Email: report.faculty_email ?? "No email",
+    Department: report.department_name ?? "Unassigned",
+    College: report.college_name ?? "Unassigned",
+    Status: report.status,
+    "Start Date": formatDate(report.start_date),
+    "End Date": formatDate(report.end_date),
+    "Date Submitted": formatDate(report.date_submitted),
+    "Attached Forms": report.entry_count,
+    Remarks: report.remarks ?? "None",
+    "Latest Review": report.latest_review_status
+      ? reviewStatusLabels[report.latest_review_status]
+      : "No review",
+    "Latest Review Remarks": report.latest_review_remarks ?? "None",
+    "Latest Review Date": formatDate(report.latest_review_date),
+  };
+}
+
 export default function SubmittedReportsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [expandedReportId, setExpandedReportId] = useState<number | null>(null);
-  const [reportDrafts, setReportDrafts] = useState<Record<number, ReportDraft>>(
+  const [selectedFormIds, setSelectedFormIds] = useState<Record<number, number>>(
     {}
   );
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>(
@@ -116,7 +195,7 @@ export default function SubmittedReportsPage() {
   );
 
   const submittedReportsQuery = useSubmittedReports();
-  const updateReportMutation = useUpdateSubmittedReport();
+  const submittedReportDetailQuery = useSubmittedReportDetail(expandedReportId);
   const createReviewMutation = useCreateReviewDecision();
   const updateReviewMutation = useUpdateReviewDecision();
 
@@ -173,16 +252,6 @@ export default function SubmittedReportsPage() {
     [reports]
   );
 
-  function getReportDraft(report: SubmittedReport) {
-    return (
-      reportDrafts[report.report_id] ?? {
-        startDate: report.start_date ?? "",
-        endDate: report.end_date ?? "",
-        remarks: report.remarks ?? "",
-      }
-    );
-  }
-
   function getReviewDraft(report: SubmittedReport) {
     return (
       reviewDrafts[report.report_id] ?? {
@@ -192,25 +261,15 @@ export default function SubmittedReportsPage() {
     );
   }
 
-  async function handleSaveReport(report: SubmittedReport) {
-    const draft = getReportDraft(report);
-
-    await updateReportMutation.mutateAsync({
-      reportId: report.report_id,
-      startDate: draft.startDate || null,
-      endDate: draft.endDate || null,
-      remarks: draft.remarks || null,
-    });
-  }
-
-  async function handleSaveReview(report: SubmittedReport) {
+  async function handleSubmitReview(report: SubmittedReport) {
     const draft = getReviewDraft(report);
 
     if (report.latest_review_id) {
       await updateReviewMutation.mutateAsync({
         reviewId: report.latest_review_id,
+        reportId: report.report_id,
         status: draft.status,
-        remarks: draft.remarks,
+        remarks: draft.remarks.trim() || undefined,
       });
       return;
     }
@@ -218,7 +277,7 @@ export default function SubmittedReportsPage() {
     await createReviewMutation.mutateAsync({
       reportId: report.report_id,
       status: draft.status,
-      remarks: draft.remarks,
+      remarks: draft.remarks.trim() || undefined,
     });
   }
 
@@ -232,7 +291,7 @@ export default function SubmittedReportsPage() {
         <div className="flex-1 px-8 py-8">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold">Submitted Reports</h2>
+              <h2 className="text-2xl font-bold">Report Submissions</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Review and manage submitted faculty accomplishment reports.
               </p>
@@ -324,14 +383,34 @@ export default function SubmittedReportsPage() {
                     <TableHead>Date Submitted</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Review</TableHead>
-                    <TableHead className="text-right">Entries</TableHead>
+                    <TableHead className="text-right">Forms / Entries</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredReports.map((report) => {
                     const isExpanded = expandedReportId === report.report_id;
-                    const reportDraft = getReportDraft(report);
+                    const detailForms =
+                      isExpanded &&
+                      submittedReportDetailQuery.data?.report.report_id ===
+                        report.report_id
+                        ? submittedReportDetailQuery.data.forms
+                        : null;
+                    const displayedEntryCount = detailForms
+                      ? detailForms.length
+                      : report.entry_count;
+                    const selectedFormId =
+                      selectedFormIds[report.report_id] ??
+                      detailForms?.[0]?.entry_id ??
+                      null;
+                    const selectedForm =
+                      detailForms?.find((form) => form.entry_id === selectedFormId) ??
+                      detailForms?.[0] ??
+                      null;
                     const reviewDraft = getReviewDraft(report);
+                    const isReviewPending =
+                      createReviewMutation.isPending ||
+                      updateReviewMutation.isPending;
 
                     return (
                       <Fragment key={report.report_id}>
@@ -380,172 +459,257 @@ export default function SubmittedReportsPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            {report.entry_count}
+                            {displayedEntryCount}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() =>
+                                setExpandedReportId(
+                                  isExpanded ? null : report.report_id
+                                )
+                              }
+                            >
+                              <Eye size={14} />
+                              View
+                            </Button>
                           </TableCell>
                         </TableRow>
 
                         {isExpanded ? (
                           <TableRow key={`${report.report_id}-details`}>
                             <TableCell />
-                            <TableCell colSpan={7}>
-                              <div className="grid gap-6 py-4 lg:grid-cols-[1fr_1fr]">
-                                <div className="space-y-4">
-                                  <div>
-                                    <h3 className="text-sm font-semibold">
-                                      Report Details
-                                    </h3>
-                                    <p className="text-xs text-muted-foreground">
-                                      Edit submitted report metadata and remarks.
-                                    </p>
-                                  </div>
-
-                                  <div className="grid gap-3 sm:grid-cols-2">
-                                    <label className="space-y-1.5 text-sm">
-                                      <span className="font-medium">
-                                        Start date
-                                      </span>
-                                      <Input
-                                        type="date"
-                                        value={reportDraft.startDate}
-                                        onChange={(event) =>
-                                          setReportDrafts((drafts) => ({
-                                            ...drafts,
-                                            [report.report_id]: {
-                                              ...reportDraft,
-                                              startDate: event.target.value,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                    </label>
-
-                                    <label className="space-y-1.5 text-sm">
-                                      <span className="font-medium">
-                                        End date
-                                      </span>
-                                      <Input
-                                        type="date"
-                                        value={reportDraft.endDate}
-                                        onChange={(event) =>
-                                          setReportDrafts((drafts) => ({
-                                            ...drafts,
-                                            [report.report_id]: {
-                                              ...reportDraft,
-                                              endDate: event.target.value,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                    </label>
-                                  </div>
-
-                                  <label className="space-y-1.5 text-sm">
-                                    <span className="font-medium">
-                                      Report remarks
-                                    </span>
-                                    <Textarea
-                                      className="min-h-24 resize-none"
-                                      value={reportDraft.remarks}
-                                      onChange={(event) =>
-                                        setReportDrafts((drafts) => ({
-                                          ...drafts,
-                                          [report.report_id]: {
-                                            ...reportDraft,
-                                            remarks: event.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </label>
-
-                                  <Button
-                                    size="sm"
-                                    className="gap-2 bg-[#6b0f1a] hover:bg-[#5a0a0a]"
-                                    onClick={() => void handleSaveReport(report)}
-                                    disabled={updateReportMutation.isPending}
-                                  >
-                                    <Save size={14} />
-                                    Save Report
-                                  </Button>
+                            <TableCell colSpan={8}>
+                              <div className="grid min-w-0 gap-6 py-4">
+                                <div>
+                                  <h3 className="text-base font-semibold">
+                                    Full Report
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    Review submitted report metadata, browse attached forms, and record the review decision.
+                                  </p>
                                 </div>
 
-                                <div className="space-y-4">
-                                  <div>
-                                    <h3 className="text-sm font-semibold">
-                                      Review Workflow
-                                    </h3>
-                                    <p className="text-xs text-muted-foreground">
-                                      Approved decisions mark the report as reviewed and record the review.
-                                    </p>
-                                  </div>
-
-                                  <Select
-                                    value={reviewDraft.status}
-                                    onValueChange={(value) =>
-                                      setReviewDrafts((drafts) => ({
-                                        ...drafts,
-                                        [report.report_id]: {
-                                          ...reviewDraft,
-                                          status: value as ReviewStatus,
-                                        },
-                                      }))
-                                    }
-                                  >
-                                    <SelectTrigger className="w-56">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="approved">
-                                        Approved
-                                      </SelectItem>
-                                      <SelectItem value="partially_approved">
-                                        Partially approved
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-
-                                  <label className="space-y-1.5 text-sm">
-                                    <span className="font-medium">
-                                      Reviewer comments
-                                    </span>
-                                    <Textarea
-                                      className="min-h-28 resize-none"
-                                      value={reviewDraft.remarks}
-                                      onChange={(event) =>
-                                        setReviewDrafts((drafts) => ({
-                                          ...drafts,
-                                          [report.report_id]: {
-                                            ...reviewDraft,
-                                            remarks: event.target.value,
-                                          },
-                                        }))
-                                      }
+                                <Card className="rounded-lg">
+                                  <CardHeader className="border-b">
+                                    <CardTitle>Report Summary</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <FieldGrid
+                                      values={{
+                                        ...getReportSummaryValues(report),
+                                        "Attached Forms": displayedEntryCount,
+                                      }}
                                     />
-                                  </label>
+                                  </CardContent>
+                                </Card>
 
-                                  <div className="flex flex-wrap items-center gap-3">
+                                <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(18rem,22rem)_1fr]">
+                                  <Card className="min-w-0 rounded-lg">
+                                    <CardHeader className="border-b">
+                                      <CardTitle className="flex items-center justify-between gap-3">
+                                        <span>Forms / Entries</span>
+                                        <Badge variant="outline">
+                                          {displayedEntryCount}
+                                        </Badge>
+                                      </CardTitle>
+                                      <p className="text-xs text-muted-foreground">
+                                        Select a form to inspect its recorded values.
+                                      </p>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2">
+                                      {submittedReportDetailQuery.isFetching ? (
+                                        <div className="rounded-md border bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
+                                          Loading form list...
+                                        </div>
+                                      ) : null}
+
+                                      {submittedReportDetailQuery.isError ? (
+                                        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-4 text-sm text-destructive">
+                                          Unable to load report form details.
+                                        </div>
+                                      ) : null}
+
+                                      {detailForms?.length === 0 ? (
+                                        <div className="rounded-md border bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
+                                          No forms are attached to this report.
+                                        </div>
+                                      ) : null}
+
+                                      {detailForms?.map((form, index) => {
+                                        const isSelected =
+                                          selectedForm?.entry_id === form.entry_id;
+
+                                        return (
+                                          <button
+                                            key={form.entry_id}
+                                            type="button"
+                                            className={`w-full min-w-0 rounded-md border p-3 text-left transition-colors ${
+                                              isSelected
+                                                ? "border-[#6b0f1a] bg-[#6b0f1a]/5 ring-1 ring-[#6b0f1a]"
+                                                : "bg-background hover:bg-muted/50"
+                                            }`}
+                                            onClick={() =>
+                                              setSelectedFormIds((current) => ({
+                                                ...current,
+                                                [report.report_id]: form.entry_id,
+                                              }))
+                                            }
+                                          >
+                                            <div className="flex min-w-0 items-start justify-between gap-2">
+                                              <div className="min-w-0">
+                                                <div className="truncate text-sm font-medium">
+                                                  Form {index + 1}: {form.title}
+                                                </div>
+                                                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                                  <span>Entry #{form.entry_id}</span>
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="max-w-full truncate"
+                                                  >
+                                                    {form.type}
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                              <ChevronRight
+                                                size={14}
+                                                className="mt-0.5 shrink-0 text-muted-foreground"
+                                              />
+                                            </div>
+                                            <p className="mt-2 line-clamp-2 break-words text-xs text-muted-foreground">
+                                              {getFormPreview(form)}
+                                            </p>
+                                          </button>
+                                        );
+                                      })}
+                                    </CardContent>
+                                  </Card>
+
+                                  <Card className="min-w-0 rounded-lg">
+                                    <CardHeader className="border-b">
+                                      <CardTitle className="flex min-w-0 flex-wrap items-center gap-2">
+                                        {selectedForm ? (
+                                          <>
+                                            <span className="min-w-0 break-words">
+                                              {selectedForm.title}
+                                            </span>
+                                            <Badge variant="outline">
+                                              {selectedForm.type}
+                                            </Badge>
+                                          </>
+                                        ) : (
+                                          "Form Details"
+                                        )}
+                                      </CardTitle>
+                                      {selectedForm ? (
+                                        <p className="text-xs text-muted-foreground">
+                                          Entry #{selectedForm.entry_id}
+                                          {selectedForm.created_at
+                                            ? ` | Created ${formatDate(selectedForm.created_at)}`
+                                            : ""}
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs text-muted-foreground">
+                                          Select a form from the list to view its details.
+                                        </p>
+                                      )}
+                                    </CardHeader>
+                                    <CardContent className="min-w-0 space-y-5">
+                                      {selectedForm ? (
+                                        selectedForm.groups.map((group) => (
+                                          <section
+                                            key={`${selectedForm.entry_id}-${group.label}`}
+                                            className="min-w-0 space-y-2"
+                                          >
+                                            <h4 className="break-words text-sm font-semibold">
+                                              {group.label}
+                                            </h4>
+                                            <FieldGrid values={group.values} />
+                                          </section>
+                                        ))
+                                      ) : (
+                                        <div className="rounded-md border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                                          No form selected.
+                                        </div>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                </div>
+
+                                <Card className="min-w-0 rounded-lg">
+                                  <CardHeader className="border-b">
+                                    <CardTitle>Review Decision</CardTitle>
+                                    <p className="text-xs text-muted-foreground">
+                                      Submit or update the review outcome for this report.
+                                    </p>
+                                  </CardHeader>
+                                  <CardContent className="grid min-w-0 gap-4 lg:grid-cols-[16rem_1fr_auto] lg:items-end">
+                                    <label className="space-y-1.5 text-sm">
+                                      <span className="font-medium">
+                                        Outcome
+                                      </span>
+                                      <Select
+                                        value={reviewDraft.status}
+                                        onValueChange={(value) =>
+                                          setReviewDrafts((current) => ({
+                                            ...current,
+                                            [report.report_id]: {
+                                              ...reviewDraft,
+                                              status: value as ReviewStatus,
+                                            },
+                                          }))
+                                        }
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="approved">
+                                            Approved
+                                          </SelectItem>
+                                          <SelectItem value="partially_approved">
+                                            Partially approved
+                                          </SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </label>
+
+                                    <label className="min-w-0 space-y-1.5 text-sm">
+                                      <span className="font-medium">
+                                        Remarks / comments
+                                      </span>
+                                      <Textarea
+                                        className="min-h-24 resize-y"
+                                        placeholder="Add optional review remarks"
+                                        value={reviewDraft.remarks}
+                                        onChange={(event) =>
+                                          setReviewDrafts((current) => ({
+                                            ...current,
+                                            [report.report_id]: {
+                                              ...reviewDraft,
+                                              remarks: event.target.value,
+                                            },
+                                          }))
+                                        }
+                                      />
+                                    </label>
+
                                     <Button
-                                      size="sm"
                                       className="gap-2 bg-[#6b0f1a] hover:bg-[#5a0a0a]"
-                                      onClick={() => void handleSaveReview(report)}
-                                      disabled={
-                                        createReviewMutation.isPending ||
-                                        updateReviewMutation.isPending
+                                      onClick={() =>
+                                        void handleSubmitReview(report)
                                       }
+                                      disabled={isReviewPending}
                                     >
-                                      <CheckCircle2 size={14} />
+                                      <CheckCircle2 size={15} />
                                       {report.latest_review_id
                                         ? "Update Review"
                                         : "Submit Review"}
                                     </Button>
-
-                                    {report.latest_review_date ? (
-                                      <span className="text-xs text-muted-foreground">
-                                        Last reviewed {formatDate(report.latest_review_date)}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </div>
+                                  </CardContent>
+                                </Card>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -557,7 +721,7 @@ export default function SubmittedReportsPage() {
                   {filteredReports.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={8}
+                        colSpan={9}
                         className="h-32 text-center text-sm text-muted-foreground"
                       >
                         No submitted reports match the current filters.

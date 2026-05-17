@@ -7,6 +7,7 @@ import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 import { getMutationErrorMessage } from "@/api/forms/shared"
 import { useCreateFormCRecord, useFormCRecord } from "@/hooks/forms/use-form-c-mutation"
 import { deleteReportEntry } from "@/api/entries"
+import { getReportEditorPath, getReportIdFromSearchParams } from "@/features/forms/report-navigation"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormCOralOrPoster() {
@@ -15,6 +16,7 @@ export default function FormCOralOrPoster() {
   const [searchParams] = useSearchParams()
   const editingEntryId = Number(searchParams.get("entryId"))
   const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+  const reportId = getReportIdFromSearchParams(searchParams)
 
   const { data: existingData, isLoading: isLoadingExisting } = useFormCRecord(editingEntryId)
 
@@ -25,9 +27,10 @@ export default function FormCOralOrPoster() {
 
     await createFormCRecord.mutateAsync({
       values: data,
+      reportId,
     })
 
-    navigate("/reports/create-report")
+    navigate(getReportEditorPath(reportId))
   }
 
   if (isEditing && isLoadingExisting) {

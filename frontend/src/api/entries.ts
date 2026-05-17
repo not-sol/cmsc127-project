@@ -269,12 +269,18 @@ async function fetchDetailRows() {
   return new Map(rows.flat().map((row) => [row.entry_id, row]))
 }
 
-export async function fetchReportEntries(): Promise<ReportEntry[]> {
+export async function fetchReportEntries(reportId?: number | null): Promise<ReportEntry[]> {
+  let formsQuery = supabase
+    .from("forms")
+    .select("entry_id, created_at, title, description, author, report_id, form_type_id")
+    .order("created_at", { ascending: false })
+
+  if (reportId) {
+    formsQuery = formsQuery.eq("report_id", reportId)
+  }
+
   const [{ data, error }, detailByEntryId] = await Promise.all([
-    supabase
-      .from("forms")
-      .select("entry_id, created_at, title, description, author, report_id, form_type_id")
-      .order("created_at", { ascending: false }),
+    formsQuery,
     fetchDetailRows(),
   ])
 
