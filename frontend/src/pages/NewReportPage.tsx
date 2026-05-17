@@ -42,6 +42,7 @@ import {
   updateReportMetadata,
   updateReportStatus,
 } from "@/api/reports";
+import type { AttachmentLink, ReportEntryDetailValue } from "@/api/entries";
 import { useAuth } from "@/hooks/use-auth";
 import { getEntryFormPath, getReportEditorPath } from "@/features/forms/report-navigation";
 import { format } from "date-fns";
@@ -60,7 +61,43 @@ function Breadcrumb() {
   );
 }
 
-export default function NewEntryPage() {
+function isAttachmentLinks(value: ReportEntryDetailValue): value is AttachmentLink[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        "url" in item &&
+        "path" in item &&
+        "label" in item
+    )
+  );
+}
+
+function DetailValue({ value }: { value: ReportEntryDetailValue }) {
+  if (isAttachmentLinks(value)) {
+    return (
+      <div className="flex flex-col gap-1">
+        {value.map((attachment) => (
+          <a
+            key={attachment.path}
+            href={attachment.url}
+            target="_blank"
+            rel="noreferrer"
+            className="break-all text-sm text-[#6b0f1a] underline"
+          >
+            {attachment.label}
+          </a>
+        ))}
+      </div>
+    );
+  }
+
+  return <>{String(value)}</>;
+}
+
+export default function NewReportPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -68,6 +105,7 @@ export default function NewEntryPage() {
   const reportIdParam = Number(searchParams.get("reportId"));
   const reportId = Number.isFinite(reportIdParam) && reportIdParam > 0 ? reportIdParam : null;
   const mode = searchParams.get("mode");
+
   const {
     data: entries = [],
     isLoading,
@@ -78,11 +116,13 @@ export default function NewEntryPage() {
     queryFn: () => fetchReportEntries(reportId),
     enabled: reportId !== null,
   });
+
   const reportQuery = useQuery({
     queryKey: ["reports", "editor", reportId],
     queryFn: getAccessibleReports,
     enabled: reportId !== null,
   });
+
   const deleteEntry = useMutation({
     mutationFn: deleteReportEntry,
     onSuccess: () => {
@@ -90,22 +130,30 @@ export default function NewEntryPage() {
       void queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
+
   const saveDraft = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ navigateAfter = true }: { navigateAfter?: boolean } = {}) => {
       const payload = getMetadataPayload();
 
+      let report;
       if (reportId) {
-        return updateReportMetadata(reportId, payload);
+        report = await updateReportMetadata(reportId, payload);
+      } else {
+        report = await createDraftReport(payload);
       }
 
-      return createDraftReport(payload);
+      return { report, navigateAfter };
     },
-    onSuccess: (report) => {
+    onSuccess: ({ report, navigateAfter }) => {
       void queryClient.invalidateQueries({ queryKey: ["reports"] });
       void queryClient.invalidateQueries({ queryKey: ["reports", "editor", report.report_id] });
-      if (!reportId) navigate(getReportEditorPath(report.report_id), { replace: true });
+
+      if (!reportId && navigateAfter) {
+        navigate(getReportEditorPath(report.report_id), { replace: true });
+      }
     },
   });
+
   const submitReport = useMutation({
     mutationFn: async () => {
       const payload = getMetadataPayload();
@@ -121,6 +169,7 @@ export default function NewEntryPage() {
       navigate(getReportEditorPath(report.report_id), { replace: true });
     },
   });
+
   const entryDetails = useMutation({
     mutationFn: fetchReportEntryDetails,
   });
@@ -134,10 +183,12 @@ export default function NewEntryPage() {
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
   const [viewEntry, setViewEntry] = useState<ReportEntry | null>(null);
+
   const currentReport = useMemo(
     () => (reportId ? reportQuery.data?.find((report) => report.report_id === reportId) ?? null : null),
     [reportId, reportQuery.data]
   );
+
   const reportStatus = currentReport?.status ?? "draft";
   const isReadOnly = mode === "view" || reportStatus !== "draft";
 
@@ -201,7 +252,17 @@ export default function NewEntryPage() {
 
     setStartDate(currentReport.start_date ? new Date(`${currentReport.start_date}T00:00:00`) : undefined);
     setEndDate(currentReport.end_date ? new Date(`${currentReport.end_date}T00:00:00`) : undefined);
-    setRemarks(currentReport.remarks ?? "");
+
+    // Extract title from remarks if possible
+    if (currentReport.remarks) {
+      const parts = currentReport.remarks.split("\n\n");
+      if (parts.length > 1) {
+        setTitle(parts[0]);
+        setRemarks(parts.slice(1).join("\n\n"));
+      } else {
+        setRemarks(currentReport.remarks);
+      }
+    }
   }, [currentReport]);
 
   function toIsoDate(value?: Date) {
@@ -215,24 +276,20 @@ export default function NewEntryPage() {
   }
 
   function getMetadataPayload() {
+    const combinedRemarks = title.trim()
+      ? `${title.trim()}\n\n${remarks.trim()}`.trim()
+      : remarks.trim();
+
     return {
       startDate: toIsoDate(startDate),
       endDate: toIsoDate(endDate),
-      remarks: remarks.trim() || null,
+      remarks: combinedRemarks || null,
       departmentId: profile?.department_id ?? null,
     };
   }
 
-  const ensureDraftReport = async () => {
-    if (reportId) return reportId;
-
-    const report = await saveDraft.mutateAsync();
-    return report.report_id;
-  };
-
-  const handleCreateEntry = async (route: string) => {
-    const targetReportId = await ensureDraftReport();
-    navigate(getEntryFormPath(route, targetReportId));
+  const handleCreateEntry = (route: string) => {
+    navigate(getEntryFormPath(route, reportId ?? undefined));
   };
 
   const handleView = async (entry: ReportEntry) => {
@@ -272,7 +329,7 @@ export default function NewEntryPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => void saveDraft.mutateAsync()}
+                onClick={() => void saveDraft.mutateAsync({ navigateAfter: true })}
                 disabled={isReadOnly || saveDraft.isPending || submitReport.isPending}
               >
                 Save as Draft
@@ -400,9 +457,9 @@ export default function NewEntryPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium text-sm">Filters</h4>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setSelectedSections([]);
@@ -419,8 +476,8 @@ export default function NewEntryPage() {
                       <div className="grid grid-cols-1 gap-2">
                         {ENTRY_TYPES.map((type) => (
                           <div key={type.id} className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={`filter-${type.id}`} 
+                            <Checkbox
+                              id={`filter-${type.id}`}
                               checked={selectedSections.includes(type.label)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
@@ -430,7 +487,7 @@ export default function NewEntryPage() {
                                 }
                               }}
                             />
-                            <label 
+                            <label
                               htmlFor={`filter-${type.id}`}
                               className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                             >
@@ -509,7 +566,7 @@ export default function NewEntryPage() {
                   <Button
                     size="sm"
                     className="h-8 gap-1.5 text-sm bg-[#6b0f1a] hover:bg-[#5a0a0a]"
-                    disabled={isReadOnly || saveDraft.isPending}
+                    disabled={isReadOnly}
                   >
                     <Plus className="w-4 h-4" />
                     Create New Entry
@@ -520,7 +577,7 @@ export default function NewEntryPage() {
                   {ENTRY_TYPES.map((entryType) => (
                     <DropdownMenuItem
                       key={entryType.id}
-                      onClick={() => void handleCreateEntry(routeMap[entryType.id])}
+                      onClick={() => handleCreateEntry(routeMap[entryType.id])}
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2">
@@ -566,12 +623,23 @@ export default function NewEntryPage() {
                   filteredEntries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="text-sm">{entry.section}</TableCell>
-                      <TableCell className="text-sm font-medium">{entry.title}</TableCell>
+                      <TableCell className="text-sm font-medium">
+                        {entry.formRoute && !isReadOnly ? (
+                          <button
+                            onClick={() => handleEdit(entry)}
+                            className="hover:underline text-left transition-colors hover:text-[#6b0f1a]"
+                          >
+                            {entry.title}
+                          </button>
+                        ) : (
+                          entry.title
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">{entry.date}</TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-2">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             className="h-7 px-3 text-xs bg-foreground text-background hover:bg-foreground/90"
                             onClick={() => handleView(entry)}
                           >
@@ -626,14 +694,30 @@ export default function NewEntryPage() {
                 <h3 className="text-xl font-bold">{viewEntry.title}</h3>
               </div>
 
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setViewEntry(null)}
-                title="Close"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                {viewEntry.formRoute && !isReadOnly && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      handleEdit(viewEntry);
+                      setViewEntry(null);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit Entry
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setViewEntry(null)}
+                  title="Close"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="mt-6 space-y-6">
@@ -653,7 +737,9 @@ export default function NewEntryPage() {
                       {Object.entries(group.values).map(([label, value]) => (
                         <div key={label}>
                           <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-                          <dd className="break-words text-sm">{String(value)}</dd>
+                          <dd className="break-words text-sm">
+                            <DetailValue value={value} />
+                          </dd>
                         </div>
                       ))}
                     </dl>

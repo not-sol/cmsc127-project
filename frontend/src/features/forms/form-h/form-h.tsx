@@ -24,13 +24,12 @@ export default function FormH() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormHRecord.mutateAsync({
+    const result = await createFormHRecord.mutateAsync({
       values: data,
       reportId,
       submittedBy: userId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

@@ -28,13 +28,12 @@ export default function FormKOther() {
         await deleteReportEntry(editingEntryId)
       }
 
-      await createFormKRecord.mutateAsync({
+      const result = await createFormKRecord.mutateAsync({
         values: data,
         reportId,
         submittedBy: userId,
       })
-
-      navigate(getReportEditorPath(reportId))
+      navigate(getReportEditorPath(result.report_id))
     } catch (error) {
       console.error("Form submission failed:", error)
       // Error is handled by the mutation and displayed via submitError prop

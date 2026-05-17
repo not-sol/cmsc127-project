@@ -3,6 +3,7 @@ import type { FormHValues as FormHValues } from "@/features/forms/form-h/form-h-
 import { emptyStringToNull, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormHInput = {
   values: FormHValues
@@ -10,7 +11,10 @@ export type CreateFormHInput = {
   submittedBy?: string
 }
 
-export async function createFormHRecord({ values, reportId }: CreateFormHInput) {
+export async function createFormHRecord({ values, reportId: initialReportId }: CreateFormHInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload documents first. Store only Supabase Storage path text in the database.
   const programDocumentPaths = await uploadFilesAsStoragePathText(values.programDocuments, STORAGE_BUCKETS.FORM_H)
 
@@ -82,7 +86,7 @@ export async function createFormHRecord({ values, reportId }: CreateFormHInput) 
     throw pbmsError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormHRecord(entryId: number): Promise<FormHValues> {

@@ -3,6 +3,7 @@ import type { FormEValues } from "@/features/forms/form-e/form-e-schema"
 import { emptyStringToNull, toIsoDate, uploadAllFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormEInput = {
   values: FormEValues
@@ -32,13 +33,17 @@ async function rollbackFormERecord(entryId: number) {
   await supabase.from("forms").delete().eq("entry_id", entryId)
 }
 
-export async function createFormERecord({ values, reportId }: CreateFormEInput) {
+export async function createFormERecord({ values, reportId: initialReportId }: CreateFormEInput) {
   let researchProofPaths: string[] = []
   let utilizationProofPaths: string[] = []
   let uploadedPaths: string[] = []
   let entryId: number | undefined
+  let reportId: number | undefined
 
   try {
+    // 0. Get an existing report id, or lazily create a draft during form submission
+    reportId = await getOrCreateDraftReportId(initialReportId)
+
     researchProofPaths = await uploadAllFiles(
       values.proofOfResearchOutput,
       STORAGE_BUCKETS.FORM_E,
@@ -110,7 +115,7 @@ export async function createFormERecord({ values, reportId }: CreateFormEInput) 
       throw pbmsError
     }
 
-    return { entry_id: entryId }
+    return { entry_id: entryId, report_id: reportId }
   } catch (error) {
     if (entryId !== undefined) {
       await rollbackFormERecord(entryId)

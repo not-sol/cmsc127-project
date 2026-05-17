@@ -27,13 +27,12 @@ export default function FormJAuthorship() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormJRecord.mutateAsync({
+    const result = await createFormJRecord.mutateAsync({
       values: data,
       reportId,
       submittedBy: userId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

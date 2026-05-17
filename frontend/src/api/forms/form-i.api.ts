@@ -3,6 +3,7 @@ import type { FormIPartnershipValues } from "@/features/forms/form-i/form-i-sche
 import { emptyStringToNull, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormIInput = {
   values: FormIPartnershipValues
@@ -38,7 +39,10 @@ function assertSingleMoaDocument(value: unknown) {
   }
 }
 
-export async function createFormIRecord({ values, reportId, existingMoaDocumentPath }: CreateFormIInput) {
+export async function createFormIRecord({ values, reportId: initialReportId, existingMoaDocumentPath }: CreateFormIInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload the single PDF first so the database stores a valid storage path.
   assertSingleMoaDocument(values.moaDocument)
 
@@ -119,7 +123,7 @@ export async function createFormIRecord({ values, reportId, existingMoaDocumentP
     throw pbmsError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormIRecord(entryId: number): Promise<FormIPartnershipValues> {

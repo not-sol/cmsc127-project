@@ -25,12 +25,11 @@ export default function FormAPublications() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormARecord.mutateAsync({
+    const result = await createFormARecord.mutateAsync({
       values: data,
       reportId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

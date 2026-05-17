@@ -24,13 +24,12 @@ export default function FormG() {
       await deleteReportEntry(editingEntryId)
     }
 
-    await createFormGRecord.mutateAsync({
+    const result = await createFormGRecord.mutateAsync({
       values: data,
       reportId,
       submittedBy: userId,
     })
-
-    navigate(getReportEditorPath(reportId))
+    navigate(getReportEditorPath(result.report_id))
   }
 
   if (isEditing && isLoadingExisting) {

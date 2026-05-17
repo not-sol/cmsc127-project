@@ -3,6 +3,7 @@ import type { FormGValues as FormGValues } from "@/features/forms/form-g/form-g-
 import { emptyStringToNull, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
+import { getOrCreateDraftReportId } from "@/api/reports"
 
 export type CreateFormGInput = {
   values: FormGValues
@@ -11,7 +12,10 @@ export type CreateFormGInput = {
   existingAttachmentPath?: string | null
 }
 
-export async function createFormGRecord({ values, reportId, existingAttachmentPath }: CreateFormGInput) {
+export async function createFormGRecord({ values, reportId: initialReportId, existingAttachmentPath }: CreateFormGInput) {
+  // 0. Get an existing report id, or lazily create a draft during form submission
+  const reportId = await getOrCreateDraftReportId(initialReportId)
+
   // 1. Upload the single attachment first so the stored row references a real file path.
   const attachmentPath = await uploadFiles(
     values.attachments,
@@ -95,7 +99,7 @@ export async function createFormGRecord({ values, reportId, existingAttachmentPa
     throw pbmsError
   }
 
-  return { entry_id: entryId }
+  return { entry_id: entryId, report_id: reportId }
 }
 
 export async function getFormGRecord(entryId: number): Promise<FormGValues> {

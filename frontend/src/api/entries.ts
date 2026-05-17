@@ -1,3 +1,4 @@
+import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { supabase } from "@/lib/supabase/client"
 
 export type ReportEntry = {
@@ -377,8 +378,21 @@ export async function deleteReportEntry(entryId: number) {
 
 export type ReportEntryDetailGroup = {
   label: string
-  values: Record<string, unknown>
+  values: Record<string, ReportEntryDetailValue>
 }
+
+export type AttachmentLink = {
+  label: string
+  path: string
+  url: string
+}
+
+export type ReportEntryDetailValue =
+  | string
+  | number
+  | boolean
+  | AttachmentLink[]
+  | null
 
 function humanizeKey(key: string) {
   return key
@@ -386,16 +400,130 @@ function humanizeKey(key: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function cleanValues(row: Record<string, unknown>) {
-  return Object.fromEntries(
-    Object.entries(row)
-      .filter(([, value]) => value !== null && value !== undefined && value !== "")
-      .map(([key, value]) => [humanizeKey(key), value])
+const ATTACHMENT_BUCKETS_BY_TABLE: Record<string, Record<string, string>> = {
+  isip_publication_forms: {
+    publication_proof: STORAGE_BUCKETS.FORM_A,
+  },
+  pbms_publication_forms: {
+    utilization_proof: STORAGE_BUCKETS.FORM_A,
+  },
+  isip_research_forms: {
+    attachments: STORAGE_BUCKETS.FORM_B,
+  },
+  isip_oral_forms: {
+    attachments: STORAGE_BUCKETS.FORM_C,
+  },
+  isip_patents_forms: {
+    attachments: STORAGE_BUCKETS.FORM_D,
+  },
+  isip_creative_work_forms: {
+    research_proof: STORAGE_BUCKETS.FORM_E,
+  },
+  pbms_creative_work_forms: {
+    utilization_proof: STORAGE_BUCKETS.FORM_E,
+  },
+  isip_awards_forms: {
+    attachments: STORAGE_BUCKETS.FORM_F,
+  },
+  isip_trainings_forms: {
+    attachments: STORAGE_BUCKETS.FORM_G,
+  },
+  isip_extension_programs_forms: {
+    program_description: STORAGE_BUCKETS.FORM_H,
+  },
+  pbms_partnerships_forms: {
+    partnership_agreement: STORAGE_BUCKETS.FORM_I,
+  },
+  isip_authorship_forms: {
+    attachments: STORAGE_BUCKETS.FORM_J,
+  },
+  isip_other_accomplishments_forms: {
+    attachments: STORAGE_BUCKETS.FORM_K,
+  },
+}
+
+function parseStoragePaths(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((path): path is string => typeof path === "string" && path.trim().length > 0)
+  }
+
+  if (typeof value !== "string") {
+    return []
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) return []
+
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed)) {
+      return parsed.filter((path): path is string => typeof path === "string" && path.trim().length > 0)
+    }
+  } catch {
+    // Single-file attachment columns store the raw storage path as text.
+  }
+
+  return [trimmed]
+}
+
+function getAttachmentLabel(path: string) {
+  const fileName = path.split("/").pop() || path
+  return fileName.replace(/^[0-9a-f-]{36}-/i, "")
+}
+
+async function createAttachmentLinks(bucket: string, value: unknown): Promise<AttachmentLink[]> {
+  const paths = parseStoragePaths(value)
+  if (paths.length === 0) return []
+
+  const links = await Promise.all(
+    paths.map(async (path) => {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, 60 * 10)
+
+      if (error) {
+        console.warn(`Failed to create signed URL for ${bucket}/${path}:`, error)
+      }
+
+      return {
+        label: getAttachmentLabel(path),
+        path,
+        url: data?.signedUrl ?? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl,
+      }
+    })
   )
+
+  return links
+}
+
+async function cleanValues(
+  row: Record<string, unknown>,
+  attachmentBuckets: Record<string, string> = {}
+) {
+  const values: Record<string, ReportEntryDetailValue> = {}
+
+  for (const [key, value] of Object.entries(row)) {
+    if (value === null || value === undefined || value === "") continue
+
+    const label = humanizeKey(key)
+    const bucket = attachmentBuckets[key]
+
+    if (bucket) {
+      const links = await createAttachmentLinks(bucket, value)
+      if (links.length > 0) {
+        values[label] = links
+      }
+      continue
+    }
+
+    values[label] = value as ReportEntryDetailValue
+  }
+
+  return values
 }
 
 export async function fetchReportEntryDetails(entryId: number): Promise<ReportEntryDetailGroup[]> {
-  const mergedValues: Record<string, unknown> = {}
+  const mergedValues: Record<string, ReportEntryDetailValue> = {}
 
   // 1. Get base form data
   const { data: baseRow, error: baseError } = await supabase
@@ -405,7 +533,7 @@ export async function fetchReportEntryDetails(entryId: number): Promise<ReportEn
     .single()
 
   if (!baseError && baseRow) {
-    Object.assign(mergedValues, cleanValues(baseRow as Record<string, unknown>))
+    Object.assign(mergedValues, await cleanValues(baseRow as Record<string, unknown>))
   }
 
   // 2. Get data from all other tables and merge
@@ -421,7 +549,13 @@ export async function fetchReportEntryDetails(entryId: number): Promise<ReportEn
     }
 
     for (const row of data ?? []) {
-      Object.assign(mergedValues, cleanValues(row as Record<string, unknown>))
+      Object.assign(
+        mergedValues,
+        await cleanValues(
+          row as Record<string, unknown>,
+          ATTACHMENT_BUCKETS_BY_TABLE[table] ?? {}
+        )
+      )
     }
   }
 
