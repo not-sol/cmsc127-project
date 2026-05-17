@@ -1,13 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
+import { LayoutGrid, Plus, Download, User, LogOut, LayoutList } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { icon: LayoutGrid, label: "My Reports", href: "/reports" },
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
+  { icon: LayoutGrid, label: "Faculty Accomplishments", href: "/accomplishments" },
   { icon: Download, label: "Export Records", href: "/exports" },
-  { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" },
+  { icon: LayoutList, label: "Report Submissions", href: "/report-submissions" },
   { icon: User, label: "User Management", href: "/user-management" },
 ];
 
