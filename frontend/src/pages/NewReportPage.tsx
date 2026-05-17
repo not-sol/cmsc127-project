@@ -23,8 +23,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +36,14 @@ import {
   fetchReportEntries,
   type ReportEntry,
 } from "@/api/entries";
+import {
+  createDraftReport,
+  getAccessibleReports,
+  updateReportMetadata,
+  updateReportStatus,
+} from "@/api/reports";
+import { useAuth } from "@/hooks/use-auth";
+import { getEntryFormPath, getReportEditorPath } from "@/features/forms/report-navigation";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -54,19 +62,64 @@ function Breadcrumb() {
 
 export default function NewEntryPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const reportIdParam = Number(searchParams.get("reportId"));
+  const reportId = Number.isFinite(reportIdParam) && reportIdParam > 0 ? reportIdParam : null;
+  const mode = searchParams.get("mode");
   const {
     data: entries = [],
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["report-entries"],
-    queryFn: fetchReportEntries,
+    queryKey: ["report-entries", reportId],
+    queryFn: () => fetchReportEntries(reportId),
+    enabled: reportId !== null,
+  });
+  const reportQuery = useQuery({
+    queryKey: ["reports", "editor", reportId],
+    queryFn: getAccessibleReports,
+    enabled: reportId !== null,
   });
   const deleteEntry = useMutation({
     mutationFn: deleteReportEntry,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["report-entries"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["report-entries", reportId] });
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+  const saveDraft = useMutation({
+    mutationFn: async () => {
+      const payload = getMetadataPayload();
+
+      if (reportId) {
+        return updateReportMetadata(reportId, payload);
+      }
+
+      return createDraftReport(payload);
+    },
+    onSuccess: (report) => {
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+      void queryClient.invalidateQueries({ queryKey: ["reports", "editor", report.report_id] });
+      if (!reportId) navigate(getReportEditorPath(report.report_id), { replace: true });
+    },
+  });
+  const submitReport = useMutation({
+    mutationFn: async () => {
+      const payload = getMetadataPayload();
+      const targetReport = reportId
+        ? await updateReportMetadata(reportId, payload)
+        : await createDraftReport(payload);
+
+      return updateReportStatus(targetReport.report_id, "pending", payload);
+    },
+    onSuccess: (report) => {
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+      void queryClient.invalidateQueries({ queryKey: ["submitted-reports"] });
+      navigate(getReportEditorPath(report.report_id), { replace: true });
+    },
   });
   const entryDetails = useMutation({
     mutationFn: fetchReportEntryDetails,
@@ -81,6 +134,12 @@ export default function NewEntryPage() {
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
   const [viewEntry, setViewEntry] = useState<ReportEntry | null>(null);
+  const currentReport = useMemo(
+    () => (reportId ? reportQuery.data?.find((report) => report.report_id === reportId) ?? null : null),
+    [reportId, reportQuery.data]
+  );
+  const reportStatus = currentReport?.status ?? "draft";
+  const isReadOnly = mode === "view" || reportStatus !== "draft";
 
   const routeMap: Record<string, string> = {
     pub: "/form-a",
@@ -137,14 +196,53 @@ export default function NewEntryPage() {
     return result;
   }, [entries, search, selectedSections, filterStartDate, filterEndDate]);
 
+  useEffect(() => {
+    if (!currentReport) return;
+
+    setStartDate(currentReport.start_date ? new Date(`${currentReport.start_date}T00:00:00`) : undefined);
+    setEndDate(currentReport.end_date ? new Date(`${currentReport.end_date}T00:00:00`) : undefined);
+    setRemarks(currentReport.remarks ?? "");
+  }, [currentReport]);
+
+  function toIsoDate(value?: Date) {
+    if (!value) return null;
+
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function getMetadataPayload() {
+    return {
+      startDate: toIsoDate(startDate),
+      endDate: toIsoDate(endDate),
+      remarks: remarks.trim() || null,
+      departmentId: profile?.department_id ?? null,
+    };
+  }
+
+  const ensureDraftReport = async () => {
+    if (reportId) return reportId;
+
+    const report = await saveDraft.mutateAsync();
+    return report.report_id;
+  };
+
+  const handleCreateEntry = async (route: string) => {
+    const targetReportId = await ensureDraftReport();
+    navigate(getEntryFormPath(route, targetReportId));
+  };
+
   const handleView = async (entry: ReportEntry) => {
     setViewEntry(entry);
     await entryDetails.mutateAsync(entry.id);
   };
 
   const handleEdit = (entry: ReportEntry) => {
-    if (!entry.formRoute) return;
-    navigate(`${entry.formRoute}?entryId=${entry.id}`);
+    if (!entry.formRoute || isReadOnly) return;
+    navigate(getEntryFormPath(entry.formRoute, reportId ?? undefined, entry.id));
   };
 
   const handleDelete = async (entry: ReportEntry) => {
@@ -171,8 +269,20 @@ export default function NewEntryPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">Save as Draft</Button>
-              <Button size="sm" className="bg-[#6b0f1a] hover:bg-[#5a0a0a]">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void saveDraft.mutateAsync()}
+                disabled={isReadOnly || saveDraft.isPending || submitReport.isPending}
+              >
+                Save as Draft
+              </Button>
+              <Button
+                size="sm"
+                className="bg-[#6b0f1a] hover:bg-[#5a0a0a]"
+                onClick={() => void submitReport.mutateAsync()}
+                disabled={isReadOnly || submitReport.isPending || saveDraft.isPending}
+              >
                 Submit Report
               </Button>
             </div>
@@ -187,6 +297,7 @@ export default function NewEntryPage() {
                   placeholder="Enter report title here"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
+                  disabled={isReadOnly}
                 />
               </div>
 
@@ -211,6 +322,7 @@ export default function NewEntryPage() {
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
+                        disabled={isReadOnly}
                         initialFocus
                       />
                     </PopoverContent>
@@ -237,6 +349,7 @@ export default function NewEntryPage() {
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
+                        disabled={isReadOnly}
                         initialFocus
                       />
                     </PopoverContent>
@@ -252,6 +365,7 @@ export default function NewEntryPage() {
                 className="resize-none h-24 bg-[#f5f5f5]"
                 value={remarks}
                 onChange={(event) => setRemarks(event.target.value)}
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -392,7 +506,11 @@ export default function NewEntryPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" className="h-8 gap-1.5 text-sm bg-[#6b0f1a] hover:bg-[#5a0a0a]">
+                  <Button
+                    size="sm"
+                    className="h-8 gap-1.5 text-sm bg-[#6b0f1a] hover:bg-[#5a0a0a]"
+                    disabled={isReadOnly || saveDraft.isPending}
+                  >
                     <Plus className="w-4 h-4" />
                     Create New Entry
                   </Button>
@@ -402,7 +520,7 @@ export default function NewEntryPage() {
                   {ENTRY_TYPES.map((entryType) => (
                     <DropdownMenuItem
                       key={entryType.id}
-                      onClick={() => navigate(routeMap[entryType.id])}
+                      onClick={() => void handleCreateEntry(routeMap[entryType.id])}
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2">
@@ -465,7 +583,7 @@ export default function NewEntryPage() {
                             size="icon"
                             className="h-7 w-7"
                             onClick={() => handleEdit(entry)}
-                            disabled={!entry.formRoute}
+                            disabled={!entry.formRoute || isReadOnly}
                             title="Edit entry"
                           >
                             <Pencil className="h-4 w-4" />
@@ -476,7 +594,7 @@ export default function NewEntryPage() {
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
                             onClick={() => handleDelete(entry)}
-                            disabled={deleteEntry.isPending}
+                            disabled={deleteEntry.isPending || isReadOnly}
                             title="Delete entry"
                           >
                             <Trash2 className="h-4 w-4" />

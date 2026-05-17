@@ -5,6 +5,7 @@ import { getMutationErrorMessage } from "@/api/forms/shared"
 import { useCreateFormFRecord, useFormFRecord } from "@/hooks/forms/use-form-f-mutation"
 import { useAuthStore } from "@/store/auth-store"
 import { deleteReportEntry } from "@/api/entries"
+import { getReportEditorPath, getReportIdFromSearchParams } from "@/features/forms/report-navigation"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormF() {
@@ -14,6 +15,7 @@ export default function FormF() {
   const [searchParams] = useSearchParams()
   const editingEntryId = Number(searchParams.get("entryId"))
   const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+  const reportId = getReportIdFromSearchParams(searchParams)
 
   const { data: existingData, isLoading: isLoadingExisting } = useFormFRecord(editingEntryId)
 
@@ -24,10 +26,11 @@ export default function FormF() {
 
     await createFormFRecord.mutateAsync({
       values: data,
+      reportId,
       submittedBy: userId,
     })
 
-    navigate("/reports/create-report")
+    navigate(getReportEditorPath(reportId))
   }
 
   if (isEditing && isLoadingExisting) {

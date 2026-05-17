@@ -1,14 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { ClipboardList, LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
+import { LayoutGrid, Plus, Download, User, LogOut, KanbanSquare } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { icon: LayoutGrid, label: "My Reports", href: "/reports" },
   { icon: Plus, label: "Create New Report", href: "/reports/create-report" },
-  { icon: ClipboardList, label: "Submitted Reports", href: "/submitted-reports" },
   { icon: Download, label: "Export Records", href: "/exports" },
-  { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" }, //DEPT CHAIR VIEW ONLY
+  { icon: KanbanSquare, label: "Report Submissions", href: "/report-submissions" },
   { icon: User, label: "User Management", href: "/user-management" },
 ];
 
@@ -18,13 +17,13 @@ export default function Sidebar() {
 
   const filteredNavItems = navItems.filter((item) => {
     if (item.href === "/user-management") return isAdmin;
-    if (item.href === "/submitted-reports") return isAdmin || isChair;
+    if (item.href === "/report-submissions") return isAdmin || isChair;
     return true;
   });
 
   return (
     <aside
-      className="relative flex flex-col w-64 min-h-screen px-4 py-6"
+      className="sticky top-0 h-screen w-64 shrink-0 flex flex-col px-4 py-6 overflow-y-auto"
       style={{
         backgroundImage: "linear-gradient(to left, #430409 0%, rgba(107,15,26,0.85) 90%, rgba(107,15,26,0.2) 100%)",
         backgroundColor: "#6b0f1a",

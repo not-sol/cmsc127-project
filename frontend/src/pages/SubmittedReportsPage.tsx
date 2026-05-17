@@ -1,12 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
-import {
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  RefreshCw,
-  Save,
-  Search,
-} from "lucide-react";
+import { Eye, RefreshCw, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,28 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import type { ReviewStatus } from "@/api/reports";
 import type { SubmittedReport } from "@/api/submitted-reports";
-import {
-  useCreateReviewDecision,
-  useSubmittedReports,
-  useUpdateReviewDecision,
-  useUpdateSubmittedReport,
-} from "@/hooks/use-submitted-reports";
+import { useSubmittedReports } from "@/hooks/use-submitted-reports";
 
 type StatusFilter = "all" | "pending" | "reviewed";
-
-type ReportDraft = {
-  startDate: string;
-  endDate: string;
-  remarks: string;
-};
-
-type ReviewDraft = {
-  status: ReviewStatus;
-  remarks: string;
-};
 
 const statusLabels: Record<StatusFilter, string> = {
   all: "All",
@@ -104,21 +81,12 @@ function getStatusBadge(report: SubmittedReport) {
 }
 
 export default function SubmittedReportsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [expandedReportId, setExpandedReportId] = useState<number | null>(null);
-  const [reportDrafts, setReportDrafts] = useState<Record<number, ReportDraft>>(
-    {}
-  );
-  const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>(
-    {}
-  );
 
   const submittedReportsQuery = useSubmittedReports();
-  const updateReportMutation = useUpdateSubmittedReport();
-  const createReviewMutation = useCreateReviewDecision();
-  const updateReviewMutation = useUpdateReviewDecision();
 
   const reports = useMemo(
     () => submittedReportsQuery.data ?? [],
@@ -173,55 +141,6 @@ export default function SubmittedReportsPage() {
     [reports]
   );
 
-  function getReportDraft(report: SubmittedReport) {
-    return (
-      reportDrafts[report.report_id] ?? {
-        startDate: report.start_date ?? "",
-        endDate: report.end_date ?? "",
-        remarks: report.remarks ?? "",
-      }
-    );
-  }
-
-  function getReviewDraft(report: SubmittedReport) {
-    return (
-      reviewDrafts[report.report_id] ?? {
-        status: report.latest_review_status ?? "approved",
-        remarks: report.latest_review_remarks ?? "",
-      }
-    );
-  }
-
-  async function handleSaveReport(report: SubmittedReport) {
-    const draft = getReportDraft(report);
-
-    await updateReportMutation.mutateAsync({
-      reportId: report.report_id,
-      startDate: draft.startDate || null,
-      endDate: draft.endDate || null,
-      remarks: draft.remarks || null,
-    });
-  }
-
-  async function handleSaveReview(report: SubmittedReport) {
-    const draft = getReviewDraft(report);
-
-    if (report.latest_review_id) {
-      await updateReviewMutation.mutateAsync({
-        reviewId: report.latest_review_id,
-        status: draft.status,
-        remarks: draft.remarks,
-      });
-      return;
-    }
-
-    await createReviewMutation.mutateAsync({
-      reportId: report.report_id,
-      status: draft.status,
-      remarks: draft.remarks,
-    });
-  }
-
   return (
     <div className="flex min-h-screen bg-muted/40">
       <Sidebar />
@@ -232,7 +151,7 @@ export default function SubmittedReportsPage() {
         <div className="flex-1 px-8 py-8">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold">Submitted Reports</h2>
+              <h2 className="text-2xl font-bold">Report Submissions</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Review and manage submitted faculty accomplishment reports.
               </p>
@@ -317,43 +236,21 @@ export default function SubmittedReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10" />
                     <TableHead>Report</TableHead>
                     <TableHead>Faculty</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Date Submitted</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Review</TableHead>
-                    <TableHead className="text-right">Entries</TableHead>
+                    <TableHead className="text-right">Forms / Entries</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredReports.map((report) => {
-                    const isExpanded = expandedReportId === report.report_id;
-                    const reportDraft = getReportDraft(report);
-                    const reviewDraft = getReviewDraft(report);
-
                     return (
                       <Fragment key={report.report_id}>
                         <TableRow key={report.report_id}>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() =>
-                                setExpandedReportId(
-                                  isExpanded ? null : report.report_id
-                                )
-                              }
-                            >
-                              {isExpanded ? (
-                                <ChevronDown size={15} />
-                              ) : (
-                                <ChevronRight size={15} />
-                              )}
-                            </Button>
-                          </TableCell>
                           <TableCell className="font-medium">
                             {getReportTitle(report)}
                           </TableCell>
@@ -382,174 +279,22 @@ export default function SubmittedReportsPage() {
                           <TableCell className="text-right">
                             {report.entry_count}
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() =>
+                                navigate(
+                                  `/report-submissions/${report.report_id}/review`
+                                )
+                              }
+                            >
+                              <Eye size={14} />
+                              Open Review
+                            </Button>
+                          </TableCell>
                         </TableRow>
-
-                        {isExpanded ? (
-                          <TableRow key={`${report.report_id}-details`}>
-                            <TableCell />
-                            <TableCell colSpan={7}>
-                              <div className="grid gap-6 py-4 lg:grid-cols-[1fr_1fr]">
-                                <div className="space-y-4">
-                                  <div>
-                                    <h3 className="text-sm font-semibold">
-                                      Report Details
-                                    </h3>
-                                    <p className="text-xs text-muted-foreground">
-                                      Edit submitted report metadata and remarks.
-                                    </p>
-                                  </div>
-
-                                  <div className="grid gap-3 sm:grid-cols-2">
-                                    <label className="space-y-1.5 text-sm">
-                                      <span className="font-medium">
-                                        Start date
-                                      </span>
-                                      <Input
-                                        type="date"
-                                        value={reportDraft.startDate}
-                                        onChange={(event) =>
-                                          setReportDrafts((drafts) => ({
-                                            ...drafts,
-                                            [report.report_id]: {
-                                              ...reportDraft,
-                                              startDate: event.target.value,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                    </label>
-
-                                    <label className="space-y-1.5 text-sm">
-                                      <span className="font-medium">
-                                        End date
-                                      </span>
-                                      <Input
-                                        type="date"
-                                        value={reportDraft.endDate}
-                                        onChange={(event) =>
-                                          setReportDrafts((drafts) => ({
-                                            ...drafts,
-                                            [report.report_id]: {
-                                              ...reportDraft,
-                                              endDate: event.target.value,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                    </label>
-                                  </div>
-
-                                  <label className="space-y-1.5 text-sm">
-                                    <span className="font-medium">
-                                      Report remarks
-                                    </span>
-                                    <Textarea
-                                      className="min-h-24 resize-none"
-                                      value={reportDraft.remarks}
-                                      onChange={(event) =>
-                                        setReportDrafts((drafts) => ({
-                                          ...drafts,
-                                          [report.report_id]: {
-                                            ...reportDraft,
-                                            remarks: event.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </label>
-
-                                  <Button
-                                    size="sm"
-                                    className="gap-2 bg-[#6b0f1a] hover:bg-[#5a0a0a]"
-                                    onClick={() => void handleSaveReport(report)}
-                                    disabled={updateReportMutation.isPending}
-                                  >
-                                    <Save size={14} />
-                                    Save Report
-                                  </Button>
-                                </div>
-
-                                <div className="space-y-4">
-                                  <div>
-                                    <h3 className="text-sm font-semibold">
-                                      Review Workflow
-                                    </h3>
-                                    <p className="text-xs text-muted-foreground">
-                                      Approved decisions mark the report as reviewed and record the review.
-                                    </p>
-                                  </div>
-
-                                  <Select
-                                    value={reviewDraft.status}
-                                    onValueChange={(value) =>
-                                      setReviewDrafts((drafts) => ({
-                                        ...drafts,
-                                        [report.report_id]: {
-                                          ...reviewDraft,
-                                          status: value as ReviewStatus,
-                                        },
-                                      }))
-                                    }
-                                  >
-                                    <SelectTrigger className="w-56">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="approved">
-                                        Approved
-                                      </SelectItem>
-                                      <SelectItem value="partially_approved">
-                                        Partially approved
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-
-                                  <label className="space-y-1.5 text-sm">
-                                    <span className="font-medium">
-                                      Reviewer comments
-                                    </span>
-                                    <Textarea
-                                      className="min-h-28 resize-none"
-                                      value={reviewDraft.remarks}
-                                      onChange={(event) =>
-                                        setReviewDrafts((drafts) => ({
-                                          ...drafts,
-                                          [report.report_id]: {
-                                            ...reviewDraft,
-                                            remarks: event.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </label>
-
-                                  <div className="flex flex-wrap items-center gap-3">
-                                    <Button
-                                      size="sm"
-                                      className="gap-2 bg-[#6b0f1a] hover:bg-[#5a0a0a]"
-                                      onClick={() => void handleSaveReview(report)}
-                                      disabled={
-                                        createReviewMutation.isPending ||
-                                        updateReviewMutation.isPending
-                                      }
-                                    >
-                                      <CheckCircle2 size={14} />
-                                      {report.latest_review_id
-                                        ? "Update Review"
-                                        : "Submit Review"}
-                                    </Button>
-
-                                    {report.latest_review_date ? (
-                                      <span className="text-xs text-muted-foreground">
-                                        Last reviewed {formatDate(report.latest_review_date)}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : null}
                       </Fragment>
                     );
                   })}
@@ -557,7 +302,7 @@ export default function SubmittedReportsPage() {
                   {filteredReports.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={8}
+                        colSpan={9}
                         className="h-32 text-center text-sm text-muted-foreground"
                       >
                         No submitted reports match the current filters.

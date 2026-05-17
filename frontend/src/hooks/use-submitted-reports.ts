@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createReviewDecision,
+  getSubmittedReportDetail,
   getSubmittedReports,
   updateReviewDecision,
   updateSubmittedReport,
@@ -63,6 +64,28 @@ export function useSubmittedReports() {
   });
 }
 
+export function useSubmittedReportDetail(reportId: number | null) {
+  const { role, profile } = useAuth();
+
+  return useQuery({
+    queryKey: [
+      ...submittedReportsQueryKey,
+      "detail",
+      reportId,
+      role,
+      profile?.department_id ?? null,
+    ],
+    queryFn: () =>
+      getSubmittedReportDetail({
+        reportId: reportId as number,
+        role,
+        departmentId: profile?.department_id ?? null,
+      }),
+    enabled:
+      reportId !== null && (role === "department_chair" || role === "admin"),
+  });
+}
+
 export function useUpdateSubmittedReport() {
   const queryClient = useQueryClient();
 
@@ -81,6 +104,7 @@ export function useCreateReviewDecision() {
     mutationFn: (input: ReviewDecisionInput) => createReviewDecision(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: submittedReportsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }
@@ -92,6 +116,7 @@ export function useUpdateReviewDecision() {
     mutationFn: (input: ReviewUpdateInput) => updateReviewDecision(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: submittedReportsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }

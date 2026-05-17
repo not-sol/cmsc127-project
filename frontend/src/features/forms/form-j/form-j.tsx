@@ -8,6 +8,7 @@ import { getMutationErrorMessage } from "@/api/forms/shared"
 import { useCreateFormJRecord, useFormJRecord } from "@/hooks/forms/use-form-j-mutation"
 import { useAuthStore } from "@/store/auth-store"
 import { deleteReportEntry } from "@/api/entries"
+import { getReportEditorPath, getReportIdFromSearchParams } from "@/features/forms/report-navigation"
 import { useSearchParams, useNavigate } from "react-router-dom"
 
 export default function FormJAuthorship() {
@@ -17,6 +18,7 @@ export default function FormJAuthorship() {
   const navigate = useNavigate()
   const editingEntryId = Number(searchParams.get("entryId"))
   const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+  const reportId = getReportIdFromSearchParams(searchParams)
 
   const { data: existingData, isLoading: isLoadingExisting } = useFormJRecord(editingEntryId)
 
@@ -27,10 +29,11 @@ export default function FormJAuthorship() {
 
     await createFormJRecord.mutateAsync({
       values: data,
+      reportId,
       submittedBy: userId,
     })
 
-    navigate("/reports/create-report")
+    navigate(getReportEditorPath(reportId))
   }
 
   if (isEditing && isLoadingExisting) {

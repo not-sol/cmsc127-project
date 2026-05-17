@@ -1,22 +1,21 @@
 SET session_replication_role = replica;
 
--- Clear search path boilerplate that might cause issues
 SELECT pg_catalog.set_config('search_path', 'public, auth, extensions', false);
 
--- User seeding
+-- Local admin account only. Demo accomplishment data lives in manual snippets.
 INSERT INTO auth.users (
-  id, 
-  instance_id, 
-  email, 
-  encrypted_password, 
-  email_confirmed_at, 
-  raw_app_meta_data, 
-  raw_user_meta_data, 
-  is_super_admin, 
-  role, 
-  last_sign_in_at, 
-  created_at, 
-  updated_at, 
+  id,
+  instance_id,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  is_super_admin,
+  role,
+  last_sign_in_at,
+  created_at,
+  updated_at,
   aud,
   is_sso_user,
   is_anonymous
@@ -45,12 +44,12 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO auth.identities (
   id,
-  user_id, 
-  identity_data, 
-  provider, 
+  user_id,
+  identity_data,
+  provider,
   provider_id,
-  last_sign_in_at, 
-  created_at, 
+  last_sign_in_at,
+  created_at,
   updated_at
 )
 VALUES (
@@ -64,78 +63,4 @@ VALUES (
   now()
 ) ON CONFLICT (provider, provider_id) DO NOTHING;
 
--- Departments
-insert into public.departments (department_name, college_name)
-values 
-  ('CSMOD', 'College of Science and Mathematics'),
-  ('DBSES', 'College of Science and Mathematics'),
-  ('DFSC', 'College of Science and Mathematics'),
-  ('DMPCS', 'College of Science and Mathematics')
-on conflict (department_name) do nothing;
-
--- Accomplishment Reports
-insert into public.accomplishment_reports (
-  start_date,
-  end_date,
-  date_submitted,
-  status,
-  remarks,
-  department_id,
-  faculty_id
-)
-values
-  ('2026-01-01', '2026-03-31', '2026-04-05', 'pending', 'Dummy seed: CSMOD Q1 research, publications, and training report awaiting chair review.', (select department_id from public.departments where department_name = 'CSMOD'), null),
-  ('2026-04-01', '2026-06-30', '2026-07-04', 'reviewed', 'Dummy seed: CSMOD Q2 accomplishments reviewed with minor documentation follow-up.', (select department_id from public.departments where department_name = 'CSMOD'), null),
-  ('2025-10-01', '2025-12-31', '2026-01-10', 'draft', 'Dummy seed: CSMOD year-end report still being prepared by faculty.', (select department_id from public.departments where department_name = 'CSMOD'), null),
-
-  ('2026-01-01', '2026-03-31', '2026-04-08', 'pending', 'Dummy seed: DBSES biodiversity monitoring and extension report pending review.', (select department_id from public.departments where department_name = 'DBSES'), null),
-  ('2026-04-01', '2026-06-30', '2026-07-06', 'reviewed', 'Dummy seed: DBSES coastal research and community engagement report reviewed.', (select department_id from public.departments where department_name = 'DBSES'), null),
-  ('2025-07-01', '2025-09-30', '2025-10-12', 'archived', 'Dummy seed: DBSES archived quarterly accomplishments report.', (select department_id from public.departments where department_name = 'DBSES'), null),
-
-  ('2026-01-01', '2026-03-31', '2026-04-03', 'pending', 'Dummy seed: DFSC food systems research report pending department chair action.', (select department_id from public.departments where department_name = 'DFSC'), null),
-  ('2026-04-01', '2026-06-30', '2026-07-02', 'reviewed', 'Dummy seed: DFSC laboratory service and publication report reviewed.', (select department_id from public.departments where department_name = 'DFSC'), null),
-  ('2025-10-01', '2025-12-31', '2026-01-09', 'draft', 'Dummy seed: DFSC draft accomplishments for validation.', (select department_id from public.departments where department_name = 'DFSC'), null),
-
-  ('2026-01-01', '2026-03-31', '2026-04-07', 'pending', 'Dummy seed: DMPCS computational science and math education report pending review.', (select department_id from public.departments where department_name = 'DMPCS'), null),
-  ('2026-04-01', '2026-06-30', '2026-07-08', 'reviewed', 'Dummy seed: DMPCS reviewed report covering research dissemination and student mentoring.', (select department_id from public.departments where department_name = 'DMPCS'), null),
-  ('2025-07-01', '2025-09-30', '2025-10-07', 'archived', 'Dummy seed: DMPCS archived report retained for historical testing.', (select department_id from public.departments where department_name = 'DMPCS'), null);
-
--- Form Data (ISIP & PBMS)
-INSERT INTO "public"."isip_creative_work_forms" ("creative_work_title", "other_type", "event_start_date", "event_end_date", "research_proof", "remarks") VALUES
-	('Nunizer', NULL, '2025-11-30', '2025-12-13', 'Even more proof', 'yeah');
-
-INSERT INTO "public"."isip_oral_forms" ("paper_title", "presentation_type", "event_type", "attachments", "remarks") VALUES
-	('Alliteration at an aggressively astronomical amount', 'poster', 'forum', 'image', 'mid af burhh');
-
-INSERT INTO "public"."isip_patents_forms" ("attachments", "remarks") VALUES
-	('lookie here', 'important');
-
-INSERT INTO "public"."isip_publication_forms" ("publication_type", "publication_title", "publication_author", "publication_date_published", "publication_name", "isi", "scopus", "pubmed", "ched_recognized", "peer_reviewed", "publication_proof", "remarks") VALUES
-	('book', 'Sdakfghilfasd: What is this paper', 'Becilio I, Ird W', '2021-10-10', 'The Journal', false, true, false, false, false, 'meow', NULL),
-	('bookChapter', 'Chapter VII: Wait wasn''t this 6', 'Fasd S', '2025-05-13', 'The Booke of Miseries', true, true, true, true, true, 'look at ts', 'bro what'),
-	('book', 'Sample Publication Title', 'Dela Cruz, Juan', '2026-10-10', 'Name of Publication', false, false, false, false, false, 'Heres a proof', NULL);
-
-INSERT INTO "public"."isip_research_forms" ("research_title", "research_type", "start_date", "end_date", "researcher_name", "research_grant", "funding_amount", "total_funding", "attachments", "remarks") VALUES
-	('Redundancy, like a whole lot', 'basic', '2025-12-06', '2026-05-07', 'Smetana S', 65, 65, 130, 'lord alvin redund''s biography', 'This is, in fact, truly, verily, indeed, actually, apparently, really, a paper, which is of research variety, that is used as a means, method, form, and procedure to convey the topic at hand'),
-	('The Adjective of Noun: How Noun Affects Noun', 'applied', '2025-11-26', NULL, 'Smetana S., Bazinga S', 159, 1, 160, 'look at this thing vro', NULL);
-
-INSERT INTO "public"."pbms_creative_work_forms" ("linked_research", "output_type", "public_event_type", "event_title", "organizer_name", "event_scope", "event_venue", "date_released", "utilization_research_output", "utilization_proof") VALUES
-	('The Adjective of Noun: How Noun Affects Noun', 'visual_arts', 'exhibition', 'Random objects from who cares and wherever', 'Org Anne I. Zer', 'international', 'Utrecht, NL', '2025-11-25', 'development_of_technology', 'look at this placeholder');
-
-INSERT INTO "public"."pbms_oral_forms" ("linked_research", "conference_title", "organizer_name", "conference_location", "venue", "conference_start_date", "conference_end_date", "presentation_date") VALUES
-	('Redundancy, like a whole lot', 'The means of remembering Lord Alvin Redund through a homage, a dedication, and third thing', 'Lord Alvin Redund IIIIIIIIIIIIII', 'institutionalInhouse', 'Toledo, Ohio', '2025-08-31', '2025-09-06', '2025-09-02');
-
-INSERT INTO "public"."pbms_patents_forms" ("linked_research", "patent_title", "patent_type", "application_no", "inventor_name", "applicant_name", "publication_date", "grant_date", "registration_no", "commercial_product_name", "research_utilization_output") VALUES
-	('The Adjective of Noun: How Noun Affects Noun', 'The Noun Nouner', 'invention', '91240', 'Sobriquet Name Surname', 'Meaf Loaf', '2025-11-03', '2026-01-14', '1015032', '[the] [TITLE]', 'endProduct');
-
-INSERT INTO "public"."pbms_publication_forms" ("publisher_name", "publisher_type", "publisher_location", "volume_issue_no", "doi", "number_of_citation", "utilization_proof") VALUES
-	('Sbermann''s and co.', 'Commercial', 'Local', 'Vol. 69, No. 420', 'doidoidoidoidoi', NULL, 'proof'),
-	('Laird Enervon', 'University Press', 'International', NULL, 'doioiod', 14, 'proof'),
-	('PubllishnNAme', 'Commercial', 'Local', NULL, 'doidoidoidoidoidoidoidoidoidoid', NULL, 'proof');
-
-INSERT INTO "public"."pbms_research_forms" ("contributing_unit", "original_timeframe_months", "majority_source_of_funds") VALUES
-	('csmod', 5, 'rpGovtDirFund'),
-	('dfsc', 2, 'forDirFund');
-
--- Clean up markers
 RESET ALL;

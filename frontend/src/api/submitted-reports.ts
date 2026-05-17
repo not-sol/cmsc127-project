@@ -40,6 +40,7 @@ export interface ReviewDecisionInput {
 
 export interface ReviewUpdateInput {
   reviewId: number;
+  reportId: number;
   status: ReviewStatus;
   remarks?: string;
 }
@@ -47,6 +48,28 @@ export interface ReviewUpdateInput {
 export interface GetSubmittedReportsOptions {
   role: AppRole | null;
   departmentId: number | null;
+}
+
+export interface SubmittedReportDetailOptions extends GetSubmittedReportsOptions {
+  reportId: number;
+}
+
+export interface SubmittedReportFormGroup {
+  label: string;
+  values: Record<string, unknown>;
+}
+
+export interface SubmittedReportFormDetail {
+  entry_id: number;
+  title: string;
+  type: string;
+  created_at: string;
+  groups: SubmittedReportFormGroup[];
+}
+
+export interface SubmittedReportDetail {
+  report: SubmittedReport;
+  forms: SubmittedReportFormDetail[];
 }
 
 type ReportRow = {
@@ -88,7 +111,42 @@ type ReviewRow = {
 type FormRow = {
   entry_id: number;
   report_id: number | null;
+  created_at?: string;
+  title?: string | null;
+  description?: string | null;
+  author?: string | null;
+  form_type_id?: number | null;
 };
+
+type DetailTableConfig = {
+  table: string;
+  label: string;
+  type: string;
+};
+
+const DETAIL_TABLES: DetailTableConfig[] = [
+  { table: "isip_publication_forms", label: "ISIP Publication", type: "Publication" },
+  { table: "pbms_publication_forms", label: "PBMS Publication", type: "Publication" },
+  { table: "isip_research_forms", label: "ISIP Research Grant", type: "Research Grant" },
+  { table: "pbms_research_forms", label: "PBMS Research Grant", type: "Research Grant" },
+  { table: "isip_oral_forms", label: "ISIP Paper Presentation", type: "Paper Presentation" },
+  { table: "pbms_oral_forms", label: "PBMS Paper Presentation", type: "Paper Presentation" },
+  { table: "isip_patents_forms", label: "ISIP Patent", type: "Patent" },
+  { table: "pbms_patents_forms", label: "PBMS Patent", type: "Patent" },
+  { table: "isip_creative_work_forms", label: "ISIP Creative Work", type: "Creative Work" },
+  { table: "pbms_creative_work_forms", label: "PBMS Creative Work", type: "Creative Work" },
+  { table: "isip_awards_forms", label: "ISIP Award / Grant", type: "Award / Grant" },
+  { table: "isip_trainings_forms", label: "ISIP Training", type: "Training" },
+  { table: "pbms_trainings_forms", label: "PBMS Training", type: "Training" },
+  { table: "isip_extension_programs_forms", label: "ISIP Extension Program", type: "Extension Program" },
+  { table: "pbms_extension_programs_forms", label: "PBMS Extension Program", type: "Extension Program" },
+  { table: "isip_partnership_forms", label: "ISIP Partnership / MOA", type: "Partnership / MOA" },
+  { table: "pbms_partnerships_forms", label: "PBMS Partnership / MOA", type: "Partnership / MOA" },
+  { table: "isip_authorship_forms", label: "ISIP Authorship", type: "Authorship" },
+  { table: "isip_other_accomplishments_forms", label: "ISIP Other Accomplishment", type: "Other Accomplishment" },
+  { table: "pbms_other_accomplishments_forms", label: "PBMS Other Accomplishment", type: "Other Accomplishment" },
+  { table: "supporting_documents", label: "Supporting Documents", type: "Supporting Documents" },
+];
 
 function uniqueValues<TValue>(values: (TValue | null | undefined)[]) {
   return Array.from(
@@ -104,6 +162,30 @@ async function getOptionalForms(reportIds: number[]) {
 
   if (error) return [];
   return (data ?? []) as FormRow[];
+}
+
+function humanizeKey(key: string) {
+  return key
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function cleanValues(row: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(row)
+      .filter(([, value]) => value !== null && value !== undefined && value !== "")
+      .map(([key, value]) => [humanizeKey(key), value])
+  );
+}
+
+function withoutInternalFields(values: Record<string, unknown>) {
+  const next = { ...values };
+
+  for (const field of ["Entry Id", "Report Id", "Form Type Id"]) {
+    delete next[field];
+  }
+
+  return next;
 }
 
 async function getOptionalUsers(facultyIds: string[]) {
@@ -269,6 +351,96 @@ export async function getSubmittedReports({
   return submittedReports;
 }
 
+export async function getSubmittedReportDetail({
+  reportId,
+  role,
+  departmentId,
+}: SubmittedReportDetailOptions): Promise<SubmittedReportDetail | null> {
+  if (role !== "department_chair" && role !== "admin") {
+    return null;
+  }
+
+  const reports = await getSubmittedReports({ role, departmentId });
+  const report = reports.find((item) => item.report_id === reportId);
+
+  if (!report) {
+    return null;
+  }
+
+  const { data: forms, error: formsError } = await supabase
+    .from("forms")
+    .select("*")
+    .eq("report_id", reportId)
+    .order("created_at", { ascending: true });
+
+  if (formsError) throw formsError;
+
+  const formRows = (forms ?? []) as FormRow[];
+  const entryIds = formRows.map((form) => form.entry_id);
+
+  if (entryIds.length === 0) {
+    return { report, forms: [] };
+  }
+
+  const detailGroupsByEntryId = new Map<number, SubmittedReportFormGroup[]>();
+  const typeByEntryId = new Map<number, string>();
+
+  await Promise.all(
+    DETAIL_TABLES.map(async (config) => {
+      const { data, error } = await supabase
+        .from(config.table)
+        .select("*")
+        .in("entry_id", entryIds);
+
+      if (error) {
+        console.warn(`Failed to fetch ${config.table} for report ${reportId}:`, error);
+        return;
+      }
+
+      for (const row of (data ?? []) as Record<string, unknown>[]) {
+        const entryId = Number(row.entry_id);
+        if (!Number.isFinite(entryId)) continue;
+
+        const values = withoutInternalFields(cleanValues(row));
+        const currentGroups = detailGroupsByEntryId.get(entryId) ?? [];
+
+        detailGroupsByEntryId.set(entryId, [
+          ...currentGroups,
+          { label: config.label, values },
+        ]);
+
+        if (!typeByEntryId.has(entryId) && config.type !== "Supporting Documents") {
+          typeByEntryId.set(entryId, config.type);
+        }
+      }
+    })
+  );
+
+  return {
+    report,
+    forms: formRows.map((form) => {
+      const baseValues = withoutInternalFields(
+        cleanValues(form as unknown as Record<string, unknown>)
+      );
+      const groups = [
+        { label: "Form Information", values: baseValues },
+        ...(detailGroupsByEntryId.get(form.entry_id) ?? []),
+      ];
+
+      return {
+        entry_id: form.entry_id,
+        title:
+          form.title?.trim() ||
+          typeByEntryId.get(form.entry_id) ||
+          `Form #${form.entry_id}`,
+        type: typeByEntryId.get(form.entry_id) ?? "Unclassified Form",
+        created_at: form.created_at ?? "",
+        groups,
+      };
+    }),
+  };
+}
+
 export async function updateSubmittedReport({
   reportId,
   startDate,
@@ -308,20 +480,34 @@ export async function createReviewDecision({
 
 export async function updateReviewDecision({
   reviewId,
+  reportId,
   status,
   remarks,
 }: ReviewUpdateInput) {
-  const { data, error } = await supabase
-    .from("reviews")
-    .update({
-      status,
-      remarks: remarks ?? null,
-      review_date: new Date().toISOString().slice(0, 10),
-    })
-    .eq("reviews_id", reviewId)
-    .select()
-    .single();
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
 
-  if (error) throw error;
-  return data;
+  const [reviewResult, reportResult] = await Promise.all([
+    supabase
+      .from("reviews")
+      .update({
+        status,
+        remarks: remarks ?? null,
+        review_date: new Date().toISOString().slice(0, 10),
+        reviewed_by: userData.user.id,
+      })
+      .eq("reviews_id", reviewId)
+      .select()
+      .single(),
+    supabase
+      .from("accomplishment_reports")
+      .update({ status: "reviewed" })
+      .eq("report_id", reportId)
+      .select("report_id")
+      .single(),
+  ]);
+
+  if (reviewResult.error) throw reviewResult.error;
+  if (reportResult.error) throw reportResult.error;
+  return reviewResult.data;
 }

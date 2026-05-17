@@ -7,6 +7,7 @@ import { DynamicForm } from "@/features/forms/dynamic-form/dynamic-form"
 import { getMutationErrorMessage } from "@/api/forms/shared"
 import { useCreateFormARecord, useFormARecord } from "@/hooks/forms/use-form-a-mutation"
 import { deleteReportEntry } from "@/api/entries"
+import { getReportEditorPath, getReportIdFromSearchParams } from "@/features/forms/report-navigation"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 export default function FormAPublications() {
@@ -15,6 +16,7 @@ export default function FormAPublications() {
   const [searchParams] = useSearchParams()
   const editingEntryId = Number(searchParams.get("entryId"))
   const isEditing = Number.isFinite(editingEntryId) && editingEntryId > 0
+  const reportId = getReportIdFromSearchParams(searchParams)
 
   const { data: existingData, isLoading: isLoadingExisting } = useFormARecord(editingEntryId)
 
@@ -25,10 +27,10 @@ export default function FormAPublications() {
 
     await createFormARecord.mutateAsync({
       values: data,
-      // reportId: ... // TODO: Get reportId from URL or state
+      reportId,
     })
 
-    navigate("/reports/create-report")
+    navigate(getReportEditorPath(reportId))
   }
 
   if (isEditing && isLoadingExisting) {

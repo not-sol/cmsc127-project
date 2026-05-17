@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUsers, updateUserRole, deleteUser, getDepartments } from "@/api/admin";
+import { getUsers, updateUserRole, deleteUser, getDepartments, updateUserDepartment } from "@/api/admin";
 
 export function useUsers() {
   return useQuery({
@@ -21,6 +21,18 @@ export function useUpdateUserRole() {
   return useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: "faculty" | "department_chair" | "admin" }) =>
       updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+}
+
+export function useUpdateUserDepartment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, departmentId }: { userId: string; departmentId: number }) =>
+      updateUserDepartment(userId, departmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },

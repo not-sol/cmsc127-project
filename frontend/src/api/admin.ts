@@ -32,14 +32,25 @@ export const updateUserRole = async (
   if (error) throw error
 }
 
-export const deleteUser = async (userId: string) => {
+export const updateUserDepartment = async (
+  userId: string,
+  departmentId: number
+) => {
   const { error } = await supabase
     .from("users")
-    .delete()
+    .update({ department_id: departmentId })
     .eq("id", userId)
 
   if (error) throw error
 }
+
+export const deleteUser = async (userId: string) => {
+  const { error } = await supabase.rpc("delete_user_entirely", {
+    target_user_id: userId,
+  });
+
+  if (error) throw error;
+};
 
 export const getMyRole = async (userId: string) => {
   const { data, error } = await supabase
