@@ -55,7 +55,7 @@ function csvEscape(value: unknown) {
 }
 
 export async function getApprovedExportReports(role: AppRole | null) {
-  const reports = (await getAccessibleReports()).filter(
+  const reports = (await getAccessibleReports({ ownOnly: false })).filter(
     (report) => report.latest_review_status === "approved"
   );
 
@@ -125,6 +125,7 @@ export async function buildApprovedReportCsv(report: ExportableReport) {
     SourceSystem: "REPORT",
     SourceTable: "accomplishment_reports",
     ReportId: report.report_id,
+    ReportTitle: report.title ?? "",
     Department: report.department_name ?? "",
     Faculty: report.faculty_name,
     FacultyEmail: report.faculty_email ?? "",
@@ -184,6 +185,7 @@ export async function buildApprovedReportCsv(report: ExportableReport) {
     "SourceSystem",
     "SourceTable",
     "ReportId",
+    "ReportTitle",
     "EntryId",
     "Department",
     "Faculty",

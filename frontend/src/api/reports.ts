@@ -6,6 +6,7 @@ export type ReviewStatus = "approved" | "partially_approved";
 export interface AccomplishmentReport {
   report_id: number;
   created_at: string;
+  title: string | null;
   start_date: string | null;
   end_date: string | null;
   date_submitted: string | null;
@@ -46,6 +47,7 @@ type UserRow = {
 };
 
 export type ReportMetadataInput = {
+  title?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   remarks?: string | null;
@@ -62,16 +64,28 @@ export async function getOrCreateDraftReportId(
   return report.report_id;
 }
 
-export async function getAccessibleReports(): Promise<ReportSummary[]> {
+export async function getAccessibleReports({
+  ownOnly = true,
+}: { ownOnly?: boolean } = {}): Promise<ReportSummary[]> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!userData.user) return [];
+
+  let reportsQuery = supabase
+    .from("accomplishment_reports")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (ownOnly) {
+    reportsQuery = reportsQuery.eq("faculty_id", userData.user.id);
+  }
+
   const [
     { data, error },
     { data: forms, error: formsError },
     { data: reviews, error: reviewsError },
   ] = await Promise.all([
-    supabase
-      .from("accomplishment_reports")
-      .select("*")
-      .order("created_at", { ascending: false }),
+    reportsQuery,
     supabase.from("forms").select("entry_id, report_id"),
     supabase
       .from("reviews")
@@ -147,6 +161,7 @@ export async function getAccessibleReports(): Promise<ReportSummary[]> {
 
 function toReportPayload(input: ReportMetadataInput) {
   return {
+    ...(input.title !== undefined ? { title: input.title } : {}),
     ...(input.startDate !== undefined ? { start_date: input.startDate } : {}),
     ...(input.endDate !== undefined ? { end_date: input.endDate } : {}),
     ...(input.remarks !== undefined ? { remarks: input.remarks } : {}),
@@ -160,6 +175,7 @@ export async function createDraftReport(input: ReportMetadataInput = {}) {
     p_end_date: input.endDate ?? null,
     p_remarks: input.remarks ?? null,
     p_department_id: input.departmentId ?? null,
+    p_title: input.title ?? null,
   });
 
   if (error) throw error;

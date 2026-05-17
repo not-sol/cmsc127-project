@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { FieldError } from "@/components/ui/field"
+import { useToast } from "@/components/ui/toast"
 import { DynamicField } from "@/features/forms/dynamic-form/form-fields/DynamicField"
 import { SectionHeaderField } from "@/features/forms/dynamic-form/form-fields/SectionHeaderField"
 
@@ -218,11 +219,34 @@ export function DynamicForm<TValues extends FieldValues>({
   formClassName = "w-full space-y-10",
 }: DynamicFormProps<TValues>) {
   const resolverSchema = createFormSchema(formSchema, formFields)
+  const { toast } = useToast()
 
   const form = useForm<TValues>({
     resolver: zodResolver(resolverSchema) as Resolver<TValues>,
     defaultValues: createDefaultValues(defaultValues, formFields),
   })
+
+  async function handleSubmit(values: TValues) {
+    const isUpdate = submitLabel.toLowerCase().includes("update")
+
+    try {
+      await onSubmit(values)
+      toast({
+        title: isUpdate ? "Entry updated" : "Entry submitted",
+        description: isUpdate
+          ? "The accomplishment entry was updated."
+          : "The accomplishment entry was saved.",
+        variant: "success",
+      })
+    } catch (error) {
+      toast({
+        title: isUpdate ? "Unable to update entry" : "Unable to submit entry",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      })
+      throw error
+    }
+  }
 
   return (
     <Card className={className}>
@@ -234,7 +258,7 @@ export function DynamicForm<TValues extends FieldValues>({
       )}
 
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className={formClassName}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className={formClassName}>
           {formFields.map((fieldConfig) => {
             if (fieldConfig.type === "section-header") {
               return (

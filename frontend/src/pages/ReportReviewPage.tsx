@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 import type { ReviewStatus } from "@/api/reports";
 import type { SubmittedReport, SubmittedReportFormDetail } from "@/api/submitted-reports";
 import {
@@ -86,6 +87,7 @@ function FieldGrid({ values }: { values: Record<string, unknown> }) {
 function reportSummary(report: SubmittedReport, entryCount: number) {
   return {
     "Report ID": report.report_id,
+    Title: report.title ?? "Untitled report",
     Faculty: getFacultyName(report),
     Email: report.faculty_email ?? "No email",
     Department: report.department_name ?? "Unassigned",
@@ -112,6 +114,7 @@ export default function ReportReviewPage() {
   const detailQuery = useSubmittedReportDetail(validReportId);
   const createReview = useCreateReviewDecision();
   const updateReview = useUpdateReviewDecision();
+  const { toast } = useToast();
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
   const [draftStatus, setDraftStatus] = useState<ReviewStatus>("approved");
   const [draftRemarks, setDraftRemarks] = useState("");
@@ -143,14 +146,40 @@ export default function ReportReviewPage() {
     };
 
     if (report.latest_review_id) {
-      await updateReview.mutateAsync({
-        reviewId: report.latest_review_id,
-        ...input,
-      });
+      try {
+        await updateReview.mutateAsync({
+          reviewId: report.latest_review_id,
+          ...input,
+        });
+        toast({
+          title: "Review updated",
+          description: "The review decision was saved.",
+          variant: "success",
+        });
+      } catch (error) {
+        toast({
+          title: "Unable to update review",
+          description: error instanceof Error ? error.message : "Please try again.",
+          variant: "error",
+        });
+      }
       return;
     }
 
-    await createReview.mutateAsync(input);
+    try {
+      await createReview.mutateAsync(input);
+      toast({
+        title: "Report reviewed",
+        description: "The review decision was submitted.",
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Unable to submit review",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
+    }
   }
 
   return (

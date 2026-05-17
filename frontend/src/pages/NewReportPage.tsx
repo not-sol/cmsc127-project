@@ -4,6 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/toast";
+import {
   ChevronRight,
   Search,
   Plus,
@@ -102,6 +114,7 @@ export default function NewReportPage() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
+  const { toast } = useToast();
   const reportIdParam = Number(searchParams.get("reportId"));
   const reportId = Number.isFinite(reportIdParam) && reportIdParam > 0 ? reportIdParam : null;
   const mode = searchParams.get("mode");
@@ -119,7 +132,7 @@ export default function NewReportPage() {
 
   const reportQuery = useQuery({
     queryKey: ["reports", "editor", reportId],
-    queryFn: getAccessibleReports,
+    queryFn: () => getAccessibleReports(),
     enabled: reportId !== null,
   });
 
@@ -128,6 +141,18 @@ export default function NewReportPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["report-entries", reportId] });
       void queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast({
+        title: "Entry deleted",
+        description: "The accomplishment entry was removed from this report.",
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to delete entry",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
     },
   });
 
@@ -147,10 +172,22 @@ export default function NewReportPage() {
     onSuccess: ({ report, navigateAfter }) => {
       void queryClient.invalidateQueries({ queryKey: ["reports"] });
       void queryClient.invalidateQueries({ queryKey: ["reports", "editor", report.report_id] });
+      toast({
+        title: "Report updated",
+        description: "The report details were saved.",
+        variant: "success",
+      });
 
       if (!reportId && navigateAfter) {
         navigate(getReportEditorPath(report.report_id), { replace: true });
       }
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to update report",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
     },
   });
 
@@ -166,7 +203,19 @@ export default function NewReportPage() {
     onSuccess: (report) => {
       void queryClient.invalidateQueries({ queryKey: ["reports"] });
       void queryClient.invalidateQueries({ queryKey: ["submitted-reports"] });
+      toast({
+        title: "Report submitted",
+        description: "The report is now pending review.",
+        variant: "success",
+      });
       navigate(getReportEditorPath(report.report_id), { replace: true });
+    },
+    onError: (error) => {
+      toast({
+        title: "Unable to submit report",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
     },
   });
 
@@ -183,6 +232,7 @@ export default function NewReportPage() {
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
   const [viewEntry, setViewEntry] = useState<ReportEntry | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<ReportEntry | null>(null);
 
   const currentReport = useMemo(
     () => (reportId ? reportQuery.data?.find((report) => report.report_id === reportId) ?? null : null),
@@ -252,17 +302,8 @@ export default function NewReportPage() {
 
     setStartDate(currentReport.start_date ? new Date(`${currentReport.start_date}T00:00:00`) : undefined);
     setEndDate(currentReport.end_date ? new Date(`${currentReport.end_date}T00:00:00`) : undefined);
-
-    // Extract title from remarks if possible
-    if (currentReport.remarks) {
-      const parts = currentReport.remarks.split("\n\n");
-      if (parts.length > 1) {
-        setTitle(parts[0]);
-        setRemarks(parts.slice(1).join("\n\n"));
-      } else {
-        setRemarks(currentReport.remarks);
-      }
-    }
+    setTitle(currentReport.title ?? "");
+    setRemarks(currentReport.remarks ?? "");
   }, [currentReport]);
 
   function toIsoDate(value?: Date) {
@@ -276,14 +317,11 @@ export default function NewReportPage() {
   }
 
   function getMetadataPayload() {
-    const combinedRemarks = title.trim()
-      ? `${title.trim()}\n\n${remarks.trim()}`.trim()
-      : remarks.trim();
-
     return {
+      title: title.trim() || null,
       startDate: toIsoDate(startDate),
       endDate: toIsoDate(endDate),
-      remarks: combinedRemarks || null,
+      remarks: remarks.trim() || null,
       departmentId: profile?.department_id ?? null,
     };
   }
@@ -303,8 +341,8 @@ export default function NewReportPage() {
   };
 
   const handleDelete = async (entry: ReportEntry) => {
-    if (!window.confirm(`Delete "${entry.title}" from the database?`)) return;
     await deleteEntry.mutateAsync(entry.id);
+    setEntryToDelete(null);
   };
 
   return (
@@ -334,14 +372,31 @@ export default function NewReportPage() {
               >
                 Save as Draft
               </Button>
-              <Button
-                size="sm"
-                className="bg-[#6b0f1a] hover:bg-[#5a0a0a]"
-                onClick={() => void submitReport.mutateAsync()}
-                disabled={isReadOnly || submitReport.isPending || saveDraft.isPending}
-              >
-                Submit Report
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="bg-[#6b0f1a] hover:bg-[#5a0a0a]"
+                    disabled={isReadOnly || submitReport.isPending || saveDraft.isPending}
+                  >
+                    Submit Report
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Submit this report?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will send the report for department review and lock editing until it is returned to draft.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => void submitReport.mutateAsync()}>
+                      Submit Report
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
 
@@ -661,7 +716,7 @@ export default function NewReportPage() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(entry)}
+                            onClick={() => setEntryToDelete(entry)}
                             disabled={deleteEntry.isPending || isReadOnly}
                             title="Delete entry"
                           >
@@ -750,6 +805,28 @@ export default function NewReportPage() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={entryToDelete !== null} onOpenChange={(open) => !open && setEntryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {entryToDelete
+                ? `"${entryToDelete.title}" will be permanently removed from this report.`
+                : "This entry will be permanently removed from this report."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => entryToDelete && void handleDelete(entryToDelete)}
+            >
+              Delete Entry
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

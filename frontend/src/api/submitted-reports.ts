@@ -5,6 +5,7 @@ import type { AppRole } from "@/api/profile";
 export interface SubmittedReport {
   report_id: number;
   created_at: string;
+  title: string | null;
   start_date: string | null;
   end_date: string | null;
   date_submitted: string | null;
@@ -27,6 +28,7 @@ export interface SubmittedReport {
 
 export interface SubmittedReportUpdate {
   reportId: number;
+  title: string | null;
   startDate: string | null;
   endDate: string | null;
   remarks: string | null;
@@ -75,6 +77,7 @@ export interface SubmittedReportDetail {
 type ReportRow = {
   report_id: number;
   created_at: string;
+  title: string | null;
   start_date: string | null;
   end_date: string | null;
   date_submitted: string | null;
@@ -226,6 +229,7 @@ function toSubmittedReport({
   return {
     report_id: row.report_id,
     created_at: row.created_at,
+    title: row.title,
     start_date: row.start_date,
     end_date: row.end_date,
     date_submitted: row.date_submitted,
@@ -258,7 +262,7 @@ export async function getSubmittedReports({
   const { data: reports, error } = await supabase
     .from("accomplishment_reports")
     .select(
-      "report_id, created_at, start_date, end_date, date_submitted, status, remarks, faculty_id, department_id"
+      "report_id, created_at, title, start_date, end_date, date_submitted, status, remarks, faculty_id, department_id"
     )
     .in("status", ["pending", "reviewed"])
     .order("date_submitted", { ascending: false })
@@ -443,6 +447,7 @@ export async function getSubmittedReportDetail({
 
 export async function updateSubmittedReport({
   reportId,
+  title,
   startDate,
   endDate,
   remarks,
@@ -450,6 +455,7 @@ export async function updateSubmittedReport({
   const { data, error } = await supabase
     .from("accomplishment_reports")
     .update({
+      title,
       start_date: startDate,
       end_date: endDate,
       remarks,
