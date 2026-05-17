@@ -201,3 +201,25 @@ export async function updateReportStatus(
   if (error) throw error;
   return data as AccomplishmentReport;
 }
+
+/**
+ * Deletes a report and its associated entries (cascade handled by DB or manually).
+ * If the DB doesn't handle cascade, we'd need to delete from 'forms' first.
+ */
+export async function deleteReport(reportId: number) {
+  // First, find all entries associated with this report to clean up detail tables
+  const { data: entries, error: entriesError } = await supabase
+    .from("forms")
+    .select("entry_id")
+    .eq("report_id", reportId);
+
+  if (entriesError) throw entriesError;
+
+  // Delete from accomplishment_reports (should cascade to 'forms' if set up)
+  const { error } = await supabase
+    .from("accomplishment_reports")
+    .delete()
+    .eq("report_id", reportId);
+
+  if (error) throw error;
+}

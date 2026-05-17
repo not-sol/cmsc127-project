@@ -10,7 +10,7 @@ import {
   Pencil,
   Trash2,
   X,
-  CalendarIcon,
+  Calendar as CalendarIcon,
   Filter,
 } from "lucide-react";
 
@@ -60,7 +60,7 @@ function Breadcrumb() {
   );
 }
 
-export default function NewEntryPage() {
+export default function NewReportPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
