@@ -1,3 +1,3 @@
 UPDATE users
 SET role = 'department_chair'
-WHERE email = 'jtcastones@up.edu.ph';
+WHERE email = 'amsaulon@up.edu.ph';
