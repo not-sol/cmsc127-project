@@ -23,6 +23,7 @@ import NewReportPage from "@/pages/NewReportPage";
 import ExportsRecordsPage from "@/pages/ExportRecordsPage";
 import UserManagementForm from "@/pages/UserManagementForm";
 import SubmittedReportsPage from "@/pages/SubmittedReportsPage";
+import ReportReviewPage from "@/pages/ReportReviewPage";
 
 export const router = createBrowserRouter([
   {
@@ -129,6 +130,10 @@ export const router = createBrowserRouter([
       {
         path: "/report-submissions",
         element: <SubmittedReportsPage />,
+      },
+      {
+        path: "/report-submissions/:reportId/review",
+        element: <ReportReviewPage />,
       },
     ],
   },
