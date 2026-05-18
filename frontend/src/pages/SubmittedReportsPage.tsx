@@ -61,12 +61,9 @@ function getReportTitle(report: SubmittedReport) {
     return report.title;
   }
 
-  const period =
-    report.start_date || report.end_date
-      ? `${formatDate(report.start_date)} - ${formatDate(report.end_date)}`
-      : "Unspecified period";
-
-  return `Report #${report.report_id} | ${period}`;
+  return report.start_date || report.end_date
+    ? `${formatDate(report.start_date)} - ${formatDate(report.end_date)}`
+    : "Untitled report";
 }
 
 function getStatusBadge(report: SubmittedReport) {
@@ -120,7 +117,6 @@ export default function SubmittedReportsPage() {
         departmentFilter === "all" ||
         report.department_name === departmentFilter;
       const searchableText = [
-        report.report_id,
         report.title,
         getFacultyName(report),
         report.faculty_email,
@@ -214,9 +210,9 @@ export default function SubmittedReportsPage() {
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <div className="relative min-w-64 flex-1">
                 <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                  <Input
                   className="pl-8"
-                  placeholder="Search title, faculty, department, remarks, or report ID"
+                  placeholder="Search title, faculty, department, or remarks"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />

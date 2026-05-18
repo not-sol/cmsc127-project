@@ -15,7 +15,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import type { ReviewStatus } from "@/api/reports";
-import type { SubmittedReport, SubmittedReportFormDetail } from "@/api/submitted-reports";
+import type {
+  SubmittedAttachmentLink,
+  SubmittedReport,
+  SubmittedReportFieldValue,
+  SubmittedReportFormDetail,
+} from "@/api/submitted-reports";
 import {
   useCreateReviewDecision,
   useSubmittedReportDetail,
@@ -44,9 +49,14 @@ function getFacultyName(report: SubmittedReport) {
   );
 }
 
-function formatValue(value: unknown): string {
-  if (Array.isArray(value)) return value.map(formatValue).join(", ");
-  if (value && typeof value === "object") return JSON.stringify(value);
+function isAttachmentLinkValue(value: SubmittedReportFieldValue): value is SubmittedAttachmentLink {
+  return Boolean(value && typeof value === "object" && "kind" in value && value.kind === "attachment-links");
+}
+
+function formatValue(value: SubmittedReportFieldValue): string {
+  if (isAttachmentLinkValue(value)) {
+    return value.links.map((link) => link.label).join(", ");
+  }
   if (typeof value === "boolean") return value ? "Yes" : "No";
   return String(value);
 }
@@ -61,7 +71,7 @@ function getEntryPreview(entry: SubmittedReportFormDetail) {
   return "No details recorded";
 }
 
-function FieldGrid({ values }: { values: Record<string, unknown> }) {
+function FieldGrid({ values }: { values: Record<string, SubmittedReportFieldValue> }) {
   const entries = Object.entries(values);
 
   if (entries.length === 0) {
@@ -76,7 +86,23 @@ function FieldGrid({ values }: { values: Record<string, unknown> }) {
             {label}
           </dt>
           <dd className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed">
-            {formatValue(value)}
+            {isAttachmentLinkValue(value) ? (
+              <span className="flex flex-col gap-1">
+                {value.links.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-[#6b0f1a] underline-offset-2 hover:underline"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </span>
+            ) : (
+              formatValue(value)
+            )}
           </dd>
         </div>
       ))}

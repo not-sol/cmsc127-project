@@ -73,6 +73,7 @@ const OMITTED_EXPORT_FIELDS = new Set([
   "entry_id",
   "created_at",
   "form_type_id",
+  "submitted_by",
   "isip_submitted_by",
   "isip_id",
 ]);
@@ -324,7 +325,7 @@ export async function getApprovedExportReports(role: AppRole | null) {
 
 export function getExportFilename(system: ExportSystem, report: ExportableReport) {
   const lastName = sanitizeFilenamePart(report.faculty_last_name ?? report.faculty_name, "unknown_user");
-  const reportTitle = sanitizeFilenamePart(report.title, `report_${report.report_id}`);
+  const reportTitle = sanitizeFilenamePart(report.title, "untitled_report");
 
   return `${system}_${lastName}_${reportTitle}.csv`;
 }

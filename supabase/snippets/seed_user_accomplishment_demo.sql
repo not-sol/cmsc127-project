@@ -11,7 +11,7 @@
 
 DO $$
 DECLARE
-  target_email text := 'jtastones@up.edu.ph';
+  target_email text := 'jtcastones@up.edu.ph';
   target_user public.users%ROWTYPE;
   target_department_id bigint;
   target_author text;
@@ -99,8 +99,17 @@ BEGIN
     DELETE FROM public.pbms_patents_forms WHERE entry_id = ANY(demo_entry_ids);
     DELETE FROM public.isip_creative_work_forms WHERE entry_id = ANY(demo_entry_ids);
     DELETE FROM public.pbms_creative_work_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.isip_awards_forms WHERE entry_id = ANY(demo_entry_ids);
     DELETE FROM public.isip_trainings_forms WHERE entry_id = ANY(demo_entry_ids);
     DELETE FROM public.pbms_trainings_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.isip_extension_programs_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.pbms_extension_programs_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.isip_partnership_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.pbms_partnerships_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.isip_authorship_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.isip_other_accomplishments_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.pbms_other_accomplishments_forms WHERE entry_id = ANY(demo_entry_ids);
+    DELETE FROM public.supporting_documents WHERE entry_id = ANY(demo_entry_ids);
     DELETE FROM public.forms WHERE entry_id = ANY(demo_entry_ids);
   END IF;
 
@@ -110,6 +119,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -119,6 +129,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Q1 2026 DMPCS Research and Publication Draft',
     '2026-01-01',
     '2026-03-31',
     NULL,
@@ -130,6 +141,7 @@ BEGIN
   RETURNING report_id INTO r_draft_multi;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -139,6 +151,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Q2 2026 Training Draft',
     '2026-04-01',
     '2026-06-30',
     NULL,
@@ -150,6 +163,7 @@ BEGIN
   RETURNING report_id INTO r_draft_single;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -159,6 +173,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Q3 2026 Innovation Draft',
     '2026-07-01',
     '2026-09-30',
     NULL,
@@ -170,6 +185,7 @@ BEGIN
   RETURNING report_id INTO r_draft_innovation;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -179,6 +195,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Year-End Research Grant Draft',
     '2025-10-01',
     '2025-12-31',
     NULL,
@@ -190,6 +207,7 @@ BEGIN
   RETURNING report_id INTO r_draft_grant;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -199,6 +217,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Q3 2025 Dissemination Report',
     '2025-07-01',
     '2025-09-30',
     '2025-10-06',
@@ -210,6 +229,7 @@ BEGIN
   RETURNING report_id INTO r_pending;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -219,6 +239,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Q2 2025 Creative Software Output Report',
     '2025-04-01',
     '2025-06-30',
     '2025-07-04',
@@ -230,6 +251,7 @@ BEGIN
   RETURNING report_id INTO r_reviewed;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -239,6 +261,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Archived 2024 Training Report',
     '2024-10-01',
     '2024-12-31',
     '2025-01-08',
@@ -250,6 +273,7 @@ BEGIN
   RETURNING report_id INTO r_archived_single;
 
   INSERT INTO public.accomplishment_reports (
+    title,
     start_date,
     end_date,
     date_submitted,
@@ -259,6 +283,7 @@ BEGIN
     department_id
   )
   VALUES (
+    'Archived 2024 Research and Publication Report',
     '2024-07-01',
     '2024-09-30',
     '2024-10-05',
@@ -415,13 +440,28 @@ BEGIN
     entry_id, contributing_unit, special_notes_schedule, training_hours_required,
     total_trainees_number, majority_share_funding, sample_size,
     no_of_responses_poor, no_of_responses_fair,
-    no_of_responses_satisfactory, no_of_responses_outsanding,
+    no_of_responses_satisfactory, no_of_responses_outstanding,
     no_of_responses_very_satisfactory, part_extension_program,
     related_extension_program_title
   )
   VALUES
     (e_training, 'dmpcs', 'Three half-day laboratory sessions', 12, 32, 'genFundCurYr', 28, 0, 1, 9, 14, 4, false, NULL),
     (e_archived_training, 'dmpcs', 'Two-day bootcamp with policy clinic', 16, 24, 'intGenFund', 22, 0, 2, 8, 10, 2, true, 'Digital Literacy and Data Governance Extension Program');
+
+  INSERT INTO public.reviews (
+    review_date,
+    status,
+    remarks,
+    report_id,
+    reviewed_by
+  )
+  VALUES (
+    '2025-07-08',
+    'approved',
+    '[manual-demo] Approved sample review linked to the reviewed creative software output report.',
+    r_reviewed,
+    target_user.id
+  );
 
   RAISE NOTICE 'Seeded manual demo reports for %: draft=4, pending=1, reviewed=1, archived=2', target_email;
 END $$;

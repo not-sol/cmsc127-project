@@ -30,7 +30,7 @@ function getReportTitle(report: ExportableReport) {
     return report.title;
   }
 
-  return `Report #${report.report_id}`;
+  return "Untitled report";
 }
 
 export default function ExportsRecordsPage() {
