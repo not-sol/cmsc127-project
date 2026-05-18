@@ -11,7 +11,9 @@ import {
   buildApprovedReportCsv,
   downloadCsv,
   getApprovedExportReports,
+  getExportFilename,
   type ExportableReport,
+  type ExportSystem,
 } from "@/api/export-records";
 
 function formatDate(value?: string | null) {
@@ -28,17 +30,13 @@ function getReportTitle(report: ExportableReport) {
     return report.title;
   }
 
-  return `Report #${report.report_id}`;
-}
-
-function safeFilename(report: ExportableReport) {
-  const department = report.department_name?.replaceAll(/[^a-z0-9]+/gi, "_") ?? "department";
-  return `approved_report_${report.report_id}_${department}.csv`.toLowerCase();
+  return "Untitled report";
 }
 
 export default function ExportsRecordsPage() {
   const { role, isAdmin, isChair } = useAuth();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [exportSystem, setExportSystem] = useState<ExportSystem>("pbms");
   const [isExporting, setIsExporting] = useState(false);
 
   const reportsQuery = useQuery({
@@ -47,7 +45,7 @@ export default function ExportsRecordsPage() {
     enabled: Boolean(role),
   });
 
-  const approvedReports = reportsQuery.data ?? [];
+  const approvedReports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
   const selected = useMemo(
     () => approvedReports.find((report) => report.report_id === selectedId) ?? null,
     [approvedReports, selectedId]
@@ -58,8 +56,8 @@ export default function ExportsRecordsPage() {
 
     setIsExporting(true);
     try {
-      const csv = await buildApprovedReportCsv(selected);
-      downloadCsv(safeFilename(selected), csv);
+      const csv = await buildApprovedReportCsv(selected, exportSystem);
+      downloadCsv(getExportFilename(exportSystem, selected), csv);
     } finally {
       setIsExporting(false);
     }
@@ -79,7 +77,7 @@ export default function ExportsRecordsPage() {
                 Export Records
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Export reports with an approved review decision as CSV.
+                Export approved reports as separate PBMS or ISIP CSV files.
               </p>
             </div>
             <Button
@@ -168,6 +166,24 @@ export default function ExportsRecordsPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["pbms", "isip"] as const).map((system) => (
+                      <Button
+                        key={system}
+                        type="button"
+                        variant={exportSystem === system ? "default" : "outline"}
+                        className={
+                          exportSystem === system
+                            ? "bg-[#6b0f1a] uppercase hover:bg-[#5a0a0a]"
+                            : "uppercase"
+                        }
+                        onClick={() => setExportSystem(system)}
+                      >
+                        {system} CSV
+                      </Button>
+                    ))}
+                  </div>
+
                   <div className="rounded-lg border bg-muted/30 p-4">
                     <div className="font-medium">{getReportTitle(selected)}</div>
                     <div className="mt-1 text-xs text-muted-foreground">
@@ -187,11 +203,11 @@ export default function ExportsRecordsPage() {
                     disabled={isExporting}
                   >
                     <Download size={15} />
-                    Download CSV
+                    Download {exportSystem.toUpperCase()} CSV
                   </Button>
 
                   <p className="break-words text-center text-xs text-muted-foreground">
-                    {safeFilename(selected)}
+                    {getExportFilename(exportSystem, selected)}
                   </p>
                 </div>
               )}

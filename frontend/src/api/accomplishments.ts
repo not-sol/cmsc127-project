@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 
 export interface Accomplishment {
-  id: string;
   entry_id?: number;
   activity_title: string;
   start_date: string;
@@ -11,10 +10,9 @@ export interface Accomplishment {
   attachments?: string;
   remarks?: string;
   related_kras?: string;
-  submitted_by?: string;
 }
 
-export type CreateAccomplishmentInput = Omit<Accomplishment, "id" | "entry_id" | "submitted_by">;
+export type CreateAccomplishmentInput = Omit<Accomplishment, "entry_id">;
 
 /**
  * Fetches all accomplishments from the database.
@@ -23,7 +21,7 @@ export async function fetchAccomplishments(): Promise<Accomplishment[]> {
   try {
     const { data, error } = await supabase
       .from("isip_other_accomplishments_forms")
-      .select("*")
+      .select("entry_id, activity_title, start_date, end_date, participation, venue, attachments, remarks, related_kras")
       .order("start_date", { ascending: false });
 
     if (error) {
@@ -45,16 +43,10 @@ export async function createAccomplishment(
   input: CreateAccomplishmentInput
 ): Promise<Accomplishment> {
   try {
-    // Get current user for submitted_by
-    const { data: { user } } = await supabase.auth.getUser();
-    
     const { data, error } = await supabase
       .from("isip_other_accomplishments_forms")
-      .insert({
-        ...input,
-        submitted_by: user?.id
-      })
-      .select()
+      .insert(input)
+      .select("entry_id, activity_title, start_date, end_date, participation, venue, attachments, remarks, related_kras")
       .single();
 
     if (error) {

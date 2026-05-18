@@ -78,7 +78,7 @@ function getReportTitle(report: ReportSummary) {
     return report.title;
   }
 
-  return `Report #${report.report_id}`;
+  return "Untitled report";
 }
 
 function getReportingPeriod(report: ReportSummary) {
@@ -107,7 +107,7 @@ export default function ReportsPage() {
   const reportsQuery = useQuery({
     queryKey: reportsQueryKey,
     queryFn: () => getAccessibleReports(),
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   const statusMutation = useMutation({
@@ -279,26 +279,25 @@ export default function ReportsPage() {
                   <TableHead className="text-xs font-semibold">Date Submitted</TableHead>
                   <TableHead className="text-xs font-semibold">Status</TableHead>
                   <TableHead className="text-xs font-semibold">Forms</TableHead>
-                  <TableHead className="text-xs font-semibold">Remarks</TableHead>
                   <TableHead className="text-xs font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reportsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-sm">
+                    <TableCell colSpan={6} className="h-24 text-center text-sm">
                       Loading reports...
                     </TableCell>
                   </TableRow>
                 ) : reportsQuery.isError ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-sm text-destructive">
+                    <TableCell colSpan={6} className="h-24 text-center text-sm text-destructive">
                       Failed to load reports.
                     </TableCell>
                   </TableRow>
                 ) : filteredReports.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
                       No {viewMode} reports found.
                     </TableCell>
                   </TableRow>
@@ -314,9 +313,6 @@ export default function ReportsPage() {
                       >
                         <TableCell className="text-sm font-medium">
                           {getReportTitle(report)}
-                          <div className="text-xs text-muted-foreground">
-                            Report #{report.report_id}
-                          </div>
                         </TableCell>
                         <TableCell className="text-sm">
                           {getReportingPeriod(report)}
@@ -333,9 +329,6 @@ export default function ReportsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{report.entry_count}</TableCell>
-                        <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                          {report.remarks || "No remarks"}
-                        </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
                             <Button
@@ -424,9 +417,6 @@ export default function ReportsPage() {
           <div className="w-full max-w-2xl rounded-lg bg-background p-6 shadow-lg">
             <div className="flex items-start justify-between gap-4 border-b pb-4">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Report #{reviewReport.report_id}
-                </p>
                 <h3 className="text-xl font-semibold">Review Details</h3>
               </div>
               <Button
@@ -463,14 +453,6 @@ export default function ReportsPage() {
                 </dt>
                 <dd className="mt-1 text-sm">
                   {formatDate(reviewReport.latest_review_date)}
-                </dd>
-              </div>
-              <div className="rounded-md border bg-muted/20 p-3">
-                <dt className="text-xs font-medium uppercase text-muted-foreground">
-                  Review ID
-                </dt>
-                <dd className="mt-1 text-sm">
-                  {reviewReport.latest_review_id ?? "Not linked"}
                 </dd>
               </div>
               <div className="rounded-md border bg-muted/20 p-3 sm:col-span-2">

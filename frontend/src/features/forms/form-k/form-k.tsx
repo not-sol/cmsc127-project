@@ -55,11 +55,15 @@ export default function FormKOther() {
         formFields={formKOtherFields}
         defaultValues={existingData || {
           title: "",
-        description: "",
-        date: undefined,
-        endDate: undefined,
-        supportingDocuments: [],
-      }}
+          description: "",
+          venue: "",
+          participation: "",
+          remarks: "",
+          relatedKras: "",
+          date: undefined,
+          endDate: undefined,
+          supportingDocuments: [],
+        }}
       onSubmit={onSubmit}
       //title="Form K: Other Accomplishment"
       description="Use this form to record significant accomplishments that do not fall under a predefined category. Provide a clear description and upload any relevant supporting documents."

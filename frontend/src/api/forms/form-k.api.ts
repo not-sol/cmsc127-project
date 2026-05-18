@@ -17,7 +17,16 @@ const PBMS_OTHER_ACCOMPLISHMENTS_COLUMNS = [
   "accomplishment_title",
   "accomplishment_description",
   "accomplishment_date",
+  "venue",
+  "participation",
+  "remarks",
+  "related_kras",
 ] as const
+
+function emptyStringToNull(value?: string | null) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
 
 export async function createFormKRecord({ values, reportId: initialReportId }: CreateFormKInput) {
   // 0. Get an existing report id, or lazily create a draft during form submission
@@ -54,7 +63,11 @@ export async function createFormKRecord({ values, reportId: initialReportId }: C
     activity_title: values.title,
     start_date: toIsoDate(values.date),
     end_date: values.endDate ? toIsoDate(values.endDate) : null,
+    participation: emptyStringToNull(values.participation),
+    venue: emptyStringToNull(values.venue),
     attachments: supportingDocumentPaths,
+    remarks: emptyStringToNull(values.remarks),
+    related_kras: emptyStringToNull(values.relatedKras),
   }
 
   console.log("[Supabase] Form K ISIP payload:", isipPayload)
@@ -79,6 +92,10 @@ export async function createFormKRecord({ values, reportId: initialReportId }: C
     accomplishment_title: values.title,
     accomplishment_description: values.description,
     accomplishment_date: toIsoDate(values.date),
+    venue: emptyStringToNull(values.venue),
+    participation: emptyStringToNull(values.participation),
+    remarks: emptyStringToNull(values.remarks),
+    related_kras: emptyStringToNull(values.relatedKras),
   }
 
   console.log("[Supabase] Form K PBMS payload:", pbmsPayload)
@@ -121,6 +138,10 @@ export async function getFormKRecord(entryId: number): Promise<FormKOtherValues>
   return {
     title: isipData.activity_title,
     description: pbmsData.accomplishment_description,
+    venue: isipData.venue || pbmsData.venue || "",
+    participation: isipData.participation || pbmsData.participation || "",
+    remarks: isipData.remarks || pbmsData.remarks || "",
+    relatedKras: isipData.related_kras || pbmsData.related_kras || "",
     date: new Date(isipData.start_date),
     endDate: isipData.end_date ? new Date(isipData.end_date) : undefined,
     supportingDocuments: isipData.attachments,

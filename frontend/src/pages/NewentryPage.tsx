@@ -7,13 +7,14 @@ import { ChevronRight } from "lucide-react";
 import { ENTRY_TYPES } from "@/lib/constants";
 import { useState } from "react";
 import { formRegistry } from "@/features/forms/form-registry";
+import { Link } from "react-router-dom";
 
 function Breadcrumb() {
   return (
     <div className="flex items-center gap-1.5 text-xs text-white/80">
-      <a href="/reports" className="hover:text-white transition-colors">My Reports</a>
+      <Link to="/reports" className="hover:text-white transition-colors">My Reports</Link>
       <ChevronRight size={12} />
-      <a href="/reports/new" className="hover:text-white transition-colors">Create/Edit Report</a>
+      <Link to="/reports/create-report" className="hover:text-white transition-colors">Create/Edit Report</Link>
       <ChevronRight size={12} />
       <span className="text-white">New Entry</span>
     </div>

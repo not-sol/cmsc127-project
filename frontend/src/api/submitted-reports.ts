@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import type { ReportStatus, ReviewStatus } from "@/api/reports";
 import type { AppRole } from "@/api/profile";
+import { STORAGE_BUCKETS } from "@/lib/storage-constants";
 
 export interface SubmittedReport {
   report_id: number;
@@ -58,14 +59,13 @@ export interface SubmittedReportDetailOptions extends GetSubmittedReportsOptions
 
 export interface SubmittedReportFormGroup {
   label: string;
-  values: Record<string, unknown>;
+  values: Record<string, SubmittedReportFieldValue>;
 }
 
 export interface SubmittedReportFormDetail {
   entry_id: number;
   title: string;
   type: string;
-  created_at: string;
   groups: SubmittedReportFormGroup[];
 }
 
@@ -125,31 +125,119 @@ type DetailTableConfig = {
   table: string;
   label: string;
   type: string;
+  attachmentBuckets?: Record<string, string>;
 };
 
+export type SubmittedAttachmentLink = {
+  kind: "attachment-links";
+  links: {
+    label: string;
+    url: string;
+  }[];
+};
+
+export type SubmittedReportFieldValue =
+  | string
+  | number
+  | boolean
+  | null
+  | SubmittedAttachmentLink;
+
 const DETAIL_TABLES: DetailTableConfig[] = [
-  { table: "isip_publication_forms", label: "ISIP Publication", type: "Publication" },
-  { table: "pbms_publication_forms", label: "PBMS Publication", type: "Publication" },
-  { table: "isip_research_forms", label: "ISIP Research Grant", type: "Research Grant" },
+  {
+    table: "isip_publication_forms",
+    label: "ISIP Publication",
+    type: "Publication",
+    attachmentBuckets: { publication_proof: STORAGE_BUCKETS.FORM_A },
+  },
+  {
+    table: "pbms_publication_forms",
+    label: "PBMS Publication",
+    type: "Publication",
+    attachmentBuckets: { utilization_proof: STORAGE_BUCKETS.FORM_A },
+  },
+  {
+    table: "isip_research_forms",
+    label: "ISIP Research Grant",
+    type: "Research Grant",
+    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_B },
+  },
   { table: "pbms_research_forms", label: "PBMS Research Grant", type: "Research Grant" },
-  { table: "isip_oral_forms", label: "ISIP Paper Presentation", type: "Paper Presentation" },
+  {
+    table: "isip_oral_forms",
+    label: "ISIP Paper Presentation",
+    type: "Paper Presentation",
+    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_C },
+  },
   { table: "pbms_oral_forms", label: "PBMS Paper Presentation", type: "Paper Presentation" },
-  { table: "isip_patents_forms", label: "ISIP Patent", type: "Patent" },
+  {
+    table: "isip_patents_forms",
+    label: "ISIP Patent",
+    type: "Patent",
+    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_D },
+  },
   { table: "pbms_patents_forms", label: "PBMS Patent", type: "Patent" },
-  { table: "isip_creative_work_forms", label: "ISIP Creative Work", type: "Creative Work" },
-  { table: "pbms_creative_work_forms", label: "PBMS Creative Work", type: "Creative Work" },
-  { table: "isip_awards_forms", label: "ISIP Award / Grant", type: "Award / Grant" },
-  { table: "isip_trainings_forms", label: "ISIP Training", type: "Training" },
+  {
+    table: "isip_creative_work_forms",
+    label: "ISIP Creative Work",
+    type: "Creative Work",
+    attachmentBuckets: { research_proof: STORAGE_BUCKETS.FORM_E },
+  },
+  {
+    table: "pbms_creative_work_forms",
+    label: "PBMS Creative Work",
+    type: "Creative Work",
+    attachmentBuckets: { utilization_proof: STORAGE_BUCKETS.FORM_E },
+  },
+  {
+    table: "isip_awards_forms",
+    label: "ISIP Award / Grant",
+    type: "Award / Grant",
+    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_F },
+  },
+  {
+    table: "isip_trainings_forms",
+    label: "ISIP Training",
+    type: "Training",
+    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_G },
+  },
   { table: "pbms_trainings_forms", label: "PBMS Training", type: "Training" },
-  { table: "isip_extension_programs_forms", label: "ISIP Extension Program", type: "Extension Program" },
+  {
+    table: "isip_extension_programs_forms",
+    label: "ISIP Extension Program",
+    type: "Extension Program",
+    attachmentBuckets: { program_description: STORAGE_BUCKETS.FORM_H },
+  },
   { table: "pbms_extension_programs_forms", label: "PBMS Extension Program", type: "Extension Program" },
   { table: "isip_partnership_forms", label: "ISIP Partnership / MOA", type: "Partnership / MOA" },
-  { table: "pbms_partnerships_forms", label: "PBMS Partnership / MOA", type: "Partnership / MOA" },
-  { table: "isip_authorship_forms", label: "ISIP Authorship", type: "Authorship" },
-  { table: "isip_other_accomplishments_forms", label: "ISIP Other Accomplishment", type: "Other Accomplishment" },
+  {
+    table: "pbms_partnerships_forms",
+    label: "PBMS Partnership / MOA",
+    type: "Partnership / MOA",
+    attachmentBuckets: { partnership_agreement: STORAGE_BUCKETS.FORM_I },
+  },
+  {
+    table: "isip_authorship_forms",
+    label: "ISIP Authorship",
+    type: "Authorship",
+    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_J },
+  },
+  {
+    table: "isip_other_accomplishments_forms",
+    label: "ISIP Other Accomplishment",
+    type: "Other Accomplishment",
+    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_K },
+  },
   { table: "pbms_other_accomplishments_forms", label: "PBMS Other Accomplishment", type: "Other Accomplishment" },
-  { table: "supporting_documents", label: "Supporting Documents", type: "Supporting Documents" },
 ];
+
+const INTERNAL_FIELD_KEYS = new Set([
+  "created_at",
+  "updated_at",
+  "submitted_by",
+  "isip_submitted_by",
+  "reviewed_by",
+]);
 
 function uniqueValues<TValue>(values: (TValue | null | undefined)[]) {
   return Array.from(
@@ -173,22 +261,98 @@ function humanizeKey(key: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function cleanValues(row: Record<string, unknown>) {
-  return Object.fromEntries(
-    Object.entries(row)
-      .filter(([, value]) => value !== null && value !== undefined && value !== "")
-      .map(([key, value]) => [humanizeKey(key), value])
-  );
+function isInternalFieldKey(key: string) {
+  return key === "id" || key.endsWith("_id") || INTERNAL_FIELD_KEYS.has(key);
 }
 
-function withoutInternalFields(values: Record<string, unknown>) {
-  const next = { ...values };
-
-  for (const field of ["Entry Id", "Report Id", "Form Type Id"]) {
-    delete next[field];
+function parseStoragePaths(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((path): path is string => typeof path === "string" && path.trim().length > 0);
   }
 
-  return next;
+  if (typeof value !== "string") return [];
+
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((path): path is string => typeof path === "string" && path.trim().length > 0);
+    }
+  } catch {
+    // Attachment columns also store a single raw storage path.
+  }
+
+  return [trimmed];
+}
+
+function getAttachmentLabel(path: string, index: number) {
+  const cleanPath = path.split("?")[0] ?? path;
+  const name = cleanPath.split("/").filter(Boolean).at(-1);
+
+  return name || `Attachment ${index + 1}`;
+}
+
+async function getAttachmentLinks(bucket: string, value: unknown): Promise<SubmittedAttachmentLink | null> {
+  const paths = parseStoragePaths(value);
+
+  if (paths.length === 0) return null;
+
+  const links = await Promise.all(
+    paths.map(async (path, index) => {
+      if (/^https?:\/\//i.test(path)) {
+        return {
+          label: getAttachmentLabel(path, index),
+          url: path,
+        };
+      }
+
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);
+
+      if (error) {
+        console.warn(`Failed to create signed URL for ${bucket}/${path}:`, error);
+      }
+
+      return {
+        label: getAttachmentLabel(path, index),
+        url: data?.signedUrl ?? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl,
+      };
+    })
+  );
+
+  return { kind: "attachment-links", links };
+}
+
+async function normalizeReviewValues(
+  row: Record<string, unknown>,
+  attachmentBuckets: Record<string, string> = {}
+) {
+  const values: Record<string, SubmittedReportFieldValue> = {};
+
+  for (const [key, value] of Object.entries(row)) {
+    if (value === null || value === undefined || value === "" || isInternalFieldKey(key)) {
+      continue;
+    }
+
+    const bucket = attachmentBuckets[key];
+
+    if (bucket) {
+      const attachmentLinks = await getAttachmentLinks(bucket, value);
+
+      if (attachmentLinks && attachmentLinks.links.length > 0) {
+        values[humanizeKey(key)] = attachmentLinks;
+      }
+
+      continue;
+    }
+
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      values[humanizeKey(key)] = value;
+    }
+  }
+
+  return values;
 }
 
 async function getOptionalUsers(facultyIds: string[]) {
@@ -405,7 +569,7 @@ export async function getSubmittedReportDetail({
         const entryId = Number(row.entry_id);
         if (!Number.isFinite(entryId)) continue;
 
-        const values = withoutInternalFields(cleanValues(row));
+        const values = await normalizeReviewValues(row, config.attachmentBuckets);
         const currentGroups = detailGroupsByEntryId.get(entryId) ?? [];
 
         detailGroupsByEntryId.set(entryId, [
@@ -420,28 +584,33 @@ export async function getSubmittedReportDetail({
     })
   );
 
-  return {
-    report,
-    forms: formRows.map((form) => {
-      const baseValues = withoutInternalFields(
-        cleanValues(form as unknown as Record<string, unknown>)
+  const normalizedForms = await Promise.all(
+    formRows.map(async (form) => {
+      const baseValues = await normalizeReviewValues(
+        form as unknown as Record<string, unknown>
       );
-      const groups = [
-        { label: "Form Information", values: baseValues },
-        ...(detailGroupsByEntryId.get(form.entry_id) ?? []),
-      ];
+      const groups = Object.keys(baseValues).length > 0
+        ? [
+            { label: "Form Information", values: baseValues },
+            ...(detailGroupsByEntryId.get(form.entry_id) ?? []),
+          ]
+        : detailGroupsByEntryId.get(form.entry_id) ?? [];
 
       return {
         entry_id: form.entry_id,
         title:
           form.title?.trim() ||
           typeByEntryId.get(form.entry_id) ||
-          `Form #${form.entry_id}`,
+          "Untitled form",
         type: typeByEntryId.get(form.entry_id) ?? "Unclassified Form",
-        created_at: form.created_at ?? "",
         groups,
       };
-    }),
+    })
+  );
+
+  return {
+    report,
+    forms: normalizedForms,
   };
 }
 

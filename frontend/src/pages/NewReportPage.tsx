@@ -35,8 +35,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -64,9 +64,9 @@ import { cn } from "@/lib/utils";
 function Breadcrumb() {
   return (
     <div className="flex items-center gap-1.5 text-xs text-white/80">
-      <a href="/reports" className="hover:text-white transition-colors">
+      <Link to="/reports" className="hover:text-white transition-colors">
         My Reports
-      </a>
+      </Link>
       <ChevronRight size={12} />
       <span className="text-white">Create/Edit Report</span>
     </div>
@@ -128,12 +128,14 @@ export default function NewReportPage() {
     queryKey: ["report-entries", reportId],
     queryFn: () => fetchReportEntries(reportId),
     enabled: reportId !== null,
+    refetchOnWindowFocus: false,
   });
 
   const reportQuery = useQuery({
     queryKey: ["reports", "editor", reportId],
     queryFn: () => getAccessibleReports(),
     enabled: reportId !== null,
+    refetchOnWindowFocus: false,
   });
 
   const deleteEntry = useMutation({
@@ -233,6 +235,7 @@ export default function NewReportPage() {
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
   const [viewEntry, setViewEntry] = useState<ReportEntry | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<ReportEntry | null>(null);
+  const metadataHydratedForReport = useRef<number | null>(null);
 
   const currentReport = useMemo(
     () => (reportId ? reportQuery.data?.find((report) => report.report_id === reportId) ?? null : null),
@@ -299,11 +302,13 @@ export default function NewReportPage() {
 
   useEffect(() => {
     if (!currentReport) return;
+    if (metadataHydratedForReport.current === currentReport.report_id) return;
 
     setStartDate(currentReport.start_date ? new Date(`${currentReport.start_date}T00:00:00`) : undefined);
     setEndDate(currentReport.end_date ? new Date(`${currentReport.end_date}T00:00:00`) : undefined);
     setTitle(currentReport.title ?? "");
     setRemarks(currentReport.remarks ?? "");
+    metadataHydratedForReport.current = currentReport.report_id;
   }, [currentReport]);
 
   function toIsoDate(value?: Date) {
