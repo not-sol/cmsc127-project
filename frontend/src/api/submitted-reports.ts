@@ -65,7 +65,6 @@ export interface SubmittedReportFormDetail {
   entry_id: number;
   title: string;
   type: string;
-  created_at: string;
   groups: SubmittedReportFormGroup[];
 }
 
@@ -184,7 +183,7 @@ function cleanValues(row: Record<string, unknown>) {
 function withoutInternalFields(values: Record<string, unknown>) {
   const next = { ...values };
 
-  for (const field of ["Entry Id", "Report Id", "Form Type Id"]) {
+  for (const field of ["Entry Id", "Report Id", "Form Type Id", "Created At"]) {
     delete next[field];
   }
 
@@ -436,9 +435,8 @@ export async function getSubmittedReportDetail({
         title:
           form.title?.trim() ||
           typeByEntryId.get(form.entry_id) ||
-          `Form #${form.entry_id}`,
+          "Untitled form",
         type: typeByEntryId.get(form.entry_id) ?? "Unclassified Form",
-        created_at: form.created_at ?? "",
         groups,
       };
     }),

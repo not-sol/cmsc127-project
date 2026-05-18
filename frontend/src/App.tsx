@@ -11,12 +11,9 @@ export default function App() {
 
   useEffect(() => {
     let isMounted = true;
-    let hasInitialized = false;
 
-    async function hydrateSession(session: Session | null, showLoading = false) {
-      if (showLoading) {
-        setLoading(true);
-      }
+    async function hydrateSession(session: Session | null) {
+      setLoading(true);
 
       try {
         let profile = null;
@@ -41,13 +38,25 @@ export default function App() {
         if (isMounted) {
           setLoading(false);
         }
-        hasInitialized = true;
+      }
+    }
+
+    async function refreshSessionProfile(session: Session | null) {
+      try {
+        const profile = session ? await ensureUserProfile() : null;
+
+        if (!isMounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        setProfile(profile);
+      } catch (error) {
+        console.error("Unable to refresh verified user profile:", error);
       }
     }
 
     // Initial session fetch
     supabase.auth.getSession().then(({ data: { session } }) => {
-      void hydrateSession(session, true);
+      void hydrateSession(session);
     });
 
     // Listen for changes on auth state (logged in, signed out, etc.)
@@ -57,21 +66,24 @@ export default function App() {
       if (event === "SIGNED_OUT") {
         setSession(null);
         setUser(null);
+        setProfile(null);
         setLoading(false);
         return;
       }
 
-      // Only show loading if we haven't initialized yet or it's a signed in event
-      const shouldShowLoading = !hasInitialized || event === "SIGNED_IN";
-      
-      void hydrateSession(session, shouldShowLoading);
+      if (event === "SIGNED_IN") {
+        void hydrateSession(session);
+        return;
+      }
+
+      void refreshSessionProfile(session);
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [setSession, setUser, setLoading]);
+  }, [setSession, setUser, setProfile, setLoading]);
 
   return <RouterProvider router={router} />;
 }

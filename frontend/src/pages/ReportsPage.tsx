@@ -107,7 +107,7 @@ export default function ReportsPage() {
   const reportsQuery = useQuery({
     queryKey: reportsQueryKey,
     queryFn: () => getAccessibleReports(),
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   const statusMutation = useMutation({
@@ -279,26 +279,25 @@ export default function ReportsPage() {
                   <TableHead className="text-xs font-semibold">Date Submitted</TableHead>
                   <TableHead className="text-xs font-semibold">Status</TableHead>
                   <TableHead className="text-xs font-semibold">Forms</TableHead>
-                  <TableHead className="text-xs font-semibold">Remarks</TableHead>
                   <TableHead className="text-xs font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reportsQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-sm">
+                    <TableCell colSpan={6} className="h-24 text-center text-sm">
                       Loading reports...
                     </TableCell>
                   </TableRow>
                 ) : reportsQuery.isError ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-sm text-destructive">
+                    <TableCell colSpan={6} className="h-24 text-center text-sm text-destructive">
                       Failed to load reports.
                     </TableCell>
                   </TableRow>
                 ) : filteredReports.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
                       No {viewMode} reports found.
                     </TableCell>
                   </TableRow>
@@ -333,9 +332,6 @@ export default function ReportsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{report.entry_count}</TableCell>
-                        <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                          {report.remarks || "No remarks"}
-                        </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
                             <Button

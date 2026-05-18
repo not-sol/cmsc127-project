@@ -2,19 +2,19 @@ import Sidebar from "@/components/sidebar"
 import FormH from "@/features/forms/form-h/form-h"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 function Breadcrumb() {
   return (
     <div className="flex items-center gap-1.5 text-xs text-white/80">
-      <a href="/reports" className="hover:text-white transition-colors">
+      <Link to="/reports" className="hover:text-white transition-colors">
         My Reports
-      </a>
+      </Link>
       <ChevronRight size={12} />
 
-      <a href="/reports/create-report" className="hover:text-white transition-colors">
+      <Link to="/reports/create-report" className="hover:text-white transition-colors">
         Create/Edit Report
-      </a>
+      </Link>
       <ChevronRight size={12} />
       <span className="text-white">Form H: Extension Program</span>
     </div>

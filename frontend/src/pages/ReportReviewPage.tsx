@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, ChevronRight, RefreshCw } from "lucide-react";
 import Sidebar from "@/components/sidebar";
@@ -86,7 +86,6 @@ function FieldGrid({ values }: { values: Record<string, unknown> }) {
 
 function reportSummary(report: SubmittedReport, entryCount: number) {
   return {
-    "Report ID": report.report_id,
     Title: report.title ?? "Untitled report",
     Faculty: getFacultyName(report),
     Email: report.faculty_email ?? "No email",
@@ -116,12 +115,19 @@ export default function ReportReviewPage() {
   const updateReview = useUpdateReviewDecision();
   const { toast } = useToast();
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
-  const [draftStatus, setDraftStatus] = useState<ReviewStatus>("approved");
-  const [draftRemarks, setDraftRemarks] = useState("");
+  const [reviewDraft, setReviewDraft] = useState<{
+    reportId: number;
+    status: ReviewStatus;
+    remarks: string;
+  } | null>(null);
 
   const detail = detailQuery.data;
   const report = detail?.report ?? null;
-  const entries = detail?.forms ?? [];
+  const entries = useMemo(() => detail?.forms ?? [], [detail?.forms]);
+  const activeDraft =
+    report && reviewDraft?.reportId === report.report_id ? reviewDraft : null;
+  const draftStatus = activeDraft?.status ?? report?.latest_review_status ?? "approved";
+  const draftRemarks = activeDraft?.remarks ?? report?.latest_review_remarks ?? "";
   const selectedEntry = useMemo(
     () =>
       entries.find((entry) => entry.entry_id === selectedEntryId) ??
@@ -130,11 +136,15 @@ export default function ReportReviewPage() {
     [entries, selectedEntryId]
   );
 
-  useEffect(() => {
+  function updateReviewDraft(next: Partial<{ status: ReviewStatus; remarks: string }>) {
     if (!report) return;
-    setDraftStatus(report.latest_review_status ?? "approved");
-    setDraftRemarks(report.latest_review_remarks ?? "");
-  }, [report]);
+
+    setReviewDraft({
+      reportId: report.report_id,
+      status: next.status ?? draftStatus,
+      remarks: next.remarks ?? draftRemarks,
+    });
+  }
 
   async function handleSubmitReview() {
     if (!report) return;
@@ -266,7 +276,6 @@ export default function ReportReviewPage() {
                             Entry {index + 1}: {entry.title}
                           </div>
                           <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                            <span>Entry #{entry.entry_id}</span>
                             <Badge variant="outline">{entry.type}</Badge>
                           </div>
                           <p className="mt-2 line-clamp-2 break-words text-xs text-muted-foreground">
@@ -309,7 +318,10 @@ export default function ReportReviewPage() {
                 <CardContent className="grid gap-4 lg:grid-cols-[16rem_1fr_auto] lg:items-end">
                   <label className="space-y-1.5 text-sm">
                     <span className="font-medium">Outcome</span>
-                    <Select value={draftStatus} onValueChange={(value) => setDraftStatus(value as ReviewStatus)}>
+                    <Select
+                      value={draftStatus}
+                      onValueChange={(value) => updateReviewDraft({ status: value as ReviewStatus })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -325,7 +337,7 @@ export default function ReportReviewPage() {
                     <Textarea
                       className="min-h-24 resize-y"
                       value={draftRemarks}
-                      onChange={(event) => setDraftRemarks(event.target.value)}
+                      onChange={(event) => updateReviewDraft({ remarks: event.target.value })}
                     />
                   </label>
 

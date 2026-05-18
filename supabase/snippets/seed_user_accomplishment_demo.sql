@@ -11,7 +11,7 @@
 
 DO $$
 DECLARE
-  target_email text := 'lucceia.xyz@gmail.com';
+  target_email text := 'jtastones@up.edu.ph';
   target_user public.users%ROWTYPE;
   target_department_id bigint;
   target_author text;
