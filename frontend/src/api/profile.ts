@@ -10,13 +10,31 @@ export interface UserProfile {
   department_id: number | null;
   role: AppRole;
   employment_type: string | null;
+  department?: {
+    department_name: string;
+    college_name: string;
+  } | null;
 }
 
 export async function ensureUserProfile() {
-  const { data, error } = await supabase.rpc("ensure_user_profile");
+  const { data: profile, error: rpcError } = await supabase.rpc(
+    "ensure_user_profile"
+  );
+
+  if (rpcError) {
+    throw rpcError;
+  }
+
+  // Fetch with joined department info
+  const { data, error } = await supabase
+    .from("users")
+    .select("*, department:departments(department_name, college_name)")
+    .eq("id", (profile as UserProfile).id)
+    .single();
 
   if (error) {
-    throw error;
+    // If join fails, at least return the basic profile from RPC
+    return profile as UserProfile;
   }
 
   return data as UserProfile;
@@ -25,7 +43,7 @@ export async function ensureUserProfile() {
 export async function getUserProfile(id: string) {
   const { data, error } = await supabase
     .from("users")
-    .select("*")
+    .select("*, department:departments(department_name, college_name)")
     .eq("id", id)
     .single();
 
