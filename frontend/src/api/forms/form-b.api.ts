@@ -1,5 +1,5 @@
 // form-b.api.ts
-import type { FormValues as FormBValues } from "@/features/forms/form-b/form-b-schema"
+import { calculateTotalFundingPesos, type FormValues as FormBValues } from "@/features/forms/form-b/form-b-schema"
 import { emptyStringToNull, logSupabaseError, toIsoDate, toNumberOrNull, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
@@ -86,7 +86,7 @@ function createIsipPayload(values: FormBValues, entryId: number, attachmentPath:
     researcher_name: values.researcherNames,
     research_grant: toNumberOrNull(values.upSystemResearchGrantPesos) ?? 0,
     funding_amount: toNumberOrNull(values.externalFundingAmountPesos) ?? 0,
-    total_funding: toNumberOrNull(values.totalFundingPesos) ?? 0,
+    total_funding: toNumberOrNull(calculateTotalFundingPesos(values)) ?? 0,
     other_fund_source: emptyStringToNull(values.otherFundSource),
     attachments: attachmentPath,
     remarks: emptyStringToNull(values.researchRemarks),

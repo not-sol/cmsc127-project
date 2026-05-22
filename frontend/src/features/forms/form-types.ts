@@ -14,6 +14,13 @@ export type TextField<TValues extends FieldValues> = BaseField<TValues> & {
   placeholder?: string
 }
 
+// Computed read-only field
+export type ComputedField<TValues extends FieldValues> = BaseField<TValues> & {
+  type: "computed"
+  dependencies: Path<TValues>[]
+  computeValue: (values: Partial<TValues>) => string
+}
+
 // Textarea field
 export type TextareaField<TValues extends FieldValues> = BaseField<TValues> & {
   type: "textarea"
@@ -93,6 +100,7 @@ export type SectionHeaderField = {
 // Union of all fields
 export type FormFieldConfig<TValues extends FieldValues> =
   | TextField<TValues>
+  | ComputedField<TValues>
   | TextareaField<TValues>
   | RadioField<TValues>
   | CheckboxField<TValues>

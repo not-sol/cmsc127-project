@@ -2,6 +2,7 @@ import type { FieldValues } from "react-hook-form"
 import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-fields/dynamic-field-types"
 
 import { CheckboxField } from "./CheckboxField"
+import { ComputedField } from "./ComputedField"
 import { DatePickerField } from "./DatePickerField"
 import { FileUploadField } from "./FileUploadField"
 import { RadioField } from "./RadioField"
@@ -15,6 +16,8 @@ export function DynamicField<TValues extends FieldValues>(
   switch (props.config.type) {
     case "text":
       return <TextField {...props} config={props.config} />
+    case "computed":
+      return <ComputedField {...props} config={props.config} />
     case "textarea":
       return <TextareaField {...props} config={props.config} />
     case "radio":

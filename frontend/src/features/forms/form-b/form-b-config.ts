@@ -1,4 +1,4 @@
-import type { FormValues } from "@/features/forms/form-b/form-b-schema"
+import { calculateTotalFundingPesos, type FormValues } from "@/features/forms/form-b/form-b-schema"
 import type { FormFieldConfig } from "@/features/forms/form-types"
 
 export const formFields: FormFieldConfig<FormValues>[] = [
@@ -73,10 +73,11 @@ export const formFields: FormFieldConfig<FormValues>[] = [
     placeholder: "0.00",
   },
   { //totalFundingPesos
-    type: "text",
+    type: "computed",
     name: "totalFundingPesos",
     label: "Total Funding (PHP)",
-    placeholder: "e.g., Vol. 12, Issue 3",
+    dependencies: ["upSystemResearchGrantPesos", "externalFundingAmountPesos"],
+    computeValue: calculateTotalFundingPesos,
   },
   { //otherFundSource
     type: "text",

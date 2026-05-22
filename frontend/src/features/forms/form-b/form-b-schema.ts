@@ -1,5 +1,21 @@
 import * as z from "zod"
 
+function amountToNumber(value?: string | null) {
+  const parsedValue = Number((value ?? "").replaceAll(",", ""))
+
+  return Number.isFinite(parsedValue) ? parsedValue : 0
+}
+
+export function calculateTotalFundingPesos(values: {
+  upSystemResearchGrantPesos?: string | null
+  externalFundingAmountPesos?: string | null
+}) {
+  return (
+    amountToNumber(values.upSystemResearchGrantPesos) +
+    amountToNumber(values.externalFundingAmountPesos)
+  ).toFixed(2)
+}
+
 function getAttachmentInputType(value: unknown) {
   if (value instanceof File) return "File"
   if (Array.isArray(value)) return "File[]"
