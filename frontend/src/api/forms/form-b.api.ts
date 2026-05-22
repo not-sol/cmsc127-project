@@ -253,4 +253,24 @@ export async function getFormBRecord(entryId: number): Promise<FormBValues> {
     researchRemarks: isipData.remarks || "",
     researchRelatedKRAs: isipData.related_kras || "",
   }
-}
+  }
+
+  export async function getFormBResearches() {
+  const { data, error } = await supabase
+    .from("isip_research_forms")
+    .select("entry_id, research_title")
+    .order("research_title", { ascending: true })
+
+  if (error) {
+    console.error("[Supabase] Failed to fetch Form B researches:", error)
+    throw error
+  }
+
+  return data.map((row) => ({
+    value: row.research_title, // The user wants to store the title, but maybe storing entry_id would be better? 
+    // Usually "Linked Research" might refer to the title in these forms.
+    // The current form-c schema uses 'researchTitle2' as a string.
+    label: row.research_title,
+  }))
+  }
+

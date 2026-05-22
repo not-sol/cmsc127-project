@@ -4,10 +4,11 @@ import type { FormFieldConfig } from "@/features/forms/form-types"
 export const formFields: FormFieldConfig<FormValues>[] = [
   // D.1 Patent Identification
   { //researchTitle3
-    type: "text",
+    type: "select",
     name: "researchTitle3",
     label: "Linked Research (from Section B)",
-    placeholder: "Enter the title of the parent research project",
+    options: [],
+    placeholder: "Select the parent research project",
   },
   { //patentTitle
     type: "text",

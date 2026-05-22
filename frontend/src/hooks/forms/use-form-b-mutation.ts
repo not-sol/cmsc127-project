@@ -1,4 +1,11 @@
-import { createFormBRecord, getFormBRecord, updateFormBRecord, type CreateFormBInput, type UpdateFormBInput } from "@/api/forms/form-b.api"
+import {
+  createFormBRecord,
+  getFormBRecord,
+  getFormBResearches,
+  updateFormBRecord,
+  type CreateFormBInput,
+  type UpdateFormBInput
+} from "@/api/forms/form-b.api"
 import { useCreateFormMutation } from "@/hooks/forms/shared"
 import { useQuery } from "@tanstack/react-query"
 
@@ -22,4 +29,11 @@ export function useUpdateFormBRecord() {
     ["forms", "form-b", "update"],
     updateFormBRecord
   )
+}
+
+export function useFormBResearches() {
+  return useQuery({
+    queryKey: ["forms", "form-b", "researches"],
+    queryFn: getFormBResearches,
+  })
 }

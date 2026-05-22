@@ -4,10 +4,11 @@ import type { FormFieldConfig } from "@/features/forms/form-types"
 export const formFields: FormFieldConfig<FormValues>[] = [
   // SECTION C.1
   { //researchTitle2
-    type: "text",
+    type: "select",
     name: "researchTitle2",
     label: "Linked Research (from Section B)",
-    placeholder: "Enter the title of the parent research project",
+    options: [],
+    placeholder: "Select the parent research project",
   },
   { //titlePresented
     type: "text",
