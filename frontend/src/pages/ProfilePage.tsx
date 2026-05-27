@@ -33,7 +33,7 @@ export default function ProfilePage() {
 
   const reportsQuery = useQuery({
     queryKey: ["reports"],
-    queryFn: getAccessibleReports,
+    queryFn: () => getAccessibleReports(),
     enabled: !!profile,
   });
 
@@ -52,7 +52,7 @@ export default function ProfilePage() {
 
   const fullName = profile
     ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() ||
-      profile.username ||
+      profile.email ||
       "User"
     : "Not logged in";
 
