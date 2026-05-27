@@ -1,6 +1,13 @@
 // form-a.api.ts
 import type { FormValues as FormAValues } from "@/features/forms/form-a/form-a-schema"
-import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, uploadFiles } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  supportingDocumentsToFieldValue,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -32,11 +39,7 @@ export async function createFormARecord({ values, reportId: initialReportId }: C
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload files first
-  const pubProofPath = await uploadFiles(values.pubProof, STORAGE_BUCKETS.FORM_A)
-  const utilProofPath = await uploadFiles(values.pubUtilProof, STORAGE_BUCKETS.FORM_A)
-
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
   const formData = await createBaseFormEntry({
     title: values.pubTitle,
     author: values.pubAuthors,
@@ -44,6 +47,21 @@ export async function createFormARecord({ values, reportId: initialReportId }: C
     formTypeName: FORM_TYPE_NAMES.FORM_A,
   })
   const entryId = formData.entry_id
+
+  // 2. Upload files and link them through supporting_documents.
+  await createSupportingDocuments({
+    entryId,
+    value: values.pubProof,
+    bucket: STORAGE_BUCKETS.FORM_A,
+    documentType: "publication_proof",
+    required: true,
+  })
+  await createSupportingDocuments({
+    entryId,
+    value: values.pubUtilProof,
+    bucket: STORAGE_BUCKETS.FORM_A,
+    documentType: "utilization_proof",
+  })
 
   // 3. Insert into isip_publication_forms using the returned entry_id
   const { error: isipError } = await supabase
@@ -61,7 +79,6 @@ export async function createFormARecord({ values, reportId: initialReportId }: C
       ched_recognized: values.isChedRecognized === "Yes",
       peer_reviewed: values.peerRev === "Yes",
       other_reputable_database: emptyStringToNull(values.otherDB),
-      publication_proof: pubProofPath || "", // NOT NULL in schema
       remarks: emptyStringToNull(values.pubSupRemarks),
       related_kras: emptyStringToNull(values.pubRelatedKRAs),
     })
@@ -84,7 +101,6 @@ export async function createFormARecord({ values, reportId: initialReportId }: C
       doi: values.doiUrl || "",           // NOT NULL
       isbn: emptyStringToNull(values.isbn),
       number_of_citation: values.citationNum ? Number(values.citationNum) : null,
-      utilization_proof: utilProofPath,
     })
 
   if (pbmsError) {
@@ -118,6 +134,11 @@ export async function getFormARecord(entryId: number): Promise<FormAValues> {
     throw pbmsError
   }
 
+  const [publicationProofDocuments, utilizationProofDocuments] = await Promise.all([
+    getSupportingDocuments(entryId, "publication_proof"),
+    getSupportingDocuments(entryId, "utilization_proof"),
+  ])
+
   return {
     pubType: isipData.publication_type,
     pubTitle: isipData.publication_title,
@@ -130,7 +151,7 @@ export async function getFormARecord(entryId: number): Promise<FormAValues> {
     isChedRecognized: isipData.ched_recognized ? "Yes" : "No",
     peerRev: isipData.peer_reviewed ? "Yes" : "No",
     otherDB: isipData.other_reputable_database || "",
-    pubProof: isipData.publication_proof,
+    pubProof: supportingDocumentsToFieldValue(publicationProofDocuments),
     pubSupRemarks: isipData.remarks || "",
     pubRelatedKRAs: isipData.related_kras || "",
 
@@ -142,7 +163,7 @@ export async function getFormARecord(entryId: number): Promise<FormAValues> {
     doiUrl: pbmsData.doi || "",
     isbn: pbmsData.isbn || "",
     citationNum: String(pbmsData.number_of_citation || 0),
-    pubUtilProof: pbmsData.utilization_proof,
+    pubUtilProof: supportingDocumentsToFieldValue(utilizationProofDocuments),
     otherPubTypeText: "", // Not stored in DB currently or derived from pubType
   }
 }

@@ -7,7 +7,6 @@ export interface Accomplishment {
   end_date?: string;
   participation?: string;
   venue?: string;
-  attachments?: string;
   remarks?: string;
   related_kras?: string;
 }
@@ -21,7 +20,7 @@ export async function fetchAccomplishments(): Promise<Accomplishment[]> {
   try {
     const { data, error } = await supabase
       .from("isip_other_accomplishments_forms")
-      .select("entry_id, activity_title, start_date, end_date, participation, venue, attachments, remarks, related_kras")
+      .select("entry_id, activity_title, start_date, end_date, participation, venue, remarks, related_kras")
       .order("start_date", { ascending: false });
 
     if (error) {
@@ -46,7 +45,7 @@ export async function createAccomplishment(
     const { data, error } = await supabase
       .from("isip_other_accomplishments_forms")
       .insert(input)
-      .select("entry_id, activity_title, start_date, end_date, participation, venue, attachments, remarks, related_kras")
+      .select("entry_id, activity_title, start_date, end_date, participation, venue, remarks, related_kras")
       .single();
 
     if (error) {

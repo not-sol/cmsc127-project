@@ -1,6 +1,14 @@
 // form-k.api.ts
 import type { FormKOtherValues } from "@/features/forms/form-k/form-k-schema"
-import { createBaseFormEntry, FORM_TYPE_NAMES, logSupabaseError, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  logSupabaseError,
+  supportingDocumentsToFieldValue,
+  toIsoDate,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -26,14 +34,7 @@ export async function createFormKRecord({ values, reportId: initialReportId }: C
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload supporting documents first. Store only Supabase Storage path text in the database.
-  const supportingDocumentPaths = await uploadFilesAsStoragePathText(
-    values.supportingDocuments,
-    STORAGE_BUCKETS.FORM_K,
-    { required: true }
-  )
-
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
   const formData = await createBaseFormEntry({
     title: values.title,
     author: "",
@@ -41,6 +42,14 @@ export async function createFormKRecord({ values, reportId: initialReportId }: C
     formTypeName: FORM_TYPE_NAMES.FORM_K,
   })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.supportingDocuments,
+    bucket: STORAGE_BUCKETS.FORM_K,
+    documentType: "attachments",
+    required: true,
+  })
 
   // 3. Insert into isip_other_accomplishments_forms using the returned entry_id
   const isipPayload = {
@@ -50,7 +59,6 @@ export async function createFormKRecord({ values, reportId: initialReportId }: C
     end_date: values.endDate ? toIsoDate(values.endDate) : null,
     participation: emptyStringToNull(values.participation),
     venue: emptyStringToNull(values.venue),
-    attachments: supportingDocumentPaths,
     remarks: emptyStringToNull(values.remarks),
     related_kras: emptyStringToNull(values.relatedKras),
   }
@@ -114,6 +122,8 @@ export async function getFormKRecord(entryId: number): Promise<FormKOtherValues>
     throw pbmsError
   }
 
+  const supportingDocuments = await getSupportingDocuments(entryId, "attachments")
+
   return {
     title: isipData.activity_title,
     description: pbmsData.accomplishment_description,
@@ -123,6 +133,6 @@ export async function getFormKRecord(entryId: number): Promise<FormKOtherValues>
     relatedKras: isipData.related_kras || "",
     date: new Date(isipData.start_date),
     endDate: isipData.end_date ? new Date(isipData.end_date) : undefined,
-    supportingDocuments: isipData.attachments,
+    supportingDocuments: supportingDocumentsToFieldValue(supportingDocuments),
   }
 }

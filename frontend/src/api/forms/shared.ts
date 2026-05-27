@@ -285,6 +285,166 @@ export async function uploadFilesAsStoragePathText(
   return uploadedPaths.length === 1 ? uploadedPaths[0] : JSON.stringify(uploadedPaths);
 }
 
+export type SupportingDocumentRow = {
+  document_id: number
+  created_at: string
+  file_name: string | null
+  entry_id: number
+  bucket_id: string | null
+  storage_path: string | null
+  document_type: string | null
+}
+
+function parseStoragePathText(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return []
+
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed)) {
+      return parsed.filter((path): path is string => typeof path === "string" && path.trim().length > 0)
+    }
+  } catch {
+    // Existing single-file values are stored as raw storage path text.
+  }
+
+  return [trimmed]
+}
+
+function getStoragePathsFromValue(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((path): path is string => typeof path === "string" && path.trim().length > 0)
+  }
+
+  if (typeof value === "string") {
+    return parseStoragePathText(value)
+  }
+
+  return []
+}
+
+function getFileNameFromPath(path: string) {
+  const cleanPath = path.split("?")[0] ?? path
+  const fileName = cleanPath.split("/").filter(Boolean).at(-1) ?? cleanPath
+
+  return fileName.replace(/^[0-9a-f-]{36}-/i, "")
+}
+
+export async function createSupportingDocuments({
+  entryId,
+  value,
+  bucket,
+  documentType,
+  path,
+  required = false,
+}: {
+  entryId: number
+  value: unknown
+  bucket: string
+  documentType: string
+  path?: string
+  required?: boolean
+}) {
+  const reusedPaths = getStoragePathsFromValue(value)
+  const uploadedPaths =
+    reusedPaths.length > 0 ? reusedPaths : await uploadAllFiles(value, bucket, path)
+  const paths = uploadedPaths.filter((item, index, values) => values.indexOf(item) === index)
+
+  if (paths.length === 0) {
+    if (required) {
+      throw new Error(`At least one attachment must be uploaded to ${bucket}.`)
+    }
+
+    return []
+  }
+
+  const rows = paths.map((storagePath) => ({
+    entry_id: entryId,
+    file_name: getFileNameFromPath(storagePath),
+    bucket_id: bucket,
+    storage_path: storagePath,
+    document_type: documentType,
+  }))
+
+  const { data, error } = await supabase
+    .from("supporting_documents")
+    .insert(rows)
+    .select("*")
+
+  if (error) {
+    logSupabaseError("[Supabase] Failed to create supporting document rows", error)
+    throw error
+  }
+
+  return (data ?? []) as SupportingDocumentRow[]
+}
+
+export async function replaceSupportingDocuments({
+  entryId,
+  value,
+  bucket,
+  documentType,
+  path,
+  required = false,
+}: {
+  entryId: number
+  value: unknown
+  bucket: string
+  documentType: string
+  path?: string
+  required?: boolean
+}) {
+  const { error } = await supabase
+    .from("supporting_documents")
+    .delete()
+    .eq("entry_id", entryId)
+    .eq("document_type", documentType)
+
+  if (error) {
+    logSupabaseError("[Supabase] Failed to replace supporting document rows", error)
+    throw error
+  }
+
+  return createSupportingDocuments({
+    entryId,
+    value,
+    bucket,
+    documentType,
+    path,
+    required,
+  })
+}
+
+export async function getSupportingDocuments(entryId: number, documentType?: string) {
+  let query = supabase
+    .from("supporting_documents")
+    .select("*")
+    .eq("entry_id", entryId)
+    .order("document_id", { ascending: true })
+
+  if (documentType) {
+    query = query.eq("document_type", documentType)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    logSupabaseError("[Supabase] Failed to fetch supporting documents", error)
+    throw error
+  }
+
+  return (data ?? []) as SupportingDocumentRow[]
+}
+
+export function supportingDocumentsToFieldValue(documents: SupportingDocumentRow[]) {
+  const paths = documents
+    .map((document) => document.storage_path ?? document.file_name)
+    .filter((path): path is string => Boolean(path?.trim()))
+
+  if (paths.length === 0) return ""
+  return paths.length === 1 ? paths[0] : JSON.stringify(paths)
+}
+
 export async function insertFormRecord<TPayload extends Record<string, unknown>>(
   table: string,
   payload: TPayload

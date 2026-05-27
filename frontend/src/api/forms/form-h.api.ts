@@ -1,6 +1,16 @@
 // form-h.api.ts
 import type { FormHValues as FormHValues } from "@/features/forms/form-h/form-h-schema"
-import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  logSupabaseError,
+  supportingDocumentsToFieldValue,
+  toIntegerOrNull,
+  toIsoDate,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -15,10 +25,7 @@ export async function createFormHRecord({ values, reportId: initialReportId }: C
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload documents first. Store only Supabase Storage path text in the database.
-  const programDocumentPaths = await uploadFilesAsStoragePathText(values.programDocuments, STORAGE_BUCKETS.FORM_H)
-
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
   const formData = await createBaseFormEntry({
     title: values.title,
     author: "",
@@ -26,6 +33,14 @@ export async function createFormHRecord({ values, reportId: initialReportId }: C
     formTypeName: FORM_TYPE_NAMES.FORM_H,
   })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.programDocuments,
+    bucket: STORAGE_BUCKETS.FORM_H,
+    documentType: "program_description",
+    required: true,
+  })
 
   // 3. Insert into isip_extension_programs_forms using the returned entry_id
   const isipPayload = {
@@ -42,7 +57,6 @@ export async function createFormHRecord({ values, reportId: initialReportId }: C
     start_date: toIsoDate(values.startDate),
     end_date: toIsoDate(values.endDate),
     target_beneficiary_group: values.targetBeneficiary,
-    program_description: programDocumentPaths,
     remarks: emptyStringToNull(values.remarks),
   }
 
@@ -103,6 +117,8 @@ export async function getFormHRecord(entryId: number): Promise<FormHValues> {
     throw pbmsError
   }
 
+  const programDocuments = await getSupportingDocuments(entryId, "program_description")
+
   return {
     contributingUnit: pbmsData.contributing_unit,
     title: isipData.extension_title,
@@ -120,7 +136,7 @@ export async function getFormHRecord(entryId: number): Promise<FormHValues> {
     targetBeneficiary: isipData.target_beneficiary_group,
     numberOfBeneficiaries: String(pbmsData.no_of_beneficiary_groups || 0),
     fundingSource: pbmsData.majority_share_funding,
-    programDocuments: isipData.program_description, // String representation from storage
+    programDocuments: supportingDocumentsToFieldValue(programDocuments) as unknown as FormHValues["programDocuments"],
     remarks: isipData.remarks || "",
   }
 }

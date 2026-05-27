@@ -1,6 +1,18 @@
 // form-b.api.ts
 import type { FormValues as FormBValues } from "@/features/forms/form-b/form-b-schema"
-import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, getFormTypeId, logSupabaseError, toIsoDate, toNumberOrNull, uploadFiles } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getFormTypeId,
+  getSupportingDocuments,
+  logSupabaseError,
+  replaceSupportingDocuments,
+  supportingDocumentsToFieldValue,
+  toIsoDate,
+  toNumberOrNull,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -52,31 +64,7 @@ function assertSingleAttachment(value: unknown, existingAttachmentPath?: string 
   }
 }
 
-async function resolveAttachmentPath(
-  value: unknown,
-  existingAttachmentPath?: string | null
-) {
-  assertSingleAttachment(value, existingAttachmentPath)
-
-  if (!value && existingAttachmentPath) {
-    return existingAttachmentPath
-  }
-
-  const attachmentPath = await uploadFiles(
-    value,
-    STORAGE_BUCKETS.FORM_B,
-    undefined,
-    existingAttachmentPath
-  )
-
-  if (!attachmentPath) {
-    throw new Error("A valid Form B attachment is required before submitting.")
-  }
-
-  return attachmentPath
-}
-
-function createIsipPayload(values: FormBValues, entryId: number, attachmentPath: string) {
+function createIsipPayload(values: FormBValues, entryId: number) {
   return {
     entry_id: entryId,
     research_title: values.researchTitle,
@@ -88,7 +76,6 @@ function createIsipPayload(values: FormBValues, entryId: number, attachmentPath:
     funding_amount: toNumberOrNull(values.externalFundingAmountPesos) ?? 0,
     total_funding: toNumberOrNull(values.totalFundingPesos) ?? 0,
     other_fund_source: emptyStringToNull(values.otherFundSource),
-    attachments: attachmentPath,
     remarks: emptyStringToNull(values.researchRemarks),
     related_kras: emptyStringToNull(values.researchRelatedKRAs),
   }
@@ -107,10 +94,9 @@ export async function createFormBRecord({ values, reportId: initialReportId, exi
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload or reuse the single attachment before inserting rows.
-  const attachmentPath = await resolveAttachmentPath(values.supportingAttachments, existingAttachmentPath)
+  assertSingleAttachment(values.supportingAttachments, existingAttachmentPath)
 
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
   const formData = await createBaseFormEntry({
     title: values.researchTitle,
     author: values.researcherNames,
@@ -119,8 +105,16 @@ export async function createFormBRecord({ values, reportId: initialReportId, exi
   })
   const entryId = formData.entry_id
 
+  await createSupportingDocuments({
+    entryId,
+    value: values.supportingAttachments || existingAttachmentPath,
+    bucket: STORAGE_BUCKETS.FORM_B,
+    documentType: "attachments",
+    required: true,
+  })
+
   // 3. Insert into isip_research_forms using the returned entry_id
-  const isipPayload = createIsipPayload(values, entryId, attachmentPath)
+  const isipPayload = createIsipPayload(values, entryId)
 
   console.log("[Supabase] Form B ISIP payload:", isipPayload)
 
@@ -156,7 +150,7 @@ export async function updateFormBRecord({
   reportId,
   existingAttachmentPath,
 }: UpdateFormBInput) {
-  const attachmentPath = await resolveAttachmentPath(values.supportingAttachments, existingAttachmentPath)
+  assertSingleAttachment(values.supportingAttachments, existingAttachmentPath)
 
   const formPayload = {
     title: values.researchTitle,
@@ -164,12 +158,20 @@ export async function updateFormBRecord({
     report_id: reportId,
     form_type_id: await getFormTypeId(FORM_TYPE_NAMES.FORM_B),
   }
-  const isipPayload = createIsipPayload(values, entryId, attachmentPath)
+  const isipPayload = createIsipPayload(values, entryId)
   const pbmsPayload = createPbmsPayload(values, entryId)
 
   console.log("[Supabase] Form B base update payload:", formPayload)
   console.log("[Supabase] Form B ISIP update payload:", isipPayload)
   console.log("[Supabase] Form B PBMS update payload:", pbmsPayload)
+
+  await replaceSupportingDocuments({
+    entryId,
+    value: values.supportingAttachments || existingAttachmentPath,
+    bucket: STORAGE_BUCKETS.FORM_B,
+    documentType: "attachments",
+    required: true,
+  })
 
   const { error: formError } = await supabase
     .from("forms")
@@ -227,6 +229,8 @@ export async function getFormBRecord(entryId: number): Promise<FormBValues> {
     throw pbmsError
   }
 
+  const attachmentDocuments = await getSupportingDocuments(entryId, "attachments")
+
   return {
     contrUnit: pbmsData.contributing_unit,
     researchTitle: isipData.research_title,
@@ -240,7 +244,7 @@ export async function getFormBRecord(entryId: number): Promise<FormBValues> {
     totalFundingPesos: String(isipData.total_funding),
     otherFundSource: isipData.other_fund_source || "",
     majoritySource: pbmsData.majority_source_of_funds,
-    supportingAttachments: isipData.attachments,
+    supportingAttachments: supportingDocumentsToFieldValue(attachmentDocuments),
     researchRemarks: isipData.remarks || "",
     researchRelatedKRAs: isipData.related_kras || "",
   }

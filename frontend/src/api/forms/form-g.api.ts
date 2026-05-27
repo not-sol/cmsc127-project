@@ -1,6 +1,16 @@
 // form-g.api.ts
 import type { FormGValues as FormGValues } from "@/features/forms/form-g/form-g-schema"
-import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  logSupabaseError,
+  supportingDocumentsToFieldValue,
+  toIntegerOrNull,
+  toIsoDate,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -16,19 +26,7 @@ export async function createFormGRecord({ values, reportId: initialReportId, exi
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload the single attachment first so the stored row references a real file path.
-  const attachmentPath = await uploadFiles(
-    values.attachments,
-    STORAGE_BUCKETS.FORM_G,
-    undefined,
-    existingAttachmentPath
-  )
-
-  if (!attachmentPath) {
-    throw new Error("A valid Form G attachment is required before submitting.")
-  }
-
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
   const formData = await createBaseFormEntry({
     title: values.title,
     author: "",
@@ -36,6 +34,14 @@ export async function createFormGRecord({ values, reportId: initialReportId, exi
     formTypeName: FORM_TYPE_NAMES.FORM_G,
   })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.attachments || existingAttachmentPath,
+    bucket: STORAGE_BUCKETS.FORM_G,
+    documentType: "attachments",
+    required: true,
+  })
 
   // 3. Insert into isip_trainings_forms using the returned entry_id
   const isipPayload = {
@@ -45,7 +51,6 @@ export async function createFormGRecord({ values, reportId: initialReportId, exi
     venue: values.venue,
     start_date: toIsoDate(values.startDate),
     end_date: toIsoDate(values.endDate),
-    attachments: attachmentPath,
     remarks: emptyStringToNull(values.remarks),
     related_kras: emptyStringToNull(values.relatedKras),
   }
@@ -116,6 +121,8 @@ export async function getFormGRecord(entryId: number): Promise<FormGValues> {
     throw pbmsError
   }
 
+  const attachmentDocuments = await getSupportingDocuments(entryId, "attachments")
+
   return {
     contributingUnit: pbmsData.contributing_unit,
     typeOfActivity: isipData.activity_type,
@@ -135,7 +142,7 @@ export async function getFormGRecord(entryId: number): Promise<FormGValues> {
     responsesOutstanding: String(pbmsData.no_of_responses_outstanding || 0),
     isPartOfExtensionProgram: pbmsData.part_extension_program,
     relatedExtensionProgram: pbmsData.related_extension_program_title || "",
-    attachments: isipData.attachments,
+    attachments: supportingDocumentsToFieldValue(attachmentDocuments),
     remarks: isipData.remarks || "",
     relatedKras: isipData.related_kras || "",
   }

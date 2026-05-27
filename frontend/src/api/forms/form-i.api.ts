@@ -1,6 +1,15 @@
 // form-i.api.ts
 import type { FormIPartnershipValues } from "@/features/forms/form-i/form-i-schema"
-import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  logSupabaseError,
+  supportingDocumentsToFieldValue,
+  toIsoDate,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -43,19 +52,8 @@ export async function createFormIRecord({ values, reportId: initialReportId, exi
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload the single PDF first so the database stores a valid storage path.
+  // 1. Validate the single PDF input.
   assertSingleMoaDocument(values.moaDocument)
-
-  const moaDocumentPath = await uploadFiles(
-    values.moaDocument,
-    STORAGE_BUCKETS.FORM_I,
-    undefined,
-    existingMoaDocumentPath
-  )
-
-  if (!moaDocumentPath) {
-    throw new Error("A signed agreement PDF is required before submitting Form I.")
-  }
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
   const formData = await createBaseFormEntry({
@@ -65,6 +63,14 @@ export async function createFormIRecord({ values, reportId: initialReportId, exi
     formTypeName: FORM_TYPE_NAMES.FORM_I,
   })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.moaDocument || existingMoaDocumentPath,
+    bucket: STORAGE_BUCKETS.FORM_I,
+    documentType: "partnership_agreement",
+    required: true,
+  })
 
   // 3. Insert into isip_partnership_forms using the returned entry_id.
   const isipPayload = {
@@ -100,7 +106,6 @@ export async function createFormIRecord({ values, reportId: initialReportId, exi
     partnership_agreement_type: values.typeOfPartnershipAgreement,
     partnership_effectivity_start_date: toIsoDate(values.partnershipEffectivityStartDate),
     partnership_effectivity_end_date: toIsoDate(values.partnershipEffectivityEndDate),
-    partnership_agreement: moaDocumentPath,
   }
 
   console.log("[Supabase] Form I PBMS payload:", pbmsPayload)
@@ -140,6 +145,8 @@ export async function getFormIRecord(entryId: number): Promise<FormIPartnershipV
     throw pbmsError
   }
 
+  const moaDocuments = await getSupportingDocuments(entryId, "partnership_agreement")
+
   return {
     contributingUnit: pbmsData.contributing_unit,
     titleOfExtensionPartnership: isipData.partnership_title,
@@ -156,7 +163,7 @@ export async function getFormIRecord(entryId: number): Promise<FormIPartnershipV
     typeOfPartnershipAgreement: pbmsData.partnership_agreement_type,
     partnershipEffectivityStartDate: new Date(pbmsData.partnership_effectivity_start_date),
     partnershipEffectivityEndDate: new Date(pbmsData.partnership_effectivity_end_date),
-    moaDocument: pbmsData.partnership_agreement,
+    moaDocument: supportingDocumentsToFieldValue(moaDocuments) as unknown as FormIPartnershipValues["moaDocument"],
     remarks: isipData.remarks || "",
   }
 }

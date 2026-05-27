@@ -2,7 +2,6 @@ import type { Alignment, Cell, Row, Worksheet } from "exceljs";
 import { supabase } from "@/lib/supabase/client";
 import { getAccessibleReports } from "@/api/reports";
 import type { AppRole } from "@/api/profile";
-import { STORAGE_BUCKETS } from "@/lib/storage-constants";
 
 export type ExportSystem = "isip" | "pbms";
 
@@ -17,13 +16,22 @@ export type ExportableReport = Awaited<ReturnType<typeof getAccessibleReports>>[
 
 type DetailTableConfig = {
   table: string;
-  attachmentBuckets?: Record<string, string>;
+  label: string;
+  formCode: string;
+  documentTypes?: string[];
 };
 
 type ExportDetail = {
   sourceTable: string;
+  label: string;
+  formCode: string;
   fields: Record<string, unknown>;
-  attachmentLinks: string[];
+  attachmentLinks: ExportAttachmentLink[];
+};
+
+type ExportAttachmentLink = {
+  label: string;
+  url: string;
 };
 
 type DepartmentRow = {
@@ -40,30 +48,39 @@ type UserRow = {
   department_id: number | null;
 };
 
+type SupportingDocumentRow = {
+  document_id: number;
+  file_name: string | null;
+  entry_id: number | null;
+  bucket_id: string | null;
+  storage_path: string | null;
+  document_type: string | null;
+};
+
 const EXPORT_TABLES: Record<ExportSystem, DetailTableConfig[]> = {
   isip: [
-    { table: "isip_publication_forms", attachmentBuckets: { publication_proof: STORAGE_BUCKETS.FORM_A } },
-    { table: "isip_research_forms", attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_B } },
-    { table: "isip_oral_forms", attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_C } },
-    { table: "isip_patents_forms", attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_D } },
-    { table: "isip_creative_work_forms", attachmentBuckets: { research_proof: STORAGE_BUCKETS.FORM_E } },
-    { table: "isip_awards_forms", attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_F } },
-    { table: "isip_trainings_forms", attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_G } },
-    { table: "isip_extension_programs_forms", attachmentBuckets: { program_description: STORAGE_BUCKETS.FORM_H } },
-    { table: "isip_partnership_forms" },
-    { table: "isip_authorship_forms", attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_J } },
-    { table: "isip_other_accomplishments_forms", attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_K } },
+    { table: "isip_publication_forms", label: "ISIP Publication", formCode: "Form A", documentTypes: ["publication_proof"] },
+    { table: "isip_research_forms", label: "ISIP Research Grant", formCode: "Form B", documentTypes: ["attachments"] },
+    { table: "isip_oral_forms", label: "ISIP Paper Presentation", formCode: "Form C", documentTypes: ["attachments"] },
+    { table: "isip_patents_forms", label: "ISIP Patent", formCode: "Form D", documentTypes: ["attachments"] },
+    { table: "isip_creative_work_forms", label: "ISIP Creative Work", formCode: "Form E", documentTypes: ["research_proof"] },
+    { table: "isip_awards_forms", label: "ISIP Awards", formCode: "Form F", documentTypes: ["attachments"] },
+    { table: "isip_trainings_forms", label: "ISIP Training", formCode: "Form G", documentTypes: ["attachments"] },
+    { table: "isip_extension_programs_forms", label: "ISIP Extension Program", formCode: "Form H", documentTypes: ["program_description"] },
+    { table: "isip_partnership_forms", label: "ISIP Partnership", formCode: "Form I" },
+    { table: "isip_authorship_forms", label: "ISIP Authorship", formCode: "Form J", documentTypes: ["attachments"] },
+    { table: "isip_other_accomplishments_forms", label: "ISIP Other Accomplishments", formCode: "Form K", documentTypes: ["attachments"] },
   ],
   pbms: [
-    { table: "pbms_publication_forms", attachmentBuckets: { utilization_proof: STORAGE_BUCKETS.FORM_A } },
-    { table: "pbms_research_forms" },
-    { table: "pbms_oral_forms" },
-    { table: "pbms_patents_forms" },
-    { table: "pbms_creative_work_forms", attachmentBuckets: { utilization_proof: STORAGE_BUCKETS.FORM_E } },
-    { table: "pbms_trainings_forms" },
-    { table: "pbms_extension_programs_forms" },
-    { table: "pbms_partnerships_forms", attachmentBuckets: { partnership_agreement: STORAGE_BUCKETS.FORM_I } },
-    { table: "pbms_other_accomplishments_forms" },
+    { table: "pbms_publication_forms", label: "PBMS Publication", formCode: "Form A", documentTypes: ["utilization_proof"] },
+    { table: "pbms_research_forms", label: "PBMS Research Grant", formCode: "Form B" },
+    { table: "pbms_oral_forms", label: "PBMS Paper Presentation", formCode: "Form C" },
+    { table: "pbms_patents_forms", label: "PBMS Patent", formCode: "Form D" },
+    { table: "pbms_creative_work_forms", label: "PBMS Creative Work", formCode: "Form E", documentTypes: ["utilization_proof"] },
+    { table: "pbms_trainings_forms", label: "PBMS Training", formCode: "Form G" },
+    { table: "pbms_extension_programs_forms", label: "PBMS Extension Program", formCode: "Form H" },
+    { table: "pbms_partnerships_forms", label: "PBMS Partnership", formCode: "Form I", documentTypes: ["partnership_agreement"] },
+    { table: "pbms_other_accomplishments_forms", label: "PBMS Other Accomplishments", formCode: "Form K" },
   ],
 };
 
@@ -87,44 +104,6 @@ function sanitizeFilenamePart(value: string | null | undefined, fallback: string
   return sanitized || fallback;
 }
 
-function parseStoragePaths(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.filter((path): path is string => typeof path === "string" && path.trim().length > 0);
-  }
-
-  if (typeof value !== "string") return [];
-
-  const trimmed = value.trim();
-  if (!trimmed) return [];
-
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (Array.isArray(parsed)) {
-      return parsed.filter((path): path is string => typeof path === "string" && path.trim().length > 0);
-    }
-  } catch {
-    // Attachment columns also store a single raw storage path.
-  }
-
-  return [trimmed];
-}
-
-async function getAttachmentUrls(bucket: string, value: unknown) {
-  const paths = parseStoragePaths(value);
-
-  return Promise.all(
-    paths.map(async (path) => {
-      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);
-
-      if (error) {
-        console.warn(`Failed to create signed URL for ${bucket}/${path}:`, error);
-      }
-
-      return data?.signedUrl ?? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-    })
-  );
-}
-
 function humanizeFieldName(key: string) {
   return key
     .replace(/^(isip|pbms)_/i, "")
@@ -132,28 +111,102 @@ function humanizeFieldName(key: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function getDocumentLabel(document: SupportingDocumentRow, index: number) {
+  if (document.file_name?.trim()) return document.file_name;
+  if (document.storage_path?.trim()) {
+    return document.storage_path.split("/").filter(Boolean).at(-1) ?? `Attachment ${index + 1}`;
+  }
+
+  return `Attachment ${index + 1}`;
+}
+
+async function createDocumentLink(document: SupportingDocumentRow, index: number) {
+  const path = document.storage_path ?? document.file_name ?? "";
+  const bucket = document.bucket_id;
+
+  if (!path || !bucket) return null;
+
+  if (/^https?:\/\//i.test(path)) {
+    return { label: getDocumentLabel(document, index), url: path };
+  }
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, 60 * 10);
+
+  if (error) {
+    console.warn(`Failed to create signed URL for ${bucket}/${path}:`, error);
+  }
+
+  const url = data?.signedUrl ?? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  const label = getDocumentLabel(document, index);
+
+  return { label, url };
+}
+
+async function getSupportingDocumentLinksByEntryId(
+  entryIds: number[],
+  system: ExportSystem
+) {
+  if (entryIds.length === 0) return new Map<number, ExportAttachmentLink[]>();
+
+  const documentTypes = Array.from(
+    new Set(EXPORT_TABLES[system].flatMap((config) => config.documentTypes ?? []))
+  );
+
+  if (documentTypes.length === 0) return new Map<number, ExportAttachmentLink[]>();
+
+  let query = supabase
+    .from("supporting_documents")
+    .select("document_id, file_name, entry_id, bucket_id, storage_path, document_type")
+    .in("entry_id", entryIds)
+    .order("document_id", { ascending: true });
+
+  query = query.in("document_type", documentTypes);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.warn("Failed to fetch supporting documents for XLSX export:", error);
+    return new Map<number, ExportAttachmentLink[]>();
+  }
+
+  const linksByEntryId = new Map<number, ExportAttachmentLink[]>();
+
+  await Promise.all(
+    ((data ?? []) as SupportingDocumentRow[]).map(async (document, index) => {
+      if (!document.entry_id) return;
+
+      const link = await createDocumentLink(document, index);
+      if (!link) return;
+
+      linksByEntryId.set(document.entry_id, [
+        ...(linksByEntryId.get(document.entry_id) ?? []),
+        link,
+      ]);
+    })
+  );
+
+  return linksByEntryId;
+}
+
 async function normalizeDetailRow(
   tableConfig: DetailTableConfig,
-  row: Record<string, unknown>
+  row: Record<string, unknown>,
+  attachmentLinks: ExportAttachmentLink[]
 ) {
   const fields: Record<string, unknown> = {};
-  const attachmentLinks: string[] = [];
 
   for (const [key, value] of Object.entries(row)) {
     if (OMITTED_EXPORT_FIELDS.has(key)) continue;
-
-    const bucket = tableConfig.attachmentBuckets?.[key];
-
-    if (bucket) {
-      attachmentLinks.push(...(await getAttachmentUrls(bucket, value)));
-      continue;
-    }
 
     fields[humanizeFieldName(key)] = value ?? "";
   }
 
   return {
     sourceTable: tableConfig.table,
+    label: tableConfig.label,
+    formCode: tableConfig.formCode,
     fields,
     attachmentLinks,
   } satisfies ExportDetail;
@@ -272,12 +325,10 @@ function formatDateForExport(value?: string | null) {
   });
 }
 
-function getSourceLabel(table: string) {
-  return table
-    .replace(/^(isip|pbms)_/i, "")
-    .replace(/_forms$/i, "")
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+function getEntryFormLabel(details: ExportDetail[]) {
+  const labels = details.map((detail) => `${detail.formCode} - ${detail.label}`);
+
+  return Array.from(new Set(labels)).join(" / ") || "Unclassified Form";
 }
 
 function styleWorksheet(worksheet: Worksheet) {
@@ -415,7 +466,7 @@ function addFieldRows(
 
 function addAttachmentRows(
   worksheet: Worksheet,
-  attachmentLinks: string[]
+  attachmentLinks: ExportAttachmentLink[]
 ) {
   addMergedSectionHeader(worksheet, "Attachments", {
     fill: "FFF3F4F6",
@@ -427,17 +478,17 @@ function addAttachmentRows(
     return;
   }
 
-  attachmentLinks.forEach((url, index) => {
+  attachmentLinks.forEach((attachment, index) => {
     const row = worksheet.addRow([`Attachment ${index + 1}`, "", "", ""]);
     worksheet.mergeCells(row.number, 2, row.number, 4);
 
     const labelCell = row.getCell(1);
-    labelCell.value = `Attachment ${index + 1}`;
+    labelCell.value = attachment.label || `Attachment ${index + 1}`;
     labelCell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF374151" } };
     labelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF9FAFB" } };
 
     const linkCell = row.getCell(2);
-    linkCell.value = { text: url, hyperlink: url };
+    linkCell.value = { text: attachment.url, hyperlink: attachment.url };
     linkCell.font = { name: "Arial", size: 10, color: { argb: "FF2563EB" }, underline: true };
     linkCell.alignment = { vertical: "top", wrapText: true };
 
@@ -520,9 +571,22 @@ function buildWorkbook(
     addSpacer(worksheet, 12);
     addMergedSectionHeader(
       worksheet,
-      `Entry ${index + 1}: ${safeCellText(form.title || "Untitled entry")}`,
+      `Entry ${index + 1} | ${getEntryFormLabel(details)}`,
       { fill: "FF111827" }
     );
+    const typeRow = worksheet.addRow([
+      "Form Type",
+      getEntryFormLabel(details),
+      "Export Scope",
+      system.toUpperCase(),
+    ]);
+    typeRow.height = 28;
+    styleRangeRow(typeRow, {
+      fill: "FFF7E8EB",
+      fontColor: "FF6B0F1A",
+      bold: true,
+      size: 11,
+    });
     addFieldRows(worksheet, {
       Title: form.title ?? "",
       Description: form.description ?? "",
@@ -531,7 +595,7 @@ function buildWorkbook(
     });
 
     for (const detail of details) {
-      addMergedSectionHeader(worksheet, getSourceLabel(detail.sourceTable), {
+      addMergedSectionHeader(worksheet, `${detail.formCode} - ${detail.label}`, {
         fill: "FFE5E7EB",
         fontColor: "FF111827",
       });
@@ -561,6 +625,10 @@ export async function buildApprovedReportXlsx(report: ExportableReport, system: 
   const typedForms = (forms ?? []) as Record<string, unknown>[];
   const entryIds = typedForms.map((form) => Number(form.entry_id));
   const detailsByEntryId = new Map<number, ExportDetail[]>();
+  const attachmentLinksByEntryId = await getSupportingDocumentLinksByEntryId(
+    entryIds,
+    system
+  );
 
   if (entryIds.length > 0) {
     await Promise.all(
@@ -579,7 +647,8 @@ export async function buildApprovedReportXlsx(report: ExportableReport, system: 
           const entryId = Number(row.entry_id);
           const normalized = await normalizeDetailRow(
             tableConfig,
-            row as Record<string, unknown>
+            row as Record<string, unknown>,
+            attachmentLinksByEntryId.get(entryId) ?? ([] as ExportAttachmentLink[])
           );
 
           detailsByEntryId.set(entryId, [...(detailsByEntryId.get(entryId) ?? []), normalized]);
