@@ -1,6 +1,6 @@
 // form-g.api.ts
 import type { FormGValues as FormGValues } from "@/features/forms/form-g/form-g-schema"
-import { emptyStringToNull, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -29,21 +29,12 @@ export async function createFormGRecord({ values, reportId: initialReportId, exi
   }
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.title,
-      author: "",
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    logSupabaseError("[Supabase] Failed to create base form entry", formError)
-    throw formError
-  }
-
+  const formData = await createBaseFormEntry({
+    title: values.title,
+    author: "",
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_G,
+  })
   const entryId = formData.entry_id
 
   // 3. Insert into isip_trainings_forms using the returned entry_id

@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { RequiredFieldLabel } from "./RequiredFieldLabel"
 
 export function SelectField<TValues extends FieldValues>({
   config,
@@ -21,7 +22,11 @@ export function SelectField<TValues extends FieldValues>({
 
   return (
     <Field>
-      <FieldLabel htmlFor={selectId}>{config.label}</FieldLabel>
+      <FieldLabel htmlFor={selectId}>
+        <RequiredFieldLabel required={!config.optional}>
+          {config.label}
+        </RequiredFieldLabel>
+      </FieldLabel>
 
       <Select
         value={typeof fieldValue === "string" ? fieldValue : ""}

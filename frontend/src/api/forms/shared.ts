@@ -79,6 +79,80 @@ export function logSupabaseError(context: string, error: unknown) {
   })
 }
 
+const formTypeIdByName = new Map<string, number>()
+
+export const FORM_TYPE_NAMES = {
+  FORM_A: "Publications",
+  FORM_B: "Research, Grants, and Fellowships",
+  FORM_C: "Paper Presentations",
+  FORM_D: "Patents",
+  FORM_E: "Creative Work",
+  FORM_F: "Awards and Grants",
+  FORM_G: "Trainings",
+  FORM_H: "Extension Programs",
+  FORM_I: "Partnerships",
+  FORM_J: "Authorships",
+  FORM_K: "Other Accomplishments",
+} as const
+
+export async function getFormTypeId(formName: string) {
+  const cachedId = formTypeIdByName.get(formName)
+
+  if (cachedId !== undefined) {
+    return cachedId
+  }
+
+  const { data, error } = await supabase
+    .from("form_types")
+    .select("form_type_id")
+    .eq("form_name", formName)
+    .order("form_type_id", { ascending: true })
+    .limit(1)
+    .single()
+
+  if (error) {
+    logSupabaseError(`[Supabase] Failed to resolve form type "${formName}"`, error)
+    throw error
+  }
+
+  const formTypeId = Number(data.form_type_id)
+  formTypeIdByName.set(formName, formTypeId)
+
+  return formTypeId
+}
+
+export async function createBaseFormEntry({
+  title,
+  author,
+  reportId,
+  formTypeName,
+}: {
+  title: string
+  author: string
+  reportId: number
+  formTypeName: string
+}) {
+  const formTypeId = await getFormTypeId(formTypeName)
+
+  const { data, error } = await supabase
+    .from("forms")
+    .insert({
+      title,
+      author,
+      report_id: reportId,
+      form_type_id: formTypeId,
+    })
+    .select("entry_id")
+    .single()
+
+  if (error) {
+    logSupabaseError("[Supabase] Failed to create base form entry", error)
+    throw error
+  }
+
+  return data
+}
+
 export async function uploadFile(file: File, bucket: string, path?: string): Promise<string> {
   const uniqueId =
     typeof crypto !== "undefined" && "randomUUID" in crypto

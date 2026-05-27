@@ -9,6 +9,7 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
+import { RequiredFieldLabel } from "./RequiredFieldLabel"
 
 export function TextareaField<TValues extends FieldValues>({
   config,
@@ -24,7 +25,11 @@ export function TextareaField<TValues extends FieldValues>({
 
   return (
     <Field>
-      <FieldLabel htmlFor={fieldId}>{config.label}</FieldLabel>
+      <FieldLabel htmlFor={fieldId}>
+        <RequiredFieldLabel required={!config.optional}>
+          {config.label}
+        </RequiredFieldLabel>
+      </FieldLabel>
 
       {config.description && (
         <FieldDescription>{config.description}</FieldDescription>

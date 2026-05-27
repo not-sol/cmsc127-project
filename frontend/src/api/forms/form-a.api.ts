@@ -1,6 +1,6 @@
 // form-a.api.ts
 import type { FormValues as FormAValues } from "@/features/forms/form-a/form-a-schema"
-import { emptyStringToNull, uploadFiles } from "@/api/forms/shared"
+import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -37,22 +37,12 @@ export async function createFormARecord({ values, reportId: initialReportId }: C
   const utilProofPath = await uploadFiles(values.pubUtilProof, STORAGE_BUCKETS.FORM_A)
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.pubTitle,
-      author: values.pubAuthors,
-      report_id: reportId,
-      // form_type_id: 1, // Optional: Publication
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    console.error("[Supabase] Failed to create base form entry:", formError)
-    throw formError
-  }
-
+  const formData = await createBaseFormEntry({
+    title: values.pubTitle,
+    author: values.pubAuthors,
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_A,
+  })
   const entryId = formData.entry_id
 
   // 3. Insert into isip_publication_forms using the returned entry_id

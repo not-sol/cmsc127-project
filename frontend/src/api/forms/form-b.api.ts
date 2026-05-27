@@ -1,6 +1,6 @@
 // form-b.api.ts
 import type { FormValues as FormBValues } from "@/features/forms/form-b/form-b-schema"
-import { emptyStringToNull, logSupabaseError, toIsoDate, toNumberOrNull, uploadFiles } from "@/api/forms/shared"
+import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, getFormTypeId, logSupabaseError, toIsoDate, toNumberOrNull, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -111,22 +111,12 @@ export async function createFormBRecord({ values, reportId: initialReportId, exi
   const attachmentPath = await resolveAttachmentPath(values.supportingAttachments, existingAttachmentPath)
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.researchTitle,
-      author: values.researcherNames,
-      report_id: reportId,
-      // form_type_id: 2, // Research Grant
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    logSupabaseError("[Supabase] Failed to create base form entry", formError)
-    throw formError
-  }
-
+  const formData = await createBaseFormEntry({
+    title: values.researchTitle,
+    author: values.researcherNames,
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_B,
+  })
   const entryId = formData.entry_id
 
   // 3. Insert into isip_research_forms using the returned entry_id
@@ -172,6 +162,7 @@ export async function updateFormBRecord({
     title: values.researchTitle,
     author: values.researcherNames,
     report_id: reportId,
+    form_type_id: await getFormTypeId(FORM_TYPE_NAMES.FORM_B),
   }
   const isipPayload = createIsipPayload(values, entryId, attachmentPath)
   const pbmsPayload = createPbmsPayload(values, entryId)

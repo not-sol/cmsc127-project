@@ -1,6 +1,6 @@
 // form-k.api.ts
 import type { FormKOtherValues } from "@/features/forms/form-k/form-k-schema"
-import { logSupabaseError, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
+import { createBaseFormEntry, FORM_TYPE_NAMES, logSupabaseError, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -14,13 +14,7 @@ export type CreateFormKInput = {
 const PBMS_OTHER_ACCOMPLISHMENTS_COLUMNS = [
   "entry_id",
   "sub_type",
-  "accomplishment_title",
   "accomplishment_description",
-  "accomplishment_date",
-  "venue",
-  "participation",
-  "remarks",
-  "related_kras",
 ] as const
 
 function emptyStringToNull(value?: string | null) {
@@ -40,21 +34,12 @@ export async function createFormKRecord({ values, reportId: initialReportId }: C
   )
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.title,
-      author: "",
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    logSupabaseError("[Supabase] Failed to create base form entry", formError)
-    throw formError
-  }
-
+  const formData = await createBaseFormEntry({
+    title: values.title,
+    author: "",
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_K,
+  })
   const entryId = formData.entry_id
 
   // 3. Insert into isip_other_accomplishments_forms using the returned entry_id
@@ -89,13 +74,7 @@ export async function createFormKRecord({ values, reportId: initialReportId }: C
 
   const pbmsPayload = {
     entry_id: entryId,
-    accomplishment_title: values.title,
     accomplishment_description: values.description,
-    accomplishment_date: toIsoDate(values.date),
-    venue: emptyStringToNull(values.venue),
-    participation: emptyStringToNull(values.participation),
-    remarks: emptyStringToNull(values.remarks),
-    related_kras: emptyStringToNull(values.relatedKras),
   }
 
   console.log("[Supabase] Form K PBMS payload:", pbmsPayload)
@@ -138,10 +117,10 @@ export async function getFormKRecord(entryId: number): Promise<FormKOtherValues>
   return {
     title: isipData.activity_title,
     description: pbmsData.accomplishment_description,
-    venue: isipData.venue || pbmsData.venue || "",
-    participation: isipData.participation || pbmsData.participation || "",
-    remarks: isipData.remarks || pbmsData.remarks || "",
-    relatedKras: isipData.related_kras || pbmsData.related_kras || "",
+    venue: isipData.venue || "",
+    participation: isipData.participation || "",
+    remarks: isipData.remarks || "",
+    relatedKras: isipData.related_kras || "",
     date: new Date(isipData.start_date),
     endDate: isipData.end_date ? new Date(isipData.end_date) : undefined,
     supportingDocuments: isipData.attachments,

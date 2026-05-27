@@ -17,6 +17,7 @@ import {
   FieldError,
   FieldLabel,
 } from "@/components/ui/field"
+import { RequiredFieldLabel } from "./RequiredFieldLabel"
 
 function createDropzoneFile(file: File, errors: DropzoneFile["errors"] = []) {
   const dropzoneFile = file as DropzoneFile
@@ -131,7 +132,11 @@ export function FileUploadField<TValues extends FieldValues>({
 
   return (
     <Field data-invalid={fieldState.invalid}>
-      <FieldLabel htmlFor={fieldId}>{config.label}</FieldLabel>
+      <FieldLabel htmlFor={fieldId}>
+        <RequiredFieldLabel required={!config.optional}>
+          {config.label}
+        </RequiredFieldLabel>
+      </FieldLabel>
 
       {config.description && (
         <FieldDescription>{config.description}</FieldDescription>

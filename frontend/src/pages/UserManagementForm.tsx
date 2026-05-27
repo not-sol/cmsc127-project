@@ -6,6 +6,16 @@ import { useUsers, useUpdateUserRole, useDeleteUser, useDepartments, useUpdateUs
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import {
   Table,
@@ -48,6 +58,7 @@ export default function UserManagementForm() {
 
   const [search, setSearch] = useState("");
   const [expandedDepts, setExpandedDepts] = useState<Record<number, boolean>>({});
+  const [userPendingDelete, setUserPendingDelete] = useState<GroupedUser | null>(null);
 
   const groupedData = useMemo(() => {
     if (!users || !departments) return [];
@@ -96,10 +107,12 @@ export default function UserManagementForm() {
     }
   }
 
-  async function handleDeleteUser(id: string) {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  async function handleDeleteUser() {
+    if (!userPendingDelete) return;
+
     try {
-      await deleteUserMutation.mutateAsync(id);
+      await deleteUserMutation.mutateAsync(userPendingDelete.id);
+      setUserPendingDelete(null);
     } catch (err) {
       console.error("Failed to delete user:", err);
     }
@@ -316,7 +329,7 @@ export default function UserManagementForm() {
                                           size="icon"
                                           className="h-8 w-8 text-destructive hover:bg-destructive/5 hover:text-destructive"
                                           disabled={deleteUserMutation.isPending}
-                                          onClick={() => handleDeleteUser(f.id)}
+                                          onClick={() => setUserPendingDelete(f)}
                                         >
                                           <Trash2 size={14} />
                                         </Button>
@@ -349,6 +362,46 @@ export default function UserManagementForm() {
           </div>
         </div>
       </main>
+
+      <AlertDialog
+        open={userPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteUserMutation.isPending) {
+            setUserPendingDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                {userPendingDelete
+                  ? `${userPendingDelete.first_name ?? ""} ${userPendingDelete.last_name ?? ""}`.trim() ||
+                    userPendingDelete.email
+                  : "this user"}
+              </span>
+              {userPendingDelete?.email ? ` (${userPendingDelete.email})` : ""}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteUserMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteUserMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteUser();
+              }}
+            >
+              {deleteUserMutation.isPending ? "Deleting..." : "Delete user"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

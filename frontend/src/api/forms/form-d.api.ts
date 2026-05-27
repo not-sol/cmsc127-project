@@ -1,6 +1,6 @@
 // form-d.api.ts
 import type { FormValues as FormDValues } from "@/features/forms/form-d/form-d-schema"
-import { emptyStringToNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -18,21 +18,12 @@ export async function createFormDRecord({ values, reportId: initialReportId }: C
   const attachmentPath = await uploadFiles(values.patentAttachments, STORAGE_BUCKETS.FORM_D)
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.patentTitle,
-      author: values.aplInventors,
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    console.error("[Supabase] Failed to create base form entry:", formError)
-    throw formError
-  }
-
+  const formData = await createBaseFormEntry({
+    title: values.patentTitle,
+    author: values.aplInventors,
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_D,
+  })
   const entryId = formData.entry_id
 
   // 3. Insert into isip_patents_forms to get the entry_id

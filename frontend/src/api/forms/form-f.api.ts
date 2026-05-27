@@ -1,6 +1,6 @@
 // form-f.api.ts
 import type { FormFValues } from "@/features/forms/form-f/form-f-schema"
-import { emptyStringToNull, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -67,21 +67,12 @@ export async function createFormFRecord({ values, reportId: initialReportId, exi
   const attachmentPath = await resolveAttachmentPath(values.attachments, existingAttachmentPath)
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.awardGrantTitle,
-      author: "",
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    logSupabaseError("[Supabase] Failed to create base form entry", formError)
-    throw formError
-  }
-
+  const formData = await createBaseFormEntry({
+    title: values.awardGrantTitle,
+    author: "",
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_F,
+  })
   const entryId = formData.entry_id
 
   // 3. Insert into the real ISIP awards table using the returned entry_id.

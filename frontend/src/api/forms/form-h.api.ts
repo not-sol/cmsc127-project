@@ -1,6 +1,6 @@
 // form-h.api.ts
 import type { FormHValues as FormHValues } from "@/features/forms/form-h/form-h-schema"
-import { emptyStringToNull, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
+import { createBaseFormEntry, emptyStringToNull, FORM_TYPE_NAMES, logSupabaseError, toIntegerOrNull, toIsoDate, uploadFilesAsStoragePathText } from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -19,21 +19,12 @@ export async function createFormHRecord({ values, reportId: initialReportId }: C
   const programDocumentPaths = await uploadFilesAsStoragePathText(values.programDocuments, STORAGE_BUCKETS.FORM_H)
 
   // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.title,
-      author: "",
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    logSupabaseError("[Supabase] Failed to create base form entry", formError)
-    throw formError
-  }
-
+  const formData = await createBaseFormEntry({
+    title: values.title,
+    author: "",
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_H,
+  })
   const entryId = formData.entry_id
 
   // 3. Insert into isip_extension_programs_forms using the returned entry_id

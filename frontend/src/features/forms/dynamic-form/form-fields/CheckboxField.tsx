@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
+import { RequiredFieldLabel } from "./RequiredFieldLabel"
 
 export function CheckboxField<TValues extends FieldValues>({
   config,
@@ -29,7 +30,9 @@ export function CheckboxField<TValues extends FieldValues>({
       <FieldLabel
         htmlFor={fieldId}
       >
-        {config.label}
+        <RequiredFieldLabel required={!config.optional}>
+          {config.label}
+        </RequiredFieldLabel>
       </FieldLabel>
 
       {config.description && (

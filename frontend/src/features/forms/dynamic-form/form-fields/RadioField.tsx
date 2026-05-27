@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { RequiredFieldLabel } from "./RequiredFieldLabel"
 
 const RADIO_OTHER_DEFAULT_VALUE = "__other__"
 
@@ -75,7 +76,11 @@ export function RadioField<TValues extends FieldValues>({
 
   return (
     <FieldSet>
-      <FieldLabel htmlFor={fieldId}>{config.label}</FieldLabel>
+      <FieldLabel htmlFor={fieldId}>
+        <RequiredFieldLabel required={!config.optional}>
+          {config.label}
+        </RequiredFieldLabel>
+      </FieldLabel>
 
       {config.description && (
         <FieldDescription>{config.description}</FieldDescription>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { RouterProvider } from "react-router-dom";
 import { useAuthStore } from "@/store/auth-store";
 import { supabase } from "@/lib/supabase/client";
@@ -8,6 +8,7 @@ import type { Session } from "@supabase/supabase-js";
 
 export default function App() {
   const { setUser, setSession, setProfile, setLoading } = useAuthStore();
+  const hydratedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -25,6 +26,7 @@ export default function App() {
         setSession(session);
         setUser(session?.user ?? null);
         setProfile(profile);
+        hydratedUserIdRef.current = session?.user.id ?? null;
       } catch (error) {
         console.error("Unable to initialize verified user profile:", error);
         if (session) {
@@ -34,6 +36,8 @@ export default function App() {
         if (!isMounted) return;
         setSession(null);
         setUser(null);
+        setProfile(null);
+        hydratedUserIdRef.current = null;
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -41,42 +45,41 @@ export default function App() {
       }
     }
 
-    async function refreshSessionProfile(session: Session | null) {
-      try {
-        const profile = session ? await ensureUserProfile() : null;
-
-        if (!isMounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-        setProfile(profile);
-      } catch (error) {
-        console.error("Unable to refresh verified user profile:", error);
-      }
-    }
-
-    // Initial session fetch
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      void hydrateSession(session);
-    });
-
     // Listen for changes on auth state (logged in, signed out, etc.)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
+      switch (event) {
+        case "INITIAL_SESSION":
+          void hydrateSession(session);
+          return;
 
-      if (event === "SIGNED_IN") {
-        void hydrateSession(session);
-        return;
-      }
+        case "SIGNED_IN":
+          if (session?.user.id === hydratedUserIdRef.current) {
+            setSession(session);
+            setUser(session.user);
+            return;
+          }
 
-      void refreshSessionProfile(session);
+          void hydrateSession(session);
+          return;
+
+        case "SIGNED_OUT":
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          hydratedUserIdRef.current = null;
+          return;
+
+        case "TOKEN_REFRESHED":
+          setSession(session);
+          setUser(session?.user ?? null);
+          return;
+
+        default:
+          return;
+      }
     });
 
     return () => {
