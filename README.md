@@ -1,46 +1,124 @@
-# Faculty Accomplishment Tracker - Project State Summary
+# FAT UPMin – Faculty Accomplishment Tracker
 
-## Completed Features
-- **User Management System (Admin Only):**
-  - Department-centric view: Users are grouped by department in an expandable card-based layout.
-  - Role Management: Admins can promote faculty to `department_chair` or demote chairs back to `faculty`.
-  - Delete Users: Admins can remove users from the system.
-  - Search & Filter: Search by name/email within the grouped view.
-- **One Chair Per Department Rule:**
-  - Enforced via backend partial unique index (`one_chair_per_dept` on `users(department_id)` where `role = 'department_chair'`).
-  - Frontend validation blocks promotion if a chair already exists in the selected department.
-- **Authentication & Authorization:**
-  - Supabase Auth integration with custom `users` table.
-  - Role-based protected routes and sidebar navigation.
-  - Verified user profile ensuring (requires email confirmation).
+FAT UPMin (Faculty Accomplishment Tracker) is a full-stack web application designed to streamline the submission, management, review, and approval of faculty accomplishment reports. The system centralizes faculty records, supporting documents, and evaluation workflows into a single platform.
 
-## Architecture Decisions
-- **Frontend:** React (TypeScript) with Vite, Tailwind CSS, Lucide icons, and shadcn/ui components.
-- **State Management:** Zustand for auth state; TanStack Query (React Query) for server state/mutations.
-- **Backend:** Supabase (PostgreSQL, Auth, RLS).
-- **Security:** Row Level Security (RLS) policies enforce that only admins can read/update/delete from the `users` table globally, while users can manage their own profiles.
+## Features
 
-## Database / Schema Assumptions
-- `public.users`: Linked to `auth.users` via `id`. Contains `role` ('faculty', 'department_chair', 'admin') and `department_id`.
-- `public.departments`: Contains `department_id` and `department_name`.
-- `public.is_admin()` and `public.is_department_chair()` helper functions in SQL for RLS policies.
+- Authentication and authorization using Supabase Auth
+- Faculty accomplishment submission and management
+- Role-based access control (Faculty, Reviewer, Admin)
+- Dynamic form handling and validation
+- File upload and supporting document management
+- Approval and review workflow
+- Real-time data synchronization
+- Export reports to Excel (`.xlsx`)
+- Responsive and accessible UI
 
-## API Structure
-- `api/auth.ts`: Authentication flows (login, register, logout, password reset).
-- `api/admin.ts`: Administrative tasks (fetch all users with departments, fetch departments, update roles, delete users).
-- `api/profile.ts`: User profile management (`ensureUserProfile`).
+## Tech Stack
 
-## Role Permissions
-- **Admin:** Full access to User Management, can see all reports, can manage system configuration.
-- **Department Chair:** Can review reports within their own department (to be fully implemented/refined).
-- **Faculty:** Can create and manage their own accomplishment reports and entries.
+### Frontend
+- React
+- TypeScript
+- React Router
+- TanStack Query
+- React Hook Form
+- Zod
+- Zustand
+- shadcn/ui
+- Tailwind CSS
 
-## Pending Tasks / Next Steps
-- [ ] Implement/Refine Department Chair's dashboard to review pending reports from their department.
-- [ ] Add more granular RLS for accomplishment reports based on department links.
-- [ ] Implement department-specific data exports.
-- [ ] Add audit logs for administrative actions (role changes, deletions).
-- [ ] Complete the integration of form types and validation schemas for all accomplishment forms (A through K).
+### Backend & Database
+- Supabase
+- PostgreSQL
+- Supabase Auth
+- Row-Level Security (RLS)
 
-## Known Issues
-- None at the moment; system enforces one-chair rule and role-based access correctly.
+## Project Structure
+
+```plaintext
+src/
+├── api/            # API and Supabase queries
+├── components/     # Reusable UI components
+├── hooks/          # Custom React hooks
+├── pages/          # Route pages
+├── routers/        # Application routing
+├── schemas/        # Zod validation schemas
+├── stores/         # Zustand state management
+├── types/          # Shared TypeScript types
+├── utils/          # Utility functions
+└── lib/            # Shared configurations
+```
+
+## Installation
+
+### Clone the repository
+
+```bash
+git clone <repository-url>
+cd cmsc127-project
+```
+
+### Install dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+### Configure environment variables
+
+Create a `.env` file:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+### Run development server
+
+```bash
+npm run dev
+```
+
+## Database
+
+Database schema and migrations are managed inside:
+
+```plaintext
+supabase/migrations
+```
+
+Apply migrations:
+
+```bash
+supabase db push
+```
+
+## Authentication Flow
+
+- User signs up using Supabase Auth
+- Application creates a corresponding record in `faculties`
+- Session is managed globally
+- Protected routes enforce access control
+
+## Scripts
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+npm run typecheck
+```
+
+## Future Improvements
+
+- Notifications and activity logs
+- Dashboard analytics
+- PDF export support
+- Email-based approvals
+- Advanced filtering and reporting
+
+## License
+
+This project is intended for academic and institutional use.
