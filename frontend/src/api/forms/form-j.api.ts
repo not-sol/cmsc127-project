@@ -1,6 +1,15 @@
 // form-j.api.ts
 import type { FormJAuthorshipValues } from "@/features/forms/form-j/form-j-schema"
-import { emptyStringToNull, logSupabaseError, toIntegerOrNull, uploadFilesAsStoragePathText } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  logSupabaseError,
+  supportingDocumentsToFieldValue,
+  toIntegerOrNull,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -15,26 +24,21 @@ export async function createFormJRecord({ values, reportId: initialReportId }: C
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload attachments first. Store only Supabase Storage path text in the database.
-  const attachmentPaths = await uploadFilesAsStoragePathText(values.attachments, STORAGE_BUCKETS.FORM_J)
-
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.titleOfMaterial,
-      author: values.authors,
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    logSupabaseError("[Supabase] Failed to create base form entry", formError)
-    throw formError
-  }
-
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const formData = await createBaseFormEntry({
+    title: values.titleOfMaterial,
+    author: values.authors,
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_J,
+  })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.attachments,
+    bucket: STORAGE_BUCKETS.FORM_J,
+    documentType: "attachments",
+  })
 
   // 3. Insert into isip_authorship_forms using the returned entry_id
   const isipPayload = {
@@ -42,7 +46,6 @@ export async function createFormJRecord({ values, reportId: initialReportId }: C
     material_title: values.titleOfMaterial,
     author: values.authors,
     year: toIntegerOrNull(values.year),
-    attachments: attachmentPaths,
     remarks: emptyStringToNull(values.remarks),
     related_kras: emptyStringToNull(values.relatedKRAs),
   }
@@ -73,11 +76,13 @@ export async function getFormJRecord(entryId: number): Promise<FormJAuthorshipVa
     throw isipError
   }
 
+  const attachmentDocuments = await getSupportingDocuments(entryId, "attachments")
+
   return {
     titleOfMaterial: isipData.material_title,
     authors: isipData.author,
     year: String(isipData.year),
-    attachments: isipData.attachments,
+    attachments: supportingDocumentsToFieldValue(attachmentDocuments) as unknown as FormJAuthorshipValues["attachments"],
     remarks: isipData.remarks || "",
     relatedKRAs: isipData.related_kras || "",
   }

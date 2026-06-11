@@ -4,6 +4,7 @@ import type { DynamicFieldProps } from "@/features/forms/dynamic-form/form-field
 
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { RequiredFieldLabel } from "./RequiredFieldLabel"
 
 export function TextField<TValues extends FieldValues>({
   config,
@@ -17,7 +18,11 @@ export function TextField<TValues extends FieldValues>({
 }: DynamicFieldProps<TValues, TextFieldConfig<TValues>>) {
   return (
     <Field>
-      <FieldLabel htmlFor={fieldId}>{config.label}</FieldLabel>
+      <FieldLabel htmlFor={fieldId}>
+        <RequiredFieldLabel required={!config.optional}>
+          {config.label}
+        </RequiredFieldLabel>
+      </FieldLabel>
 
       {config.description && (
         <FieldDescription>{config.description}</FieldDescription>

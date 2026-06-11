@@ -58,8 +58,6 @@ export function useSubmittedReports() {
         role,
         departmentId: profile?.department_id ?? null,
       }),
-    refetchInterval: 15_000,
-    refetchOnWindowFocus: true,
     enabled: role === "department_chair" || role === "admin",
   });
 }

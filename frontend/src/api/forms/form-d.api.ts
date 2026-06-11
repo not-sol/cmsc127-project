@@ -1,6 +1,14 @@
 // form-d.api.ts
 import type { FormValues as FormDValues } from "@/features/forms/form-d/form-d-schema"
-import { emptyStringToNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  supportingDocumentsToFieldValue,
+  toIsoDate,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -14,33 +22,28 @@ export async function createFormDRecord({ values, reportId: initialReportId }: C
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload files first
-  const attachmentPath = await uploadFiles(values.patentAttachments, STORAGE_BUCKETS.FORM_D)
-
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.patentTitle,
-      author: values.aplInventors,
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    console.error("[Supabase] Failed to create base form entry:", formError)
-    throw formError
-  }
-
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const formData = await createBaseFormEntry({
+    title: values.patentTitle,
+    author: values.aplInventors,
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_D,
+  })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.patentAttachments,
+    bucket: STORAGE_BUCKETS.FORM_D,
+    documentType: "attachments",
+    required: true,
+  })
 
   // 3. Insert into isip_patents_forms to get the entry_id
   const { error: isipError } = await supabase
     .from("isip_patents_forms")
     .insert({
       entry_id: entryId,
-      attachments: attachmentPath || "",
       remarks: emptyStringToNull(values.patentRemarks),
     })
     .select("entry_id")
@@ -100,6 +103,8 @@ export async function getFormDRecord(entryId: number): Promise<FormDValues> {
     throw pbmsError
   }
 
+  const attachmentDocuments = await getSupportingDocuments(entryId, "attachments")
+
   return {
     researchTitle3: pbmsData.linked_research,
     patentTitle: pbmsData.patent_title,
@@ -112,7 +117,7 @@ export async function getFormDRecord(entryId: number): Promise<FormDValues> {
     regisNum: pbmsData.registration_no ? String(pbmsData.registration_no) : "",
     commercialProduct: pbmsData.commercial_product_name || "",
     utilType: pbmsData.research_utilization_output,
-    patentAttachments: isipData.attachments,
+    patentAttachments: supportingDocumentsToFieldValue(attachmentDocuments),
     patentRemarks: isipData.remarks || "",
   }
 }

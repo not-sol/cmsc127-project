@@ -1,6 +1,14 @@
 // form-c.api.ts
 import type { FormValues as FormCValues } from "@/features/forms/form-c/form-c-schema"
-import { emptyStringToNull, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  supportingDocumentsToFieldValue,
+  toIsoDate,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -14,26 +22,22 @@ export async function createFormCRecord({ values, reportId: initialReportId }: C
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload files first
-  const attachmentPath = await uploadFiles(values.presentationAttachments, STORAGE_BUCKETS.FORM_C)
-
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.titlePresented,
-      author: "", // Form C doesn't seem to have author in values
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    console.error("[Supabase] Failed to create base form entry:", formError)
-    throw formError
-  }
-
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const formData = await createBaseFormEntry({
+    title: values.titlePresented,
+    author: "",
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_C,
+  })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.presentationAttachments,
+    bucket: STORAGE_BUCKETS.FORM_C,
+    documentType: "attachments",
+    required: true,
+  })
 
   // 3. Insert into isip_oral_forms using the returned entry_id
   const { error: isipError } = await supabase
@@ -43,7 +47,6 @@ export async function createFormCRecord({ values, reportId: initialReportId }: C
       paper_title: values.titlePresented,
       presentation_type: values.presentationType,   // "oral" | "poster"
       event_type: values.eventType,                 // "conference" | "forum" | "seminar" | "workshop"
-      attachments: attachmentPath || "", // Ensuring it's a string as per schema
       remarks: emptyStringToNull(values.presentationRemarks),
       related_kras: emptyStringToNull(values.presentationRelatedKRAs),
     })
@@ -101,6 +104,8 @@ export async function getFormCRecord(entryId: number): Promise<FormCValues> {
     throw pbmsError
   }
 
+  const attachmentDocuments = await getSupportingDocuments(entryId, "attachments")
+
   return {
     researchTitle2: pbmsData.linked_research,
     titlePresented: isipData.paper_title,
@@ -113,7 +118,7 @@ export async function getFormCRecord(entryId: number): Promise<FormCValues> {
     conferenceStartDate: new Date(pbmsData.conference_start_date),
     conferenceEndDate: pbmsData.conference_end_date ? new Date(pbmsData.conference_end_date) : undefined,
     presentationDate: new Date(pbmsData.presentation_date),
-    presentationAttachments: isipData.attachments,
+    presentationAttachments: supportingDocumentsToFieldValue(attachmentDocuments),
     presentationRemarks: isipData.remarks || "",
     presentationRelatedKRAs: isipData.related_kras || "",
   }

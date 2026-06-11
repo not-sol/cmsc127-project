@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { RequiredFieldLabel } from "./RequiredFieldLabel"
 
 export function DatePickerField<TValues extends FieldValues>({
   config,
@@ -24,7 +25,11 @@ export function DatePickerField<TValues extends FieldValues>({
 
   return (
     <Field>
-      <FieldLabel htmlFor={dateId}>{config.label}</FieldLabel>
+      <FieldLabel htmlFor={dateId}>
+        <RequiredFieldLabel required={!config.optional}>
+          {config.label}
+        </RequiredFieldLabel>
+      </FieldLabel>
 
       <Popover>
         <PopoverTrigger asChild>

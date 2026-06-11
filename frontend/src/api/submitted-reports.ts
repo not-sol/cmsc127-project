@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import type { ReportStatus, ReviewStatus } from "@/api/reports";
 import type { AppRole } from "@/api/profile";
-import { STORAGE_BUCKETS } from "@/lib/storage-constants";
 
 export interface SubmittedReport {
   report_id: number;
@@ -125,7 +124,15 @@ type DetailTableConfig = {
   table: string;
   label: string;
   type: string;
-  attachmentBuckets?: Record<string, string>;
+};
+
+type SupportingDocumentRow = {
+  document_id: number;
+  file_name: string | null;
+  entry_id: number | null;
+  bucket_id: string | null;
+  storage_path: string | null;
+  document_type: string | null;
 };
 
 export type SubmittedAttachmentLink = {
@@ -148,65 +155,55 @@ const DETAIL_TABLES: DetailTableConfig[] = [
     table: "isip_publication_forms",
     label: "ISIP Publication",
     type: "Publication",
-    attachmentBuckets: { publication_proof: STORAGE_BUCKETS.FORM_A },
   },
   {
     table: "pbms_publication_forms",
     label: "PBMS Publication",
     type: "Publication",
-    attachmentBuckets: { utilization_proof: STORAGE_BUCKETS.FORM_A },
   },
   {
     table: "isip_research_forms",
     label: "ISIP Research Grant",
     type: "Research Grant",
-    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_B },
   },
   { table: "pbms_research_forms", label: "PBMS Research Grant", type: "Research Grant" },
   {
     table: "isip_oral_forms",
     label: "ISIP Paper Presentation",
     type: "Paper Presentation",
-    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_C },
   },
   { table: "pbms_oral_forms", label: "PBMS Paper Presentation", type: "Paper Presentation" },
   {
     table: "isip_patents_forms",
     label: "ISIP Patent",
     type: "Patent",
-    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_D },
   },
   { table: "pbms_patents_forms", label: "PBMS Patent", type: "Patent" },
   {
     table: "isip_creative_work_forms",
     label: "ISIP Creative Work",
     type: "Creative Work",
-    attachmentBuckets: { research_proof: STORAGE_BUCKETS.FORM_E },
   },
   {
     table: "pbms_creative_work_forms",
     label: "PBMS Creative Work",
     type: "Creative Work",
-    attachmentBuckets: { utilization_proof: STORAGE_BUCKETS.FORM_E },
   },
   {
     table: "isip_awards_forms",
     label: "ISIP Award / Grant",
     type: "Award / Grant",
-    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_F },
   },
   {
     table: "isip_trainings_forms",
     label: "ISIP Training",
     type: "Training",
-    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_G },
   },
   { table: "pbms_trainings_forms", label: "PBMS Training", type: "Training" },
   {
     table: "isip_extension_programs_forms",
     label: "ISIP Extension Program",
     type: "Extension Program",
-    attachmentBuckets: { program_description: STORAGE_BUCKETS.FORM_H },
   },
   { table: "pbms_extension_programs_forms", label: "PBMS Extension Program", type: "Extension Program" },
   { table: "isip_partnership_forms", label: "ISIP Partnership / MOA", type: "Partnership / MOA" },
@@ -214,19 +211,16 @@ const DETAIL_TABLES: DetailTableConfig[] = [
     table: "pbms_partnerships_forms",
     label: "PBMS Partnership / MOA",
     type: "Partnership / MOA",
-    attachmentBuckets: { partnership_agreement: STORAGE_BUCKETS.FORM_I },
   },
   {
     table: "isip_authorship_forms",
     label: "ISIP Authorship",
     type: "Authorship",
-    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_J },
   },
   {
     table: "isip_other_accomplishments_forms",
     label: "ISIP Other Accomplishment",
     type: "Other Accomplishment",
-    attachmentBuckets: { attachments: STORAGE_BUCKETS.FORM_K },
   },
   { table: "pbms_other_accomplishments_forms", label: "PBMS Other Accomplishment", type: "Other Accomplishment" },
 ];
@@ -265,28 +259,6 @@ function isInternalFieldKey(key: string) {
   return key === "id" || key.endsWith("_id") || INTERNAL_FIELD_KEYS.has(key);
 }
 
-function parseStoragePaths(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.filter((path): path is string => typeof path === "string" && path.trim().length > 0);
-  }
-
-  if (typeof value !== "string") return [];
-
-  const trimmed = value.trim();
-  if (!trimmed) return [];
-
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (Array.isArray(parsed)) {
-      return parsed.filter((path): path is string => typeof path === "string" && path.trim().length > 0);
-    }
-  } catch {
-    // Attachment columns also store a single raw storage path.
-  }
-
-  return [trimmed];
-}
-
 function getAttachmentLabel(path: string, index: number) {
   const cleanPath = path.split("?")[0] ?? path;
   const name = cleanPath.split("/").filter(Boolean).at(-1);
@@ -294,56 +266,78 @@ function getAttachmentLabel(path: string, index: number) {
   return name || `Attachment ${index + 1}`;
 }
 
-async function getAttachmentLinks(bucket: string, value: unknown): Promise<SubmittedAttachmentLink | null> {
-  const paths = parseStoragePaths(value);
+async function getSupportingDocumentLinks(entryIds: number[]) {
+  if (entryIds.length === 0) return new Map<number, SubmittedAttachmentLink>();
 
-  if (paths.length === 0) return null;
+  const { data, error } = await supabase
+    .from("supporting_documents")
+    .select("document_id, file_name, entry_id, bucket_id, storage_path, document_type")
+    .in("entry_id", entryIds)
+    .order("document_id", { ascending: true });
 
-  const links = await Promise.all(
-    paths.map(async (path, index) => {
-      if (/^https?:\/\//i.test(path)) {
-        return {
-          label: getAttachmentLabel(path, index),
-          url: path,
-        };
+  if (error) {
+    console.warn("Failed to fetch supporting documents:", error);
+    return new Map<number, SubmittedAttachmentLink>();
+  }
+
+  const documentsByEntryId = new Map<number, SupportingDocumentRow[]>();
+
+  for (const document of (data ?? []) as SupportingDocumentRow[]) {
+    if (!document.entry_id) continue;
+    documentsByEntryId.set(document.entry_id, [
+      ...(documentsByEntryId.get(document.entry_id) ?? []),
+      document,
+    ]);
+  }
+
+  const linksByEntryId = new Map<number, SubmittedAttachmentLink>();
+
+  await Promise.all(
+    Array.from(documentsByEntryId.entries()).map(async ([entryId, documents]) => {
+      const links = await Promise.all(
+        documents.map(async (document, index) => {
+          const path = document.storage_path ?? document.file_name ?? "";
+          const bucket = document.bucket_id;
+
+          if (!path || !bucket) return null;
+
+          if (/^https?:\/\//i.test(path)) {
+            return {
+              label: document.file_name ?? getAttachmentLabel(path, index),
+              url: path,
+            };
+          }
+
+          const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);
+
+          if (error) {
+            console.warn(`Failed to create signed URL for ${bucket}/${path}:`, error);
+          }
+
+          return {
+            label: document.file_name ?? getAttachmentLabel(path, index),
+            url: data?.signedUrl ?? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl,
+          };
+        })
+      );
+
+      const validLinks = links.filter((link): link is { label: string; url: string } => link !== null);
+      if (validLinks.length > 0) {
+        linksByEntryId.set(entryId, { kind: "attachment-links", links: validLinks });
       }
-
-      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);
-
-      if (error) {
-        console.warn(`Failed to create signed URL for ${bucket}/${path}:`, error);
-      }
-
-      return {
-        label: getAttachmentLabel(path, index),
-        url: data?.signedUrl ?? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl,
-      };
     })
   );
 
-  return { kind: "attachment-links", links };
+  return linksByEntryId;
 }
 
 async function normalizeReviewValues(
-  row: Record<string, unknown>,
-  attachmentBuckets: Record<string, string> = {}
+  row: Record<string, unknown>
 ) {
   const values: Record<string, SubmittedReportFieldValue> = {};
 
   for (const [key, value] of Object.entries(row)) {
     if (value === null || value === undefined || value === "" || isInternalFieldKey(key)) {
-      continue;
-    }
-
-    const bucket = attachmentBuckets[key];
-
-    if (bucket) {
-      const attachmentLinks = await getAttachmentLinks(bucket, value);
-
-      if (attachmentLinks && attachmentLinks.links.length > 0) {
-        values[humanizeKey(key)] = attachmentLinks;
-      }
-
       continue;
     }
 
@@ -552,6 +546,7 @@ export async function getSubmittedReportDetail({
 
   const detailGroupsByEntryId = new Map<number, SubmittedReportFormGroup[]>();
   const typeByEntryId = new Map<number, string>();
+  const attachmentLinksByEntryId = await getSupportingDocumentLinks(entryIds);
 
   await Promise.all(
     DETAIL_TABLES.map(async (config) => {
@@ -569,7 +564,7 @@ export async function getSubmittedReportDetail({
         const entryId = Number(row.entry_id);
         if (!Number.isFinite(entryId)) continue;
 
-        const values = await normalizeReviewValues(row, config.attachmentBuckets);
+        const values = await normalizeReviewValues(row);
         const currentGroups = detailGroupsByEntryId.get(entryId) ?? [];
 
         detailGroupsByEntryId.set(entryId, [
@@ -589,12 +584,20 @@ export async function getSubmittedReportDetail({
       const baseValues = await normalizeReviewValues(
         form as unknown as Record<string, unknown>
       );
+      const attachmentLinks = attachmentLinksByEntryId.get(form.entry_id);
+      const attachmentGroup = attachmentLinks
+        ? [{ label: "Supporting Documents", values: { Attachments: attachmentLinks } }]
+        : [];
       const groups = Object.keys(baseValues).length > 0
         ? [
             { label: "Form Information", values: baseValues },
             ...(detailGroupsByEntryId.get(form.entry_id) ?? []),
+            ...attachmentGroup,
           ]
-        : detailGroupsByEntryId.get(form.entry_id) ?? [];
+        : [
+            ...(detailGroupsByEntryId.get(form.entry_id) ?? []),
+            ...attachmentGroup,
+          ];
 
       return {
         entry_id: form.entry_id,

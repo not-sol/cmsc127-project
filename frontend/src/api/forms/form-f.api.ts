@@ -1,6 +1,15 @@
 // form-f.api.ts
 import type { FormFValues } from "@/features/forms/form-f/form-f-schema"
-import { emptyStringToNull, logSupabaseError, toIsoDate, uploadFiles } from "@/api/forms/shared"
+import {
+  createBaseFormEntry,
+  createSupportingDocuments,
+  emptyStringToNull,
+  FORM_TYPE_NAMES,
+  getSupportingDocuments,
+  logSupabaseError,
+  supportingDocumentsToFieldValue,
+  toIsoDate,
+} from "@/api/forms/shared"
 import { supabase } from "@/lib/supabase/client"
 import { STORAGE_BUCKETS } from "@/lib/storage-constants"
 import { getOrCreateDraftReportId } from "@/api/reports"
@@ -24,7 +33,7 @@ function getAttachmentInputType(value: unknown) {
   return typeof value
 }
 
-async function resolveAttachmentPath(value: unknown, existingAttachmentPath?: string | null) {
+function validateAttachment(value: unknown) {
   console.log("[Form F API] attachments input type:", getAttachmentInputType(value))
 
   if (Array.isArray(value) && value.filter((file) => file instanceof File).length > 1) {
@@ -35,25 +44,6 @@ async function resolveAttachmentPath(value: unknown, existingAttachmentPath?: st
     throw new Error("Form F supports only one attachment. Please remove extra files.")
   }
 
-  if (!value && existingAttachmentPath) {
-    console.log("[Supabase Storage] Form F upload skipped: existing attachment path reused.")
-    return existingAttachmentPath
-  }
-
-  const attachmentPath = await uploadFiles(
-    value,
-    STORAGE_BUCKETS.FORM_F,
-    undefined,
-    existingAttachmentPath
-  )
-
-  if (attachmentPath) {
-    console.log("[Supabase Storage] Form F returned storage path:", attachmentPath)
-  } else {
-    console.log("[Supabase Storage] Form F upload skipped: no attachment provided.")
-  }
-
-  return attachmentPath ?? ""
 }
 
 export async function createFormFRecord({ values, reportId: initialReportId, existingAttachmentPath }: CreateFormFInput) {
@@ -63,26 +53,23 @@ export async function createFormFRecord({ values, reportId: initialReportId, exi
   // 0. Get an existing report id, or lazily create a draft during form submission
   const reportId = await getOrCreateDraftReportId(initialReportId)
 
-  // 1. Upload the optional single attachment before inserting rows.
-  const attachmentPath = await resolveAttachmentPath(values.attachments, existingAttachmentPath)
+  validateAttachment(values.attachments)
 
-  // 2. Insert into the base 'forms' table first to get a valid entry_id
-  const { data: formData, error: formError } = await supabase
-    .from("forms")
-    .insert({
-      title: values.awardGrantTitle,
-      author: "",
-      report_id: reportId,
-    })
-    .select("entry_id")
-    .single()
-
-  if (formError) {
-    logSupabaseError("[Supabase] Failed to create base form entry", formError)
-    throw formError
-  }
-
+  // 1. Insert into the base 'forms' table first to get a valid entry_id
+  const formData = await createBaseFormEntry({
+    title: values.awardGrantTitle,
+    author: "",
+    reportId,
+    formTypeName: FORM_TYPE_NAMES.FORM_F,
+  })
   const entryId = formData.entry_id
+
+  await createSupportingDocuments({
+    entryId,
+    value: values.attachments || existingAttachmentPath,
+    bucket: STORAGE_BUCKETS.FORM_F,
+    documentType: "attachments",
+  })
 
   // 3. Insert into the real ISIP awards table using the returned entry_id.
   const isipPayload = {
@@ -93,7 +80,6 @@ export async function createFormFRecord({ values, reportId: initialReportId, exi
     details: values.details,
     start_date: toIsoDate(values.startDate),
     end_date: toIsoDate(values.endDate),
-    attachments: attachmentPath,
     remarks: emptyStringToNull(values.remarks),
     related_kras: emptyStringToNull(values.relatedKras),
   }
@@ -124,6 +110,8 @@ export async function getFormFRecord(entryId: number): Promise<FormFValues> {
     throw isipError
   }
 
+  const attachmentDocuments = await getSupportingDocuments(entryId, "attachments")
+
   return {
     type: isipData.type,
     awardGrantTitle: isipData.award,
@@ -131,7 +119,7 @@ export async function getFormFRecord(entryId: number): Promise<FormFValues> {
     details: isipData.details,
     startDate: isipData.start_date ? new Date(isipData.start_date) : undefined,
     endDate: isipData.end_date ? new Date(isipData.end_date) : undefined,
-    attachments: isipData.attachments,
+    attachments: supportingDocumentsToFieldValue(attachmentDocuments),
     remarks: isipData.remarks || "",
     relatedKras: isipData.related_kras || "",
   }

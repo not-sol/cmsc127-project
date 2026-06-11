@@ -7,7 +7,14 @@ import App from "./App.tsx"
 import { ToastProvider } from "@/components/ui/toast"
 // import { ThemeProvider } from "@/components/theme-provider.tsx"
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+})
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
